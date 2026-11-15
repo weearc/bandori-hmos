@@ -45,11 +45,11 @@ python asset-reader-next/generate.py --apk D:\path\to\your.apk
 - 页大小：`libcrypto_1_1.so` / `libssl_1_1.so` / `libcustom_rules.so` / `libblkv.so` 的 `p_align=0x1000`、offset 与 vaddr 相差 0x1000，
   16KB 内核会报 `E-ELF-PAGE-CONGRUENCE`。这是 **guest 库**的限制，与分辨率无关。
 - 分辨率：**不得写死**。宿主经 `@ohos.display.getDefaultDisplaySync()` 注入 `sdk_set_display_snapshot()`；
-  已知缺陷是自检里曾把 DisplayMetrics 断言成字面量 2560x1600（`reflection_runtime.c`），已列为待修问题并在 COMPATIBILITY 中标注。
+  自检曾把 DisplayMetrics 断言成字面量 2560x1600（`reflection_runtime.c`），**已修复**为有效性检查 + 缺失时 `SKIP`。
 
 ## 尚未完成（明确列出，不掩饰）
 
-1. `reflection_runtime.c` 中 `DisplayMetrics_host_width_2560` / `..._height_1600` 两个字面量断言仍待改为有效性检查（非本仓库限制，属遗留缺陷）；
+1. ~~`reflection_runtime.c` 中 DisplayMetrics 字面量断言~~ —— **已修复**：改为 `*_valid` 有效性检查，宿主快照缺失（宽高为 0）时记 `SKIP` 并打印真实 `sdk_display_source()`，不再 `goto done` 中断自检；仓库内 `host/entry/libs/arm64-v8a/libsdktrace.so` 已用修复后源码重建并替换（sha256=4debbe8f123c442936620e36bdd3b0edc9d42aa80139d577454c4119eae2c7eb），二进制内已无 `*_2560` 字符串；
 2. `apk_payload_manifest.h` 目前只有校验脚本，没有自动再生成器；
 3. 断触/跳帧、极端长帧、标题 30fps 仍未完成最终验收；
 4. 大文件（`dvm.c` / `jni_bridge.c`）尚未拆分，属后续维护项。

@@ -44,7 +44,6 @@ required_inputs = [
     workspace / "sdk-runtime-spike/input_stream_reader_selftest.inc",
     workspace / "sdk-runtime-spike/jni_throwable_pressure_selftest.inc",
     compiler, nm, sdk / 'sysroot', sqlite, *required_archives,
-    workspace / 'tls-java-next/analysis/SSLUtils.smali.txt',
     base / 'source',
     workspace / 'tls-transport-next/vendor/mbedtls-3.6.7/include',
     *[workspace / 'tls-java-next/java' / name for name in (
@@ -425,8 +424,7 @@ for name in ('trust.c', 'trust.h', 'fixture_selftest.c', 'fixture_selftest.h', '
     shutil.copy2(workspace / 'tls-trust-next' / name, source / name)
 for name in ('cert_objects.c', 'cert_objects.h', 'cert_selftest.c',
              'cert_selftest.h', 'expected_spki.h'):
-    shutil.copy2(workspace / 'cert-objects-next' / name, source / name)
-shutil.copy2(workspace / 'tls-java-next/analysis/SSLUtils.smali.txt', out / 'SSLUtils.smali.txt')
+    shutil.copy2(workspace / 'cert-objects-next' / name, source / name)
 ssl_copy = source / 'ssl_runtime.c'
 ssl_text = ssl_copy.read_text(encoding='utf-8')
 ssl_text = ssl_text.replace('#include "../native/tls_client.h"', '#include "tls_client.h"')
