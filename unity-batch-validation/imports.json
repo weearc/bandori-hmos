@@ -1,0 +1,11242 @@
+[
+  {
+    "lib": "libBugly_Native.so",
+    "name": "sleep",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "pthread_detach",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "putc",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "sigemptyset",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "pthread_create",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "pthread_join",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "realloc",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "gettid",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "open",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "pthread_key_create",
+    "weak": true
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "_U_dyn_info_list_addr",
+    "weak": true
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "pthread_once",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "__cxa_finalize",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "ptrace",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "siglongjmp",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "pthread_rwlock_wrlock",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "calloc",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "fread",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "strncmp",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "pthread_sigmask",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "read",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "strtoul",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "fstat",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "isascii",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "pthread_mutex_init",
+    "weak": true
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "abort",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "vsnprintf",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "sigaltstack",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "closedir",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "strerror",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "qsort",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "_exit",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "__errno",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "snprintf",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "getpid",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "dl_iterate_phdr",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "strcat",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "sscanf",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "write",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "strrchr",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "access",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "time",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "fclose",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "__stack_chk_fail",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "fgets",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "dup",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "fork",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "gettimeofday",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "bsearch",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "pthread_key_delete",
+    "weak": true
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "strftime",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "memchr",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "prctl",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "pthread_setspecific",
+    "weak": true
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "strncpy",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "opendir",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "dlsym",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "localtime_r",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "dlerror",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "unlink",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "__android_log_vprint",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "strchr",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "fseek",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "strcmp",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "syscall",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "sigaddset",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "sprintf",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "strncat",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "sigaction",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "pthread_mutex_lock",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "mmap",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "pthread_getspecific",
+    "weak": true
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "memmove",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "pthread_rwlock_unlock",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "strstr",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "getpagesize",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "strdup",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "usleep",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "dladdr",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "kill",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "readdir",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "strlen",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "close",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "dlopen",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "stat",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "pthread_rwlock_init",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "localtime",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "munmap",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "malloc",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "execl",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "memcpy",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "waitpid",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "dup2",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "memset",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "fopen",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "pthread_rwlock_rdlock",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "fwrite",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "sigsetjmp",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "pthread_kill",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "free",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "pthread_self",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "strcpy",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "__system_property_get",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "sigfillset",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "pthread_mutex_unlock",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "__cxa_atexit",
+    "weak": false
+  },
+  {
+    "lib": "libBugly_Native.so",
+    "name": "isspace",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "strerror",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "memcpy",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "gettimeofday",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "memchr",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "__ctype_get_mb_cur_max",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "towlower",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "mbrtowc",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "btowc",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "wmemmove",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "strftime",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "wcslen",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "free",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "strtold",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "pthread_key_delete",
+    "weak": true
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "strcmp",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "malloc",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "strxfrm",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "wmemset",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "sprintf",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "__sF",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "rand",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "pthread_setspecific",
+    "weak": true
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "memmove",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "pthread_once",
+    "weak": true
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "__google_potentially_blocking_region_end",
+    "weak": true
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "strlen",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "wcscoll",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "realloc",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "iswctype",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "strtod",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "wcsftime",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "wctype",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "strncmp",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "srand",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "fputc",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "wmemcpy",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "__android_log_print",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "towupper",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "pthread_mutex_unlock",
+    "weak": true
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "strcoll",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "wctob",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "pthread_create",
+    "weak": true
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "fwrite",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "syscall",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "memset",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "__google_potentially_blocking_region_begin",
+    "weak": true
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "pthread_getspecific",
+    "weak": true
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "wmemchr",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "abort",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "__cxa_atexit",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "memcmp",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "write",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "_ctype_",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "wcrtomb",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "pthread_mutex_lock",
+    "weak": true
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "__cxa_finalize",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "pthread_key_create",
+    "weak": true
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "time",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "__stack_chk_fail",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "wcsxfrm",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "strtof",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "fputs",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "setlocale",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "dl_iterate_phdr",
+    "weak": false
+  },
+  {
+    "lib": "libCtaApiLib.so",
+    "name": "vsprintf",
+    "weak": false
+  },
+  {
+    "lib": "lib_burst_generated.so",
+    "name": "__cxa_atexit",
+    "weak": false
+  },
+  {
+    "lib": "lib_burst_generated.so",
+    "name": "__cxa_finalize",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "sleep",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "atoi",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "pthread_create",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "realloc",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "open",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "printf",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "getsockopt",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "pthread_attr_setdetachstate",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "pthread_once",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "__cxa_finalize",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "ftell",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "regcomp",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "system",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "fread",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "strncmp",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "read",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "strlcpy",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "strerror",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "qsort",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "__errno",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "getpid",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "sscanf",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "strrchr",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "time",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "regfree",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "fclose",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "freeaddrinfo",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "__stack_chk_fail",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "fgets",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "pthread_attr_init",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "select",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "dlclose",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "feof",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "memchr",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "strncpy",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "inet_ntop",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "dlsym",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "recv",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "__android_log_print",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "dlerror",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "sysconf",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "strchr",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "tolower",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "fseek",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "strcmp",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "regexec",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "sprintf",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "times",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "send",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "inet_aton",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "strstr",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "usleep",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "strlen",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "close",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "vasprintf",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "dlopen",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "stat",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "strtod",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "malloc",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "memcpy",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "connect",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "memset",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "fopen",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "socket",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "strtol",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "fcntl",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "free",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "strcpy",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "__system_property_get",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "__cxa_atexit",
+    "weak": false
+  },
+  {
+    "lib": "libbili.so",
+    "name": "getaddrinfo",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "pthread_create",
+    "weak": true
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "strtoull",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "realloc",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "pthread_key_create",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "__vsnprintf_chk",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "pthread_once",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "__cxa_finalize",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "calloc",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "wcstof",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "syslog",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "msync",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "posix_memalign",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "__strlen_chk",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "strtoul",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "strtoll",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "abort",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "swprintf",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "strerror",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "__errno",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "snprintf",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "dl_iterate_phdr",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "android_set_abort_message",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "islower",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "wcstoull",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "__memmove_chk",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "wcstol",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "wmemcpy",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "__sF",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "memcmp",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "fputc",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "__stack_chk_fail",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "wcslen",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "memchr",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "pthread_setspecific",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "openlog",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "wmemmove",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "strcmp",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "pthread_mutex_lock",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "mmap",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "closelog",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "pthread_getspecific",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "memmove",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "isxdigit",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "wcstod",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "getpagesize",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "wmemcmp",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "strlen",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "wmemchr",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "vasprintf",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "strtold",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "strtod",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "munmap",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "wcstoll",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "malloc",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "wmemset",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "memcpy",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "memset",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "strtol",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "free",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "wcstold",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "wcstoul",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "pwrite",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "strtof",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "vfprintf",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "pthread_mutex_unlock",
+    "weak": false
+  },
+  {
+    "lib": "libblkv.so",
+    "name": "__cxa_atexit",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "eglTerminate",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "AAsset_seek",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "memcpy",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "getsockname",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "fopen",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "gettimeofday",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "SL_IID_PLAY",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "glActiveTexture",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "cos",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "glGenBuffers",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "inet_ntop",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "__FD_ISSET_chk",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "getpriority",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "div",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "AAssetManager_open",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "logf",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "strncpy",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "atan2f",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "rename",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "pthread_mutex_destroy",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "close",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "AAssetManager_fromJava",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "syslog",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "pthread_join",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "getsockopt",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "glBufferData",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "eglGetCurrentContext",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "AAsset_close",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "pthread_attr_setschedpolicy",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "pthread_setname_np",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "eglCreatePbufferSurface",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "clock_gettime",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "pthread_attr_setschedparam",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "sscanf",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "free",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "SL_IID_ANDROIDAUTOMATICGAINCONTROL",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "fread",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "strchr",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "calloc",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "strcmp",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "malloc",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "eglGetProcAddress",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "nanosleep",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "pthread_cond_destroy",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "isxdigit",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "sprintf",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "glTexParameteri",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "__sF",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "pthread_setspecific",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "getpeername",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "glTexImage2D",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "posix_memalign",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "sched_yield",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "send",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "memmove",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "cosf",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "SL_IID_ANDROIDSIMPLEBUFFERQUEUE",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "pthread_once",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "AAsset_read",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "bind",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "strlen",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "atan2",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "pthread_self",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "gettid",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "strstr",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "expf",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "fclose",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "realloc",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "AAsset_openFileDescriptor64",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "tanf",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "pow",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "strncmp",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "getaddrinfo",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "fputc",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "pthread_getschedparam",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "snprintf",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "glBindBuffer",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "SL_IID_ANDROIDCONFIGURATION",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "listen",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "sincosf",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "pthread_condattr_setclock",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "remove",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "ferror",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "asinf",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "freeaddrinfo",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "pthread_mutex_unlock",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "SL_IID_BUFFERQUEUE",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "select",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "connect",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "tan",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "dlsym",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "setpriority",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "eglChooseConfig",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "pthread_cond_wait",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "dlclose",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "glGetError",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "AAsset_getLength64",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "pthread_cond_timedwait",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "pthread_create",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "fmodf",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "pthread_cond_broadcast",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "fwrite",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "slCreateEngine",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "strcpy",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "fileno",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "vsnprintf",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "android_set_abort_message",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "clearerr",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "glGetString",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "strncat",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "vasprintf",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "pthread_condattr_destroy",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "eglInitialize",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "memset",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "pthread_mutex_init",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "fdopen",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "SL_IID_ANDROIDNOISESUPPRESSION",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "dlopen",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "pthread_cond_signal",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "eglDestroyContext",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "eglMakeCurrent",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "stat",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "pthread_getspecific",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "islower",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "ioctl",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "abort",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "__cxa_atexit",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "SL_IID_RECORD",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "glDeleteBuffers",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "closelog",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "atoi",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "setsockopt",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "vfprintf",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "shutdown",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "eglGetDisplay",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "strcat",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "fseek",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "SL_IID_VOLUME",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "glTexParameterf",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "pthread_condattr_init",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "glTexSubImage2D",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "memcmp",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "SL_IID_ENGINE",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "exp2f",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "__errno",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "glGenTextures",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "sinf",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "pthread_mutex_lock",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "eglDestroySurface",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "__android_log_vprint",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "toupper",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "glDeleteTextures",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "qsort",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "__FD_SET_chk",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "__cxa_finalize",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "glBindTexture",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "recv",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "fflush",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "pthread_key_create",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "powf",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "socket",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "modf",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "pthread_attr_init",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "__stack_chk_fail",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "accept",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "pthread_attr_setstacksize",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "puts",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "pthread_cond_init",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "acosf",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "glGetIntegerv",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "dl_iterate_phdr",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "log10f",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "vsprintf",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "SL_IID_ANDROIDACOUSTICECHOCANCELLATION",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "openlog",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "fstat",
+    "weak": false
+  },
+  {
+    "lib": "libcri_ware_unity.so",
+    "name": "eglCreateContext",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "__cxa_finalize",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "__cxa_atexit",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "getenv",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "strtoul",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "getauxval",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "sigfillset",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "sigdelset",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "sigprocmask",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "sigaction",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "sigsetjmp",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "siglongjmp",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "memcpy",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "memset",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "strlen",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "fwrite",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "strncmp",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "strcmp",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "time",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "strncasecmp",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "memcmp",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "strrchr",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "qsort",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "strncpy",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "getnameinfo",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "__errno",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "gai_strerror",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "freeaddrinfo",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "strchr",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "getaddrinfo",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "getsockopt",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "gethostbyname",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "ioctl",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "strcpy",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "strcat",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "setsockopt",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "getsockname",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "socket",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "connect",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "bind",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "listen",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "accept",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "close",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "memmove",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "__sF",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "fputs",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "shutdown",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "write",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "read",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "sendto",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "gettimeofday",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "recvfrom",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "perror",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "lseek",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "fclose",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "fread",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "ferror",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "fgets",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "feof",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "fseek",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "ftell",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "fflush",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "syslog",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "closelog",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "openlog",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "strcasecmp",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "stat",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "calloc",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "strdup",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "free",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "vfprintf",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "abort",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "atoi",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "dlopen",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "dlerror",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "dlclose",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "dlsym",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "sprintf",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "strtol",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "fprintf",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "malloc",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "realloc",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "sysconf",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "mmap",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "mprotect",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "syscall",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "mlock",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "madvise",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "munmap",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "readdir",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "opendir",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "closedir",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "fopen",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "strerror",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "gmtime_r",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "memchr",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "strspn",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "strcspn",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "fstat",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "getentropy",
+    "weak": true
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "open",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "getpid",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "clock_gettime",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "fileno",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "setbuf",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "clearerr",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "fdopen",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "chmod",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "strstr",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "pthread_rwlock_init",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "pthread_rwlock_rdlock",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "pthread_rwlock_wrlock",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "pthread_rwlock_unlock",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "pthread_rwlock_destroy",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "pthread_once",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "pthread_key_create",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "pthread_getspecific",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "pthread_setspecific",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "pthread_key_delete",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "pthread_self",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "pthread_equal",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "pthread_atfork",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "signal",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "fputc",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "sscanf",
+    "weak": false
+  },
+  {
+    "lib": "libcrypto_1_1.so",
+    "name": "__system_property_get",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "pthread_self",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "dl_iterate_phdr",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "strtold_l",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "ungetc",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "iswxdigit",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "strncpy",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "iswalpha",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "__memmove_chk",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "ERR_get_error",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "wmemcmp",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "towlower",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "wcstol",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "vasprintf",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "pthread_getspecific",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "wcstod",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "strtod",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "__cxa_atexit",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "mbtowc",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "wcstold",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "memcmp",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "wcstoul",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "pthread_create",
+    "weak": true
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "pthread_join",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "newlocale",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "wcstof",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "malloc",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "pthread_once",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "__stack_chk_fail",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "vfprintf",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "mbrlen",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "fwrite",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "calloc",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "wcstoll",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "wmemmove",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "iswcntrl",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "wmemset",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "strcpy",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "strxfrm",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "btowc",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "iswupper",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "pthread_cond_wait",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "closelog",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "BIO_push",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "__ctype_get_mb_cur_max",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "close",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "puts",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "openlog",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "getc",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "pthread_cond_signal",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "pthread_mutexattr_settype",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "pthread_mutexattr_init",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "free",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "vsscanf",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "fputc",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "RSA_size",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "toupper",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "__android_log_print",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "__sF",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "__errno",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "fflush",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "BIO_new",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "strcmp",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "PEM_read_bio_RSA_PUBKEY",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "sysconf",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "RSA_new",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "wcscoll",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "pthread_cond_broadcast",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "pthread_mutex_trylock",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "wcsnrtombs",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "strtoll_l",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "pthread_setspecific",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "__strlen_chk",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "uselocale",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "strftime",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "iswlower",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "mbrtowc",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "pthread_mutex_unlock",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "BIO_s_mem",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "memmove",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "wcsxfrm",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "memset",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "setlocale",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "BIO_new_mem_buf",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "RSA_public_decrypt",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "isxdigit",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "__cxa_finalize",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "ERR_error_string",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "BIO_f_base64",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "android_set_abort_message",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "strcat",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "pthread_mutex_init",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "towupper",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "wcstoull",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "strtoull",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "pthread_cond_destroy",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "printf",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "__strcpy_chk",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "snprintf",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "sched_yield",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "abort",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "strtoll",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "__vsprintf_chk",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "localeconv",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "BIO_write",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "isupper",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "pthread_cond_timedwait",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "BIO_free_all",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "BIO_read",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "mbsnrtowcs",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "strtold",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "iswpunct",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "strtol",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "nanosleep",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "__vsnprintf_chk",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "pthread_mutex_lock",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "log",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "BIO_set_flags",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "pthread_mutex_destroy",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "pthread_mutexattr_destroy",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "sscanf",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "wmemchr",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "strtof",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "realloc",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "syslog",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "strcoll",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "strtoull_l",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "iswspace",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "__open_2",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "iswdigit",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "wctob",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "strtoul",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "memcpy",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "iswblank",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "RSA_free",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "strerror_r",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "BIO_ctrl",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "swprintf",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "vsnprintf",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "iswprint",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "tolower",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "syscall",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "islower",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "OpenSSL_version",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "pthread_equal",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "wcslen",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "memchr",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "__strcat_chk",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "atoi",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "strlen",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "freelocale",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "wcrtomb",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "pthread_key_create",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "pthread_detach",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "__read_chk",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "posix_memalign",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "mbsrtowcs",
+    "weak": false
+  },
+  {
+    "lib": "libcustom_rules.so",
+    "name": "wmemcpy",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "__cxa_atexit",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "__cxa_finalize",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "acos",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "memcpy",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "atan2f",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "atanf",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "modf",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "tanf",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "acosf",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "__stack_chk_fail",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "fmod",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "fmodf",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "memmove",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "sincosf",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "cosf",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "exp2f",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "sinf",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "logf",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "powf",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "memset",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "sincos",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "cos",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "sin",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "tan",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "log",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "log10f",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "atan",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "atan2",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "expf",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "asin",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "exp",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "log10",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "ldexpf",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "memcmp",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "strcmp",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "strlen",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "__sF",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "abort",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "exit",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "fprintf",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "free",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "malloc",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "pow",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "bsearch",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "pthread_getspecific",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "pthread_key_create",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "pthread_key_delete",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "pthread_mutex_destroy",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "pthread_mutex_init",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "pthread_mutex_lock",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "pthread_mutex_unlock",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "pthread_setspecific",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "fcntl",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "hypot",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "logb",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "pipe",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "read",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "scalbn",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "write",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "__errno",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "accept",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "bind",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "calloc",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "close",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "closedir",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "connect",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "dup2",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "freeaddrinfo",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "fstat",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "getaddrinfo",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "getcwd",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "gethostname",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "getnameinfo",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "getpeername",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "getsockname",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "getsockopt",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "inet_ntop",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "inet_pton",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "ioctl",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "listen",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "mkdir",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "open",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "opendir",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "poll",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "readdir",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "realloc",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "recvfrom",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "recvmsg",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "rmdir",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "send",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "sendfile",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "sendmsg",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "sendto",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "setsockopt",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "shutdown",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "socket",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "strcpy",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "pthread_mutexattr_destroy",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "pthread_mutexattr_init",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "pthread_mutexattr_settype",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "pthread_rwlock_rdlock",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "pthread_rwlock_unlock",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "pthread_rwlock_wrlock",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "vsnprintf",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "snprintf",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "access",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "chmod",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "dup",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "ftruncate",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "getpagesize",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "isatty",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "lseek",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "lstat",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "mmap",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "munmap",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "rename",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "stat",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "strncmp",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "unlink",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "log2",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "__FD_SET_chk",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "atoi",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "clock_getres",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "clock_gettime",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "difftime",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "div",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "dladdr",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "getenv",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "getpid",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "gettimeofday",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "gmtime",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "localtime",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "memalign",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "mktime",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "pthread_cond_broadcast",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "pthread_cond_destroy",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "pthread_cond_init",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "pthread_cond_signal",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "pthread_cond_timedwait",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "pthread_cond_wait",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "readlink",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "select",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "setenv",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "sigaction",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "sigemptyset",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "sprintf",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "strchr",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "strftime",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "strncpy",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "sysconf",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "time",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "uname",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "unsetenv",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "memchr",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "__android_log_print",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "pthread_once",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "strstr",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "strrchr",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "towlower",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "pthread_attr_destroy",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "pthread_attr_init",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "pthread_create",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "pthread_detach",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "pthread_self",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "pthread_setname_np",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "sched_yield",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "setlocale",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "fchmod",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "futimens",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "getegid",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "geteuid",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "link",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "lrand48",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "qsort",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "srand48",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "strdup",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "strerror_r",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "symlink",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "utimes",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "strlcpy",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "fclose",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "fflush",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "fopen",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "fread",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "fseek",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "fseeko",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "ftello",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "fwrite",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "strtol",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "atol",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "clock",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "dlopen",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "madvise",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "nanosleep",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "pthread_atfork",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "pthread_attr_getstack",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "pthread_getattr_np",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "pthread_join",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "pthread_kill",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "pthread_sigmask",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "sem_getvalue",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "sem_init",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "sem_post",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "sem_timedwait",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "sem_wait",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "setjmp",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "sigaddset",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "sigdelset",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "sigfillset",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "signal",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "sigsuspend",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "strtoul",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "usleep",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "vfprintf",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "dlclose",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "dlerror",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "dlsym",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "posix_memalign",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "syscall",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "wmemcpy",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "__ctype_get_mb_cur_max",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "__strlen_chk",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "__vsnprintf_chk",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "btowc",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "freelocale",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "isdigit_l",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "islower_l",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "isupper_l",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "iswalpha_l",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "iswblank_l",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "iswcntrl_l",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "iswdigit_l",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "iswlower_l",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "iswprint_l",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "iswpunct_l",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "iswspace_l",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "iswupper_l",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "iswxdigit_l",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "isxdigit_l",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "localeconv",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "mbrlen",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "mbrtowc",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "mbsnrtowcs",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "mbsrtowcs",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "mbtowc",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "newlocale",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "sscanf",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "strcoll_l",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "strftime_l",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "strtod",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "strtof",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "strtold_l",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "strtoll_l",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "strtoull_l",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "strxfrm_l",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "tolower_l",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "toupper_l",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "towlower_l",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "towupper_l",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "uselocale",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "vasprintf",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "vsscanf",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "wcrtomb",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "wcscoll_l",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "wcslen",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "wcsnrtombs",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "wcsxfrm_l",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "wctob",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "wmemset",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "pthread_mutex_trylock",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "pthread_equal",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "strtold",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "strtoll",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "strtoull",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "swprintf",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "wcstod",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "wcstof",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "wcstol",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "wcstold",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "wcstoll",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "wcstoul",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "wcstoull",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "wmemchr",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "wmemcmp",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "wmemmove",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "android_set_abort_message",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "closelog",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "fputc",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "openlog",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "syslog",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "__memmove_chk",
+    "weak": false
+  },
+  {
+    "lib": "libil2cpp.so",
+    "name": "dl_iterate_phdr",
+    "weak": false
+  },
+  {
+    "lib": "libmain.so",
+    "name": "__cxa_atexit",
+    "weak": false
+  },
+  {
+    "lib": "libmain.so",
+    "name": "__cxa_finalize",
+    "weak": false
+  },
+  {
+    "lib": "libmain.so",
+    "name": "__stack_chk_fail",
+    "weak": false
+  },
+  {
+    "lib": "libmain.so",
+    "name": "dlclose",
+    "weak": false
+  },
+  {
+    "lib": "libmain.so",
+    "name": "dlerror",
+    "weak": false
+  },
+  {
+    "lib": "libmain.so",
+    "name": "dlopen",
+    "weak": false
+  },
+  {
+    "lib": "libmain.so",
+    "name": "dlsym",
+    "weak": false
+  },
+  {
+    "lib": "libmain.so",
+    "name": "free",
+    "weak": false
+  },
+  {
+    "lib": "libmain.so",
+    "name": "malloc",
+    "weak": false
+  },
+  {
+    "lib": "libmain.so",
+    "name": "memcpy",
+    "weak": false
+  },
+  {
+    "lib": "libmain.so",
+    "name": "snprintf",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "strerror",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "memcpy",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "fopen",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "memchr",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "dlopen",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "usleep",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "close",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "inflate",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "pthread_mutexattr_settype",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "__system_property_get",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "getenv",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "strtoumax",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "crc32",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "__android_log_write",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "readlink",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "sscanf",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "free",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "fread",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "sysconf",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "strchr",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "strtold",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "pthread_key_delete",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "strcmp",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "malloc",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "getcwd",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "getpid",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "__sF",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "pthread_setspecific",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "__strchr_chk",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "memmove",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "pthread_once",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "__google_potentially_blocking_region_end",
+    "weak": true
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "feof",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "strlen",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "strcspn",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "strstr",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "dlclose",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "strtok",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "fclose",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "__strrchr_chk",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "realloc",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "strtod",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "munmap",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "strncmp",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "fputc",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "ftell",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "ferror",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "pthread_mutex_unlock",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "pthread_cond_wait",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "inflateEnd",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "__snprintf_chk",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "fwrite",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "mmap",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "fileno",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "syscall",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "memset",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "pthread_mutex_init",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "fdopen",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "pthread_cond_signal",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "__google_potentially_blocking_region_begin",
+    "weak": true
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "dlerror",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "stat",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "pthread_getspecific",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "abort",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "__cxa_atexit",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "dlsym",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "atoi",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "fseek",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "lrand48",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "dl_iterate_phdr",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "memcmp",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "write",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "__errno",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "__strcpy_chk",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "pthread_mutexattr_init",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "inflateInit2_",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "pthread_mutex_lock",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "mprotect",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "__sprintf_chk",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "__cxa_finalize",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "strtoul",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "pthread_key_create",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "__vsnprintf_chk",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "lseek",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "time",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "__stack_chk_fail",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "__strlcpy_chk",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "strtof",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "fputs",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "fgets",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "__strcat_chk",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "pthread_cond_init",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "setlocale",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "srand48",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "open",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "__read_chk",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "__strlen_chk",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "prctl",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "fscanf",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "strdup",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidauth.so",
+    "name": "fstat",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "strerror",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "memcpy",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "fopen",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "memchr",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "opendir",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "dlopen",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "openat",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "usleep",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "close",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "inflate",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "pthread_mutexattr_settype",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "__system_property_get",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "getenv",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "strtoumax",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "crc32",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "lstat",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "__android_log_write",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "readlink",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "sscanf",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "free",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "fread",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "waitpid",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "sysconf",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "strchr",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "strtold",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "calloc",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "pthread_key_delete",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "strcmp",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "malloc",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "getcwd",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "getpid",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "__sF",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "pthread_setspecific",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "__strchr_chk",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "memmove",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "pthread_once",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "__google_potentially_blocking_region_end",
+    "weak": true
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "feof",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "strlen",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "strcspn",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "strstr",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "dlclose",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "strtok",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "fclose",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "__strrchr_chk",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "realloc",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "strtod",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "munmap",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "strncmp",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "sleep",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "fputc",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "ftell",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "ferror",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "pthread_mutex_unlock",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "pthread_cond_wait",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "inflateEnd",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "__snprintf_chk",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "fwrite",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "mmap",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "fileno",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "syscall",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "memset",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "pthread_mutex_init",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "fdopen",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "pthread_cond_signal",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "__google_potentially_blocking_region_begin",
+    "weak": true
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "dlerror",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "stat",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "pthread_getspecific",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "abort",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "__cxa_atexit",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "dlsym",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "atoi",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "fseek",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "exit",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "ptrace",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "lrand48",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "dl_iterate_phdr",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "memcmp",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "write",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "__errno",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "__strcpy_chk",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "pthread_mutexattr_init",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "inflateInit2_",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "pthread_mutex_lock",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "mprotect",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "strtoll",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "readdir",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "__sprintf_chk",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "__cxa_finalize",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "strtoul",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "pthread_key_create",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "__vsnprintf_chk",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "_exit",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "lseek",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "time",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "__stack_chk_fail",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "__strlcpy_chk",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "strtof",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "fputs",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "fgets",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "__strcat_chk",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "pthread_cond_init",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "setlocale",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "srand48",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "open",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "__read_chk",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "__strlen_chk",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "prctl",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "fscanf",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "strdup",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "closedir",
+    "weak": false
+  },
+  {
+    "lib": "libmsaoaidsec.so",
+    "name": "fstat",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "__cxa_finalize",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "__cxa_atexit",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "free",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "__stack_chk_fail",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "memset",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "calloc",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "sscanf",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "strdup",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "fgets",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "fclose",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "memcpy",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "clock_gettime",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "strtol",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "strchr",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "strcmp",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "strncmp",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "fstat",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "mmap",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "munmap",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "__system_property_get",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "access",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "vsnprintf",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "timer_create",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "timer_settime",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "read",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "close",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "__strlen_chk",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "realloc",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "opendir",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "readlink",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "readdir",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "closedir",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "__errno",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "stat",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "rand",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "time",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "srand",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "malloc",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "strlen",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "syscall",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "fopen",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "fread",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "fseek",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "ftell",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "fmod",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "localtime",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "strftime",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "gettimeofday",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "getpid",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "fputs",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "__android_log_print",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "__memcpy_chk",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "sendto",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "recvfrom",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "inet_aton",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "socket",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "setsockopt",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "connect",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "write",
+    "weak": false
+  },
+  {
+    "lib": "libsigner.so",
+    "name": "getauxval",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "__cxa_finalize",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "__cxa_atexit",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BIO_f_buffer",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BIO_new",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BIO_push",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BIO_free",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BIO_s_connect",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BIO_ctrl",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BIO_find_type",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BIO_get_data",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BIO_next",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BIO_method_type",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BIO_clear_flags",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BIO_set_flags",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "time",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BIO_set_retry_reason",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "strlen",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BIO_write",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BIO_get_shutdown",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BIO_set_shutdown",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BIO_set_next",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BIO_up_ref",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BIO_set_init",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BIO_copy_next_retry",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BIO_get_retry_reason",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "CRYPTO_zalloc",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BIO_set_data",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "ERR_put_error",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BIO_get_init",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "CRYPTO_free",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BIO_callback_ctrl",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "memset",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "gettimeofday",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "ERR_clear_error",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "__errno",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BIO_read",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BIO_ADDR_new",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BIO_ADDR_free",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BIO_test_flags",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BIO_ADDR_clear",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OPENSSL_sk_new_null",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "strchr",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "strncmp",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OPENSSL_sk_find",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OPENSSL_sk_push",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OPENSSL_sk_free",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BUF_MEM_grow",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "memcpy",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "CRYPTO_malloc",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BIO_snprintf",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "ERR_add_error_data",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_MD_CTX_md",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_MD_size",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_CIPHER_CTX_cipher",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_CIPHER_flags",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_CIPHER_CTX_iv_length",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "memmove",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "CRYPTO_memcmp",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "COMP_expand_block",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "COMP_compress_block",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_CIPHER_CTX_block_size",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_Cipher",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_CIPHER_iv_length",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "RAND_bytes",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_CIPHER_block_size",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_CIPHER_CTX_ctrl",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_MD_CTX_new",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_MD_CTX_copy_ex",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_DigestUpdate",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_DigestFinal_ex",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_MD_CTX_free",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_MD_CTX_copy",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_DigestSignFinal",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_CipherInit_ex",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_CipherUpdate",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_CipherFinal_ex",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_MD_type",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "SHA256_Init",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "SHA256_Transform",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "MD5_Init",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "MD5_Transform",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "SHA384_Init",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "SHA512_Transform",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "SHA512_Init",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "SHA224_Init",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "SHA1_Init",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "SHA1_Transform",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_DigestInit_ex",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_DigestFinal",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "COMP_CTX_free",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "COMP_CTX_new",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_CIPHER_CTX_reset",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_CIPHER_key_length",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_CIPHER_CTX_new",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "CRYPTO_clear_free",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_MD_CTX_set_flags",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_sha1",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_md5",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OPENSSL_cleanse",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BIO_s_mem",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_MD_CTX_ctrl",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "qsort",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_PKEY_free",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_NAME_free",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OPENSSL_sk_pop_free",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_PKEY_security_bits",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EC_KEY_get0_group",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EC_GROUP_get_curve_name",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_PKEY_up_ref",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "CRYPTO_strdup",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_PKEY_new",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_PKEY_set1_DH",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "CRYPTO_memdup",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_free",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "strcmp",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_sha256",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OPENSSL_sk_num",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OPENSSL_sk_value",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OPENSSL_sk_new_reserve",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_PKEY_CTX_new",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_PKEY_keygen_init",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_PKEY_keygen",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_PKEY_CTX_free",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_PKEY_CTX_new_id",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_PKEY_CTX_ctrl",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_PKEY_set_type",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_PKEY_paramgen_init",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_PKEY_paramgen",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_PKEY_derive_init",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_PKEY_derive_set_peer",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_PKEY_derive",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "ASN1_item_i2d",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "ASN1_item_d2i",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "ASN1_item_free",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "CRYPTO_strndup",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "UINT32_it",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "INT32_it",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "ASN1_OCTET_STRING_it",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "ZINT64_it",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_it",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "ZINT32_it",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "ZUINT64_it",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "ZUINT32_it",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "CRYPTO_THREAD_run_once",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "CRYPTO_get_ex_new_index",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "CRYPTO_THREAD_lock_new",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_up_ref",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_chain_up_ref",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_STORE_up_ref",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_STORE_free",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "CRYPTO_THREAD_lock_free",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_cmp",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_STORE_CTX_new",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_STORE_CTX_init",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_STORE_CTX_get0_param",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_VERIFY_PARAM_set_auth_level",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_STORE_CTX_set_flags",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_STORE_CTX_set_ex_data",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_STORE_CTX_set0_dane",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_STORE_CTX_set_default",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_VERIFY_PARAM_set1",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_STORE_CTX_set_verify_cb",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_verify_cert",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_STORE_CTX_get_error",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_STORE_CTX_get0_chain",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_STORE_CTX_get1_chain",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_VERIFY_PARAM_move_peername",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_STORE_CTX_free",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_NAME_dup",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_get_subject_name",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BIO_s_file",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OPENSSL_LH_new",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "PEM_read_bio_X509",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OPENSSL_LH_retrieve",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OPENSSL_LH_insert",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OPENSSL_LH_free",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_NAME_hash",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "i2d_X509_NAME",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "memcmp",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OPENSSL_sk_set_cmp_func",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OPENSSL_DIR_read",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OPENSSL_DIR_end",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_STORE_new",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_STORE_add_cert",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OPENSSL_sk_shift",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_get_extension_flags",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OPENSSL_sk_pop",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_verify_cert_error_string",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_PKEY_id",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OBJ_nid2sn",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_get_cipherbyname",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_get_digestbyname",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_PKEY_asn1_find_str",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_PKEY_asn1_get0_info",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "ENGINE_finish",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_enc_null",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "CONF_parse_list",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OPENSSL_sk_dup",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OPENSSL_sk_delete",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OPENSSL_sk_insert",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OPENSSL_sk_sort",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "COMP_get_type",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "CRYPTO_mem_ctrl",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "COMP_get_name",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "COMP_zlib",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OPENSSL_sk_new",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "strncasecmp",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "strcasecmp",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EC_curve_nist2nid",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OBJ_sn2nid",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EC_KEY_new_by_curve_name",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EC_KEY_free",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_STORE_load_locations",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "PEM_read_bio_DHparams",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "DH_free",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "atoi",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "ERR_func_error_string",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "ERR_load_strings_const",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OPENSSL_init_crypto",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_des_cbc",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_add_cipher",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_des_ede3_cbc",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_idea_cbc",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_rc4",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_rc4_hmac_md5",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_rc2_cbc",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_rc2_40_cbc",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_aes_128_cbc",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_aes_192_cbc",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_aes_256_cbc",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_aes_128_gcm",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_aes_256_gcm",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_aes_128_ccm",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_aes_256_ccm",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_aes_128_cbc_hmac_sha1",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_aes_256_cbc_hmac_sha1",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_aes_128_cbc_hmac_sha256",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_aes_256_cbc_hmac_sha256",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_aria_128_gcm",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_aria_256_gcm",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_camellia_128_cbc",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_camellia_256_cbc",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_chacha20_poly1305",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_seed_cbc",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_add_digest",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OBJ_NAME_add",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_md5_sha1",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_sha224",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_sha384",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_sha512",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OPENSSL_atexit",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BUF_MEM_free",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_CIPHER_CTX_free",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_VERIFY_PARAM_new",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_VERIFY_PARAM_inherit",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "CRYPTO_new_ex_data",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_VERIFY_PARAM_free",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "CRYPTO_free_ex_data",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BIO_pop",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BIO_free_all",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_EXTENSION_free",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OCSP_RESPID_free",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "SCT_LIST_free",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "ASYNC_WAIT_CTX_free",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "CRYPTO_THREAD_write_lock",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "CRYPTO_THREAD_unlock",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "CRYPTO_THREAD_read_lock",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_VERIFY_PARAM_set_purpose",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_VERIFY_PARAM_set_trust",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_VERIFY_PARAM_set1_host",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_VERIFY_PARAM_add1_host",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_VERIFY_PARAM_set_hostflags",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_VERIFY_PARAM_get0_peername",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "d2i_X509",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_get0_pubkey",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "d2i_PUBKEY",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "CRYPTO_realloc",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "CTLOG_STORE_free",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "CRYPTO_secure_free",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BIO_s_socket",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BIO_int_ctrl",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_VERIFY_PARAM_get_depth",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_VERIFY_PARAM_set_depth",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_check_private_key",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "ASYNC_WAIT_CTX_get_all_fds",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "ASYNC_WAIT_CTX_get_changed_fds",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "ASYNC_get_current_job",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "ASYNC_WAIT_CTX_new",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "ASYNC_start_job",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OPENSSL_LH_num_items",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "strcpy",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "CTLOG_STORE_new",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "CRYPTO_secure_zalloc",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "RAND_priv_bytes",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_get_key_usage",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "ERR_peek_error",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "CRYPTO_dup_ex_data",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "COMP_CTX_get_method",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_STORE_set_default_paths",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_LOOKUP_hash_dir",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_STORE_add_lookup",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_LOOKUP_ctrl",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_LOOKUP_file",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "CRYPTO_set_ex_data",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "CRYPTO_get_ex_data",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OBJ_bsearch_",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "o2i_SCT_LIST",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "d2i_OCSP_RESPONSE",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OCSP_response_get1_basic",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OCSP_resp_count",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OCSP_resp_get0",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OCSP_SINGLERESP_get1_ext_d2i",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OCSP_BASICRESP_free",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OCSP_RESPONSE_free",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_get_ext_d2i",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "CT_POLICY_EVAL_CTX_new",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "CT_POLICY_EVAL_CTX_set1_cert",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "CT_POLICY_EVAL_CTX_set1_issuer",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "CT_POLICY_EVAL_CTX_set_shared_CTLOG_STORE",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "CT_POLICY_EVAL_CTX_set_time",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "SCT_LIST_validate",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "CT_POLICY_EVAL_CTX_free",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "SCT_get_validation_status",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "CTLOG_STORE_load_default_file",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "CTLOG_STORE_load_file",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "sprintf",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "SCT_set_source",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "conf_ssl_name_find",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "conf_ssl_get",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "conf_ssl_get_cmd",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_PKEY_get0_EC_KEY",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EC_KEY_can_sign",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_PKEY_copy_parameters",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "d2i_X509_bio",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "RSA_up_ref",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_PKEY_assign",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "RSA_free",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "d2i_RSAPrivateKey_bio",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "PEM_read_bio_RSAPrivateKey",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "d2i_RSAPrivateKey",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "PEM_read_bio_PrivateKey",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "d2i_PrivateKey_bio",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "d2i_PrivateKey",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "PEM_read_bio_X509_AUX",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "ERR_peek_last_error",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "PEM_read_bio",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_get_pubkey",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_PKEY_missing_parameters",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_PKEY_cmp",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OPENSSL_LH_delete",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OPENSSL_LH_get_down_load",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OPENSSL_LH_set_down_load",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OPENSSL_LH_doall_arg",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "ENGINE_init",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "ENGINE_get_ssl_client_cert_function",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "PEM_ASN1_read_bio",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "PEM_ASN1_read",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "PEM_ASN1_write_bio",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "PEM_ASN1_write",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BIO_puts",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BIO_printf",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BIO_dump_indent",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_PKEY_new_raw_private_key",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_DigestSignInit",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "i2d_OCSP_RESPID",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "i2d_X509_EXTENSIONS",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_PKEY_get1_tls_encodedpoint",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_PKEY_set1_tls_encodedpoint",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "memchr",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "d2i_OCSP_RESPID",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "d2i_X509_EXTENSIONS",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_DigestSign",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BUF_MEM_grow_clean",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BUF_MEM_new",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_PKEY_get0_RSA",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_PKEY_encrypt_init",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_PKEY_encrypt",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_PKEY_get0_DH",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "DH_get0_key",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BN_num_bits",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BN_bn2bin",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_DigestInit",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "DH_new",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BN_bin2bn",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BN_is_zero",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BN_free",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "DH_set0_pqg",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "DH_check_params",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "DH_set0_key",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_PKEY_size",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_DigestVerifyInit",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "RSA_pkey_ctx_ctrl",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_DigestVerify",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_Digest",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "ENGINE_load_ssl_client_cert",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BUF_reverse",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_DigestVerifyFinal",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "d2i_X509_NAME",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_NAME_cmp",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "i2d_X509",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "ASN1_item_new",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "DH_get0_pqg",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "HMAC_CTX_new",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "HMAC_CTX_free",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_EncryptInit_ex",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "HMAC_Init_ex",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_EncryptUpdate",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_EncryptFinal",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "HMAC_Update",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "HMAC_Final",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "RSA_size",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "RSA_private_decrypt",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BN_ucmp",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_PKEY_decrypt_init",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "ASN1_TYPE_get",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_PKEY_decrypt",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "ASN1_ANY_it",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_PKEY_new_mac_key",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "OBJ_ln2nid",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EC_KEY_get_conv_form",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EC_GROUP_method_of",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EC_METHOD_get_field_type",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "HMAC_size",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_DecryptInit_ex",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_DecryptUpdate",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_DecryptFinal",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_chain_check_suiteb",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_get_issuer_name",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_PKEY_get0",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_get_signature_nid",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BN_new",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BN_set_word",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BN_get_rfc3526_prime_8192",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BN_get_rfc3526_prime_4096",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BN_get_rfc3526_prime_3072",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BN_get_rfc3526_prime_2048",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BN_get_rfc2409_prime_1024",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "X509_get_signature_info",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "ERR_set_mark",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "EVP_PKEY_get_default_digest_nid",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "ERR_pop_to_mark",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BN_dup",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "SRP_Calc_B",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "SRP_get_default_gN",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BN_clear_free",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "SRP_create_verifier_BN",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "BN_copy",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "SRP_Verify_A_mod_N",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "SRP_Calc_u",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "SRP_Calc_server_key",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "SRP_Verify_B_mod_N",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "SRP_Calc_x",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "SRP_Calc_client_key",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "SRP_check_known_gN_param",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "SRP_Calc_A",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "getauxval",
+    "weak": false
+  },
+  {
+    "lib": "libssl_1_1.so",
+    "name": "__system_property_get",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "__cxa_atexit",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "__cxa_finalize",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "__stack_chk_fail",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "acosf",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "memcmp",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "memcpy",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "memmove",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "memset",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "powf",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "pthread_getspecific",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "pthread_setspecific",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "sincosf",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "strlen",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "strcpy",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "atan2f",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "strncmp",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "free",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "longjmp",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "malloc",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "realloc",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "setjmp",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "__android_log_write",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "getpagesize",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "madvise",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "mmap",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "mprotect",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "munmap",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "snprintf",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "strcmp",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "fclose",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "fopen",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "fputc",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "fread",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "fseek",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "ftell",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "fwrite",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "remove",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "sscanf",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "vsnprintf",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "pow",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "acos",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "sincos",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "sinf",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "puts",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "sprintf",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "cosf",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "expf",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "logf",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "ldexp",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "tanf",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "atanf",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "fmod",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "qsort",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "printf",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "strncpy",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "getpid",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "clock_gettime",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "getenv",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "pthread_cond_broadcast",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "pthread_cond_destroy",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "pthread_cond_init",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "pthread_cond_timedwait",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "pthread_cond_wait",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "pthread_condattr_destroy",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "pthread_condattr_init",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "pthread_condattr_setclock",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "pthread_mutex_destroy",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "pthread_mutex_init",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "pthread_mutex_lock",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "pthread_mutex_unlock",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "pthread_mutexattr_destroy",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "pthread_mutexattr_init",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "pthread_mutexattr_settype",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "dlclose",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "dlerror",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "dlopen",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "dlsym",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "time",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "__FD_SET_chk",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "__errno",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "_exit",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "accept",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "atoi",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "bind",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "close",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "connect",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "dup2",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "execl",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "fcntl",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "fork",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "freeaddrinfo",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "getaddrinfo",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "getsockname",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "getsockopt",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "inet_addr",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "ioctl",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "kill",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "listen",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "perror",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "pipe",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "read",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "recv",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "recvfrom",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "select",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "send",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "sendto",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "setsockopt",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "shutdown",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "socket",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "strerror",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "waitpid",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "strstr",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "strchr",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "_ZTH15gDeferredAction",
+    "weak": true
+  },
+  {
+    "lib": "libunity.so",
+    "name": "fmodf",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "strtol",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "exit",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "gettimeofday",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "gmtime",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "memchr",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "open",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "rand",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "access",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "chmod",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "closedir",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "flock",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "getpwuid",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "getuid",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "lseek64",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "lstat",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "mkdir",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "opendir",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "readdir",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "realpath",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "rename",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "rmdir",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "stat",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "statfs",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "strrchr",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "symlink",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "truncate",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "unlink",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "utime",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "write",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "nanosleep",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "prctl",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "pthread_mutex_trylock",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "strnlen",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "raise",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "modf",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "strdup",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "ANativeWindow_getHeight",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "ANativeWindow_getWidth",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "ANativeWindow_setBuffersGeometry",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "eglGetConfigAttrib",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "eglGetError",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "eglQuerySurface",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "eglSurfaceAttrib",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "eglSwapBuffers",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "fflush",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "fscanf",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "fseeko",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "ftello",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "inflate",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "inflateEnd",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "inflateInit2_",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "strcasecmp",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "__android_log_print",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "dladdr",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "getpriority",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "gettid",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "pthread_attr_init",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "pthread_attr_setstacksize",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "pthread_cond_signal",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "pthread_create",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "pthread_exit",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "pthread_join",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "pthread_self",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "sched_yield",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "setvbuf",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "sigaction",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "sigemptyset",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "strcat",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "syscall",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "ANativeWindow_acquire",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "ANativeWindow_fromSurface",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "ANativeWindow_release",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "calloc",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "sigaltstack",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AHardwareBuffer_acquire",
+    "weak": true
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AHardwareBuffer_describe",
+    "weak": true
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AHardwareBuffer_release",
+    "weak": true
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AImageReader_setBufferRemovedListener",
+    "weak": true
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AImage_delete",
+    "weak": true
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AImage_deleteAsync",
+    "weak": true
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AImage_getHardwareBuffer",
+    "weak": true
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AImage_getWidth",
+    "weak": true
+  },
+  {
+    "lib": "libunity.so",
+    "name": "eglMakeCurrent",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "__system_property_get",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "pthread_once",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "ANativeWindow_toSurface",
+    "weak": true
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AImageReader_acquireLatestImage",
+    "weak": true
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AImageReader_delete",
+    "weak": true
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AImageReader_getWindow",
+    "weak": true
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AImageReader_newWithUsage",
+    "weak": true
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AImageReader_setImageListener",
+    "weak": true
+  },
+  {
+    "lib": "libunity.so",
+    "name": "ALooper_forThread",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "ALooper_prepare",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "ASensorEventQueue_disableSensor",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "ASensorEventQueue_enableSensor",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "ASensorEventQueue_getEvents",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "ASensorEventQueue_hasEvents",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "ASensorEventQueue_setEventRate",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "ASensorManager_createEventQueue",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "ASensorManager_destroyEventQueue",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "ASensorManager_getDefaultSensor",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "ASensorManager_getInstance",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "ASensorManager_getSensorList",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "ASensor_getMinDelay",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "ASensor_getName",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "ASensor_getResolution",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "ASensor_getType",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "ASensor_getVendor",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "strtoul",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "__android_log_vprint",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "eglChooseConfig",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "eglCreateContext",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "eglCreatePbufferSurface",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "eglCreateWindowSurface",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "eglDestroyContext",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "eglDestroySurface",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "eglGetCurrentContext",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "eglGetCurrentSurface",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "eglGetDisplay",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "eglInitialize",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "eglQueryString",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "eglSwapInterval",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "eglTerminate",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "_ctype_",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "ferror",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "fprintf",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "fputs",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "modff",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "log10f",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "difftime",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "localtime",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "mktime",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "lseek",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "fstat",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "asinf",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "vprintf",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "atan2",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "tan",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "log2f",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "exp2f",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "nearbyintf",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "__system_property_find",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "__system_property_read",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "basename",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "pread",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "strtoll",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "strtoull",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AImage_getTimestamp",
+    "weak": true
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMEDIAFORMAT_KEY_CHANNEL_COUNT",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMEDIAFORMAT_KEY_COLOR_FORMAT",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMEDIAFORMAT_KEY_COLOR_RANGE",
+    "weak": true
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMEDIAFORMAT_KEY_COLOR_STANDARD",
+    "weak": true
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMEDIAFORMAT_KEY_DURATION",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMEDIAFORMAT_KEY_ENCODER_DELAY",
+    "weak": true
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMEDIAFORMAT_KEY_FRAME_RATE",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMEDIAFORMAT_KEY_HEIGHT",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMEDIAFORMAT_KEY_LANGUAGE",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMEDIAFORMAT_KEY_MIME",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMEDIAFORMAT_KEY_ROTATION",
+    "weak": true
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMEDIAFORMAT_KEY_SAMPLE_RATE",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMEDIAFORMAT_KEY_SLICE_HEIGHT",
+    "weak": true
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMEDIAFORMAT_KEY_STRIDE",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMEDIAFORMAT_KEY_WIDTH",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMediaCodec_configure",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMediaCodec_createDecoderByType",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMediaCodec_delete",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMediaCodec_dequeueInputBuffer",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMediaCodec_dequeueOutputBuffer",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMediaCodec_flush",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMediaCodec_getInputBuffer",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMediaCodec_getOutputBuffer",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMediaCodec_getOutputFormat",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMediaCodec_queueInputBuffer",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMediaCodec_releaseOutputBuffer",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMediaCodec_setOutputSurface",
+    "weak": true
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMediaCodec_start",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMediaCodec_stop",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMediaDataSource_delete",
+    "weak": true
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMediaDataSource_new",
+    "weak": true
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMediaDataSource_setClose",
+    "weak": true
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMediaDataSource_setGetSize",
+    "weak": true
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMediaDataSource_setReadAt",
+    "weak": true
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMediaDataSource_setUserdata",
+    "weak": true
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMediaExtractor_advance",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMediaExtractor_delete",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMediaExtractor_getSampleTime",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMediaExtractor_getSampleTrackIndex",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMediaExtractor_getTrackCount",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMediaExtractor_getTrackFormat",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMediaExtractor_new",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMediaExtractor_readSampleData",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMediaExtractor_seekTo",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMediaExtractor_selectTrack",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMediaExtractor_setDataSource",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMediaExtractor_setDataSourceCustom",
+    "weak": true
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMediaExtractor_setDataSourceFd",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMediaFormat_delete",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMediaFormat_getFloat",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMediaFormat_getInt32",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMediaFormat_getInt64",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMediaFormat_getString",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "AMediaFormat_setInt32",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "strcasestr",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "cos",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "cbrtf",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "exp",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "eglGetProcAddress",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "clearerr",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "clock",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "fgets",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "strtod",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "__sF",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "log",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "pthread_key_create",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "pthread_key_delete",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "sem_destroy",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "sem_init",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "sem_post",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "sem_wait",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "sin",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "usleep",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "vfprintf",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "pthread_rwlock_init",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "pthread_rwlock_rdlock",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "pthread_rwlock_unlock",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "pthread_rwlock_wrlock",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "ptrace",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "__android_log_buf_write",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "dup",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "localtime_r",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "strftime",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "sysconf",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "writev",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "pthread_setname_np",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "ALooper_acquire",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "ALooper_pollOnce",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "ALooper_release",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "ALooper_wake",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "sched_setaffinity",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "atol",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "lldiv",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "sched_getaffinity",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "getauxval",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "setbuf",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "gmtime_r",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "inet_pton",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "strspn",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "fsync",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "ftruncate",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "memalign",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "poll",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "posix_memalign",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "pthread_attr_destroy",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "pwrite",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "strerror_r",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "isspace",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "sqrtf",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "__FD_ISSET_chk",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "gethostbyaddr",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "gethostbyname",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "feof",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "pthread_equal",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "inet_ntop",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "getpeername",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "pthread_detach",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "memrchr",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "strcspn",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "strtok_r",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "fdopen",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "fileno",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "fnmatch",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "if_nametoindex",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "geteuid",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "getpwuid_r",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "ldexpf",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "pthread_attr_setdetachstate",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "setpriority",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "wmemcpy",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "__ctype_get_mb_cur_max",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "__strlen_chk",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "__vsnprintf_chk",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "freelocale",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "isdigit_l",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "islower_l",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "isupper_l",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "iswlower_l",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "isxdigit_l",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "mbrlen",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "mbrtowc",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "mbsnrtowcs",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "mbsrtowcs",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "mbtowc",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "newlocale",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "strftime_l",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "strtof",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "strtold_l",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "strtoll_l",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "strtoull_l",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "uselocale",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "vasprintf",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "vsscanf",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "wcrtomb",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "wcslen",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "wcsnrtombs",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "wmemset",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "wmemmove",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "__memmove_chk",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "android_set_abort_message",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "closelog",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "openlog",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "syslog",
+    "weak": false
+  },
+  {
+    "lib": "libunity.so",
+    "name": "dl_iterate_phdr",
+    "weak": false
+  },
+  {
+    "lib": "libweibosdkcore.so",
+    "name": "stpcpy",
+    "weak": false
+  },
+  {
+    "lib": "libweibosdkcore.so",
+    "name": "strcpy",
+    "weak": false
+  },
+  {
+    "lib": "libweibosdkcore.so",
+    "name": "__stack_chk_guard",
+    "weak": false
+  },
+  {
+    "lib": "libweibosdkcore.so",
+    "name": "memcpy",
+    "weak": false
+  },
+  {
+    "lib": "libweibosdkcore.so",
+    "name": "__cxa_finalize",
+    "weak": false
+  },
+  {
+    "lib": "libweibosdkcore.so",
+    "name": "tolower",
+    "weak": false
+  },
+  {
+    "lib": "libweibosdkcore.so",
+    "name": "malloc",
+    "weak": false
+  },
+  {
+    "lib": "libweibosdkcore.so",
+    "name": "__stack_chk_fail",
+    "weak": false
+  },
+  {
+    "lib": "libweibosdkcore.so",
+    "name": "strtol",
+    "weak": false
+  },
+  {
+    "lib": "libweibosdkcore.so",
+    "name": "strcat",
+    "weak": false
+  },
+  {
+    "lib": "libweibosdkcore.so",
+    "name": "__cxa_atexit",
+    "weak": false
+  },
+  {
+    "lib": "libweibosdkcore.so",
+    "name": "localtime",
+    "weak": false
+  },
+  {
+    "lib": "libweibosdkcore.so",
+    "name": "memset",
+    "weak": false
+  },
+  {
+    "lib": "libweibosdkcore.so",
+    "name": "time",
+    "weak": false
+  },
+  {
+    "lib": "libweibosdkcore.so",
+    "name": "sprintf",
+    "weak": false
+  },
+  {
+    "lib": "libweibosdkcore.so",
+    "name": "strlen",
+    "weak": false
+  },
+  {
+    "lib": "libweibosdkcore.so",
+    "name": "free",
+    "weak": false
+  }
+]

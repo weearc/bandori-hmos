@@ -1,0 +1,410 @@
+/*
+ * Copyright © 2026 Yuichiro Nakada / Project Lunaria
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * Dalvik bytecode emulator.
+ *
+ * Lunaria runs an APK's *native* code under a JIT and answers its JNI calls
+ * with hand-written host stubs.  That works while the guest only asks the
+ * framework for things (a window, a display density, a file path), but an APK
+ * also ships its own Java: `com.epicgames.ue4.GameActivity`,
+ * `com.unity3d.player.UnityPlayer`, the game's own activity subclass.  When
+ * native code calls into those, a stub can only return zero, and zero is a
+ * lie the engine acts on.
+ *
+ * This module executes that Java for real, straight from the APK's
+ * classes*.dex.  It is a register machine matching the Dalvik model: 32-bit
+ * registers, wide values in adjacent pairs, one frame per call.
+ *
+ * Classes the APK does not define (android.*, most of java.*) stay with the
+ * existing host stubs — the interpreter calls out through `struct dvm_hooks`.
+ * So the two halves meet in the middle: bytecode for the app's own code, host
+ * stubs for the framework beneath it.
+ *
+ * Instruction semantics follow the Dalvik bytecode reference:
+ * https://source.android.com/docs/core/runtime/dalvik-bytecode
+ * The shape of a standalone dex interpreter that answers a host's JNI calls
+ * follows the same idea as fatalSec/DaliVM.
+ */
+
+#pragma once
+
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+
+#include "dvm/dex.h"
+
+struct dvm;
+struct dvm_class;
+struct dvm_method;
+struct dvm_object;
+
+/* Object handle.  0 is null.  Handles are indices into the VM heap table, so
+ * they survive table growth and can be handed to the JNI layer as an
+ * integer. */
+typedef uint32_t dvm_ref;
+
+union dvm_value {
+   int32_t  i;
+   uint32_t u;
+   int64_t  j;
+   uint64_t ju;
+   float    f;
+   double   d;
+   dvm_ref  l;
+};
+
+/* --- host hooks ---------------------------------------------------------
+ *
+ * Everything the interpreter cannot do by itself.  dvm_jni.c fills these in
+ * against Lunaria's JNI layer; the unit tests fill in a smaller set.
+ */
+struct dvm_hooks {
+   void *user;
+
+   /* A method on a class with no dex definition (android.*, java.* that the
+    * VM does not implement itself).  Return false to make the call throw
+    * NoSuchMethodError; return true and leave `out` zeroed for void. */
+   bool (*call_external)(void *user, struct dvm *vm, const char *class_name,
+                         const char *method, const char *sig, dvm_ref self,
+                         const union dvm_value *args, int nargs,
+                         union dvm_value *out);
+
+   /* `new-instance` of a class with no dex definition.  Returns 0 to let the
+    * VM allocate a plain opaque object instead. */
+   dvm_ref (*new_external)(void *user, struct dvm *vm, const char *class_name);
+
+   /* Read/write a static field of an external class.  Return false when
+    * unknown (the VM then treats it as zero / ignores the store). */
+   bool (*get_external_static)(void *user, struct dvm *vm, const char *class_name,
+                               const char *field, const char *type,
+                               union dvm_value *out);
+
+   /* A method declared `native` in the dex: resolve it to the guest's
+    * implementation and call it.  Returns false when the guest has not
+    * registered or exported it. Called with the interpreter lock held for
+    * VM argument/result conversion; release it around actual guest execution. */
+   bool (*call_native)(void *user, struct dvm *vm, const char *class_name,
+                       const char *method, const char *sig, bool is_static,
+                       dvm_ref self, const union dvm_value *args, int nargs,
+                       union dvm_value *out);
+
+   /* java.lang.System.loadLibrary().  The bytecode VM owns System, while the
+    * guest ELF loader owns the APK ABI directory and JNI symbol namespace. */
+   bool (*load_library)(void *user, struct dvm *vm, const char *name);
+
+   /* A native method that has just returned.  JNI says a native which returns
+    * with an exception pending raises it in its caller; the host side keeps
+    * that state, so ask it.  Returns the Throwable (and clears the host's
+    * pending state), or 0 when there is none. */
+   dvm_ref (*take_pending_exception)(void *user, struct dvm *vm);
+
+   /* android.app.NativeActivity lifecycle (DVM_NATIVE_ACTIVITY_*).  The
+    * framework half of a NativeActivity — loading the app's native library,
+    * calling ANativeActivity_onCreate and delivering the activity's native
+    * callbacks — lives with the guest, not in bytecode.  Returns false when
+    * the process has no native activity entry point (a pure-Java app). */
+   bool (*native_activity)(void *user, struct dvm *vm, int stage,
+                           dvm_ref activity);
+};
+
+enum {
+   DVM_NATIVE_ACTIVITY_CREATE = 0,   /* NativeActivity.onCreate  */
+   DVM_NATIVE_ACTIVITY_START  = 1,   /* NativeActivity.onStart   */
+   DVM_NATIVE_ACTIVITY_RESUME = 2,   /* NativeActivity.onResume  */
+};
+
+/* --- lifecycle ---------------------------------------------------------- */
+
+struct dvm *dvm_create(const struct dvm_hooks *hooks);
+void dvm_destroy(struct dvm *vm);
+void dvm_glsurface_tick(struct dvm *vm);
+void dvm_glsurface_finish(struct dvm *vm);
+struct lm_sink;
+/* Native producers and Java MediaCodec must share one BufferQueue. */
+dvm_ref dvm_surface_from_sink(struct dvm *vm, struct lm_sink *sink);
+/* Returns an owned sink reference, or NULL for a released/invalid Surface. */
+struct lm_sink *dvm_surface_acquire_sink(struct dvm *vm, dvm_ref surface);
+/* Process teardown: stop admission and wake platform waits, then join Java
+ * host threads before releasing the JNI table or execution engines. */
+bool dvm_is_stopping(struct dvm *vm);
+void dvm_request_stop(struct dvm *vm);
+/* Explicit Java exit/halt, distinct from forced host teardown. */
+bool dvm_process_exited(struct dvm *vm, int *status);
+void dvm_exit_process(struct dvm *vm, int status);
+void dvm_threads_finish(struct dvm *vm);
+
+/* Adds one classes*.dex.  Later files do not override classes already
+ * defined, which matches the multidex lookup order. */
+bool dvm_add_dex(struct dvm *vm, const char *path);
+/* Adds a dex the app handed to a ClassLoader at runtime rather than one that
+ * came out of the APK: dalvik.system.InMemoryDexClassLoader over a direct
+ * ByteBuffer, or DexClassLoader/PathClassLoader over a file it just wrote.
+ * A native library that ships its own Java (libswappy.so carries the
+ * com.google.androidgamesdk classes as a dex inside the .so) reaches its
+ * bytecode only this way.  The bytes are copied; `name` is for diagnostics. */
+bool dvm_add_dex_memory(struct dvm *vm, const void *data, size_t len,
+                        const char *name);
+/* Adds classes.dex, classes2.dex, … from an unpacked APK directory (and from
+ * its base/ subdirectory, which is where an App Bundle split keeps them).
+ * Returns how many were loaded. */
+int dvm_add_apk_dir(struct dvm *vm, const char *dir);
+
+/* --- classes and methods ------------------------------------------------ */
+
+/* Accepts either form: "com/foo/Bar" or "Lcom/foo/Bar;".  Returns NULL when
+ * no dex defines it (use dvm_class_is_known() to tell "not defined" from
+ * "failed to load"). */
+struct dvm_class *dvm_find_class(struct dvm *vm, const char *name);
+/* Same lookup, but also answers for a class only the host stub layer
+ * implements — the VM's placeholder for it, whose methods route back out.
+ * A jclass arriving from native names a type whether or not this VM defines
+ * it, and the Class object handed to bytecode has to name that type. */
+struct dvm_class *dvm_find_class_or_external(struct dvm *vm, const char *name);
+bool dvm_class_is_known(struct dvm *vm, const char *name);
+
+/* Whether a class by this name would exist on the device at all: defined by
+ * one of the APK's dexes, or part of the Android framework.  Anything else is
+ * absent, and has to be reported as absent — see the note on the definition.
+ * Accepts "com.foo.Bar", "com/foo/Bar" or "Lcom/foo/Bar;". */
+bool dvm_class_exists(struct dvm *vm, const char *name);
+
+/* `sig` may be NULL to take the first method with a matching name.  Searches
+ * superclasses and interfaces. */
+struct dvm_method *dvm_find_method(struct dvm *vm, struct dvm_class *cls,
+                                   const char *name, const char *sig);
+/* Like dvm_find_method(), but the return type is not part of the match: only
+ * the name and the parameter list are.  For callers that name a framework
+ * method whose return type is a class an obfuscated app has renamed. */
+struct dvm_method *dvm_find_method_by_params(struct dvm *vm, struct dvm_class *cls,
+                                             const char *name, const char *sig);
+/* Convenience: class name + method name + signature in one go. */
+struct dvm_method *dvm_lookup(struct dvm *vm, const char *class_name,
+                              const char *method, const char *sig);
+
+const char *dvm_method_name(const struct dvm_method *m);
+const char *dvm_method_sig(const struct dvm_method *m);
+const char *dvm_class_name(const struct dvm_class *c);
+/* Declared superclass, slash-separated, or NULL for java/lang/Object. */
+const char *dvm_class_super_name(const struct dvm_class *c);
+bool dvm_method_is_static(const struct dvm_method *m);
+
+/* --- invocation --------------------------------------------------------- */
+
+/* `args` holds one entry per *declared parameter* (not per register slot);
+ * wide parameters use one entry.  `self` is ignored for static methods.
+ * Returns false when the call ended with an uncaught exception; the exception
+ * is then readable with dvm_exception(). */
+bool dvm_call(struct dvm *vm, struct dvm_method *m, dvm_ref self,
+              const union dvm_value *args, int nargs, union dvm_value *out);
+
+/* Runs <clinit> if it has not run yet. */
+bool dvm_init_class(struct dvm *vm, struct dvm_class *cls);
+
+dvm_ref dvm_exception(struct dvm *vm);
+void dvm_clear_exception(struct dvm *vm);
+/* "java.lang.NullPointerException: message" into a caller buffer. */
+void dvm_describe_exception(struct dvm *vm, dvm_ref exc, char *buf, size_t sz);
+
+/* --- heap --------------------------------------------------------------- */
+
+dvm_ref dvm_new_object(struct dvm *vm, struct dvm_class *cls);
+/* The java.lang.Class instance that describes `cls` (made once, pinned). */
+dvm_ref dvm_class_object(struct dvm *vm, struct dvm_class *cls);
+dvm_ref dvm_new_string(struct dvm *vm, const char *utf8);
+dvm_ref dvm_new_string_n(struct dvm *vm, const char *utf8, size_t len);
+/* Framework MotionEvent snapshots and Activity/View input delivery. */
+struct luna_touch_event;
+dvm_ref dvm_motion_event_new(struct dvm *vm, const struct luna_touch_event *sample);
+bool dvm_motion_event_read(struct dvm *vm, dvm_ref event, struct luna_touch_event *out);
+bool dvm_ui_dispatch_touch(struct dvm *vm, const struct luna_touch_event *sample);
+
+/* Element kind is one of Z B C S I J F D L. */
+dvm_ref dvm_new_array(struct dvm *vm, char elem, const char *elem_desc, uint32_t length);
+
+struct dvm_class *dvm_object_class(struct dvm *vm, dvm_ref ref);
+const char *dvm_string_utf8(struct dvm *vm, dvm_ref ref);
+uint32_t dvm_string_utf8_length(struct dvm *vm, dvm_ref ref);
+uint32_t dvm_array_length(struct dvm *vm, dvm_ref ref);
+void *dvm_array_data(struct dvm *vm, dvm_ref ref);
+
+/* Marks a handle as reachable from outside the VM so it is never recycled. */
+void dvm_pin(struct dvm *vm, dvm_ref ref);
+void dvm_unpin(struct dvm *vm, dvm_ref ref);
+
+/* An object that only exists to carry a host-side handle (a jobject from the
+ * stub layer) through bytecode.  `class_name` is in JNI form. */
+dvm_ref dvm_wrap_external(struct dvm *vm, const char *class_name, uint32_t host_handle);
+/* Non-zero when `ref` wraps a host handle. */
+uint32_t dvm_external_handle(struct dvm *vm, dvm_ref ref);
+
+/* --- fields (for the JNI bridge) ---------------------------------------- */
+
+bool dvm_get_field(struct dvm *vm, dvm_ref obj, const char *name,
+                   const char *type, union dvm_value *out);
+bool dvm_set_field(struct dvm *vm, dvm_ref obj, const char *name,
+                   const char *type, union dvm_value val);
+bool dvm_get_static(struct dvm *vm, struct dvm_class *cls, const char *name,
+                    const char *type, union dvm_value *out);
+bool dvm_set_static(struct dvm *vm, struct dvm_class *cls, const char *name,
+                    const char *type, union dvm_value val);
+
+/* --- diagnostics -------------------------------------------------------- */
+
+/* 0 = quiet, 1 = calls in/out, 2 = every instruction. */
+void dvm_set_trace(struct dvm *vm, int level);
+/* Instructions executed since creation. */
+uint64_t dvm_instructions(const struct dvm *vm);
+
+/* Write out any preferences an apply() left pending.  The frame pump calls
+ * this, which is where a device's asynchronous write would land. */
+void dvm_prefs_flush(struct dvm *vm);
+void dvm_prefs_finish(struct dvm *vm);
+/* One frame of the emulator's input method: what the host typed goes to the
+ * connected View, and a pending layout pass runs.  Called from the frame pump
+ * without the interpreter lock. */
+void dvm_ime_frame(struct dvm *vm);
+
+/* WebView controls for the emulator's menu; any thread.  Applied on the main
+ * looper's next turn.  zoom 0 = the device density; engine is one of auto,
+ * chrome, luna, off. */
+float dvm_webview_zoom(void);
+void dvm_webview_set_zoom(float zoom);
+void dvm_webview_reload(void);
+const char *dvm_webview_engine(void);
+void dvm_webview_set_engine(const char *name);
+int dvm_webview_count(void);
+/* One turn of the main thread's Looper — see dvm.c.  The frame pump calls it
+ * so a Handler.postDelayed() callback runs near its due time instead of
+ * waiting for the guest to call into Java. */
+void dvm_main_looper_tick(struct dvm *vm);
+
+/* Caps runaway bytecode (a spin loop in Java would otherwise hang the pump
+ * loop, which is cooperative).  0 disables.  Default 200M. */
+void dvm_set_step_limit(struct dvm *vm, uint64_t limit);
+
+/* Number of parameter slots (Dalvik registers) a signature occupies, not
+ * counting `this`.  -1 on a malformed signature. */
+int dvm_sig_arg_slots(const char *sig);
+/* Number of declared parameters. */
+int dvm_sig_arg_count(const char *sig);
+/* Return-type descriptor character of a signature ('V' when void). */
+char dvm_sig_return_kind(const char *sig);
+
+/* --- threads ------------------------------------------------------------ *
+ *
+ * Bytecode threads run on host threads, one at a time, under a global
+ * interpreter lock.
+ *
+ * Until now the VM interpreted a single thread: Thread.start() queued the
+ * Runnable and a later drain ran it to completion, or to a step budget.  That
+ * is workable for a worker that services a queue and returns, and wrong for
+ * one that blocks — the frames of a bytecode call live on the host C stack, so
+ * a thread sitting inside a socket read cannot be set aside, and it holds not
+ * just the VM but the whole emulator.  The game's patcher downloads 13.7 GB in
+ * one doInBackground(); every second of that was a second the engine did not
+ * render, and the step budget that kept the freeze bounded aborted the copy
+ * instead ("step limit reached in DownloadAsyncTask.doInBackground").
+ *
+ * A host thread per bytecode thread gives each its own C stack, so blocking is
+ * something a thread does rather than something the VM does.  The lock keeps
+ * exactly one of them interpreting at a time, which is what lets the heap, the
+ * class table and the emulator's own single-threaded guest scheduler stay as
+ * they are: this buys concurrency across blocking calls, not parallelism.
+ *
+ * Whoever executes VM or guest code holds the lock.  A blocking host call —
+ * a socket read, a file write, a sleep — drops it around the part that blocks
+ * and takes it back afterwards, and so does the frame pump between frames.
+ * Anything read out of the VM before a release has to be read again after it:
+ * another thread may have moved the heap in between.
+ */
+
+/* Recursive: a native that releases the lock around one blocking call may be
+ * nested inside another that already holds it. */
+void dvm_gil_acquire(struct dvm *vm);
+void dvm_gil_release(struct dvm *vm);
+/* True when this host thread holds the lock. */
+bool dvm_gil_held(struct dvm *vm);
+
+/* Drops the lock for the duration of a blocking host call.  `depth` receives
+ * the recursion count so the matching re-acquire restores it exactly.  Between
+ * the two, this thread must not touch the VM at all. */
+unsigned dvm_gil_unlock_all(struct dvm *vm);
+void dvm_gil_relock(struct dvm *vm, unsigned depth);
+
+/* Hands the lock to a thread that is waiting for it, if there is one, and
+ * takes it back.  This is what makes the lock fair: a thread interpreting a
+ * long loop, and a guest thread spinning in the emulator's own scheduler, both
+ * hold the lock for as long as they run, so each has to offer it up.  Callers
+ * must have nothing live across it that points into the heap — another thread
+ * may allocate, and the heap moves when it grows. */
+void dvm_gil_yield(struct dvm *vm);
+
+/* Total wall time, across every thread, spent blocked in dvm_gil_acquire().
+ * The interpreter lock is the emulator's other global serialisation point (the
+ * ARM execution lock is the first), and a JNI call from guest code has to take
+ * it; without a number for it, "the guest is slow" and "the guest is queued
+ * behind eight Java threads" look the same. */
+unsigned long long dvm_gil_wait_ns(void);
+/* Wall time during which some thread held the interpreter lock, and the worst
+ * single wait since the last read.  The summed wait above counts idle threads
+ * correctly blocked on empty queues; these two say whether the lock is
+ * saturated and whether anybody was starved by it. */
+unsigned long long dvm_gil_held_ns(void);
+unsigned long long dvm_gil_max_wait_ns(void);
+
+/* Block until another thread calls dvm_gil_notify() or `ms` elapses, without
+ * holding the interpreter lock; the lock is taken again before returning.
+ * Callers must re-check their own condition — the timeout is a backstop, not
+ * the mechanism. */
+void dvm_gil_wait(struct dvm *vm, unsigned ms);
+/* As above, but wake only for changes to `channel`.  Channels are opaque
+ * non-zero values; a queue's dvm_ref is a convenient stable identifier. */
+void dvm_gil_wait_for(struct dvm *vm, uintptr_t channel, unsigned ms);
+/* UINT64_MAX waits until notification without a timeout. */
+void dvm_gil_wait_for_ns(struct dvm *vm, uintptr_t channel, uint64_t ns);
+
+/* Enter/leave the VM from guest code that holds the ARM execution lock; see
+ * the definition for the lock-order argument.  The cookie is opaque and must
+ * be handed back to the matching leave. */
+unsigned dvm_gil_enter_from_guest(struct dvm *vm);
+void     dvm_gil_leave_to_guest(struct dvm *vm, unsigned cookie);
+void dvm_gil_notify(void);
+void dvm_gil_notify_for(uintptr_t channel);
+void dvm_gil_notify_one_for(uintptr_t channel);
+
+/* The VM this process created, for callers that have to offer the lock up
+ * without one to hand (the frame pump, the guest scheduler).  NULL before
+ * dvm_create(). */
+struct dvm *dvm_current(void);
+
+/* Populate PackageInfo.signatures/signingInfo from the certificate carried by
+ * the installed APK.  This is shared by the bytecode PackageManager paths in
+ * dvm_runtime.c and dvm_jni.c. */
+bool dvm_package_info_add_signatures(struct dvm *vm, dvm_ref package_info,
+                                     uint32_t flags);
+
+/* True on a host thread started for bytecode, false on the one that drives the
+ * frame pump and the guest CPU.  A wait on the latter has to stay short. */
+bool dvm_on_bytecode_thread(void);
+
+/* True in Android's main-thread context. Guest native threads sharing the
+ * frame-pump host thread retain their own Android thread identity. */
+bool dvm_on_main_thread(void);
+
+struct dvm;
+
+/* Internal IPC envelope. Pack/unpack require the VM lock; dispatch enters a
+ * main-looper transaction and takes the lock itself. operation: 1=start, 2=stop.
+ * No VM handles are present in the serialized result. Caller frees bytes. */
+int dvm_service_pack(struct dvm *,uint32_t intent,int operation,void **bytes,size_t *size);
+int dvm_service_unpack(struct dvm *,const void *bytes,size_t size,int *operation,uint32_t *intent);
+int dvm_service_dispatch(struct dvm *,const void *bytes,size_t size);
+
+/* The ActivityManager-side transport accepts a serialized start request.
+ * Returning 0 means accepted; negative errno means no request was accepted. */
+void dvm_service_set_submit(struct dvm *,int (*submit)(void *,const char *,const void *,size_t),void *user);

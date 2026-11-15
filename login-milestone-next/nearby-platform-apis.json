@@ -1,0 +1,429 @@
+{
+  "Landroid/app/Activity;->getApplication()Landroid/app/Application;": [
+    "Lcom/gsc/base/utils/CommonUtils;->getApplication()Landroid/app/Application;",
+    "Lcom/gsc/pub/GSCPubCommon;->a(Landroid/app/Activity;Ljava/lang/String;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->b(Landroid/app/Activity;Ljava/lang/String;Lcom/bsgamesdk/android/callbacklistener/InitCallbackListener;Lcom/bsgamesdk/android/callbacklistener/ExitCallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->init(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/bsgamesdk/android/callbacklistener/InitCallbackListener;Lcom/bsgamesdk/android/callbacklistener/ExitCallbackListener;)V"
+  ],
+  "Landroid/app/Activity;->getApplicationContext()Landroid/content/Context;": [
+    "Lcom/gsc/pub/GSCPubCommon;->initInternal(Landroid/app/Activity;Ljava/lang/String;Lcom/bsgamesdk/android/callbacklistener/InitCallbackListener;Lcom/bsgamesdk/android/callbacklistener/ExitCallbackListener;)V"
+  ],
+  "Landroid/app/Activity;->getFragmentManager()Landroid/app/FragmentManager;": [
+    "Lcom/gsc/pub/GSCPubCommon;->closeAccountWithUserInfo(Ljava/lang/String;Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V"
+  ],
+  "Landroid/app/Application;->getApplicationContext()Landroid/content/Context;": [
+    "Lcom/gsc/pub/GSCPubCommon;->openMiniProgram(Ljava/lang/String;Ljava/lang/String;)V"
+  ],
+  "Landroid/app/Application;->getFilesDir()Ljava/io/File;": [
+    "Lcom/gsc/pub/GSCPubCommon;->applicationAttach(Landroid/app/Application;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->setLogDir(Ljava/lang/String;)V"
+  ],
+  "Landroid/app/Application;->getPackageManager()Landroid/content/pm/PackageManager;": [
+    "Lcom/gsc/pub/GSCPubCommon;->a(Landroid/app/Application;)V"
+  ],
+  "Landroid/app/Application;->getPackageName()Ljava/lang/String;": [
+    "Lcom/gsc/pub/GSCPubCommon;->a(Landroid/app/Application;)V"
+  ],
+  "Landroid/app/Application;->registerActivityLifecycleCallbacks(Landroid/app/Application$ActivityLifecycleCallbacks;)V": [
+    "Lcom/gsc/pub/GSCPubCommon;->applicationAttach(Landroid/app/Application;)V"
+  ],
+  "Landroid/app/DialogFragment;->show(Landroid/app/FragmentManager;Ljava/lang/String;)V": [
+    "Lcom/gsc/pub/GSCPubCommon;->closeAccountWithUserInfo(Ljava/lang/String;Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V"
+  ],
+  "Landroid/content/Context;->getApplicationContext()Landroid/content/Context;": [
+    "Lcom/gsc/pub/GSCPubCommon;->checkNoticeSwitch(Landroid/content/Context;)Z"
+  ],
+  "Landroid/content/Context;->getApplicationInfo()Landroid/content/pm/ApplicationInfo;": [
+    "Lcom/gsc/pub/GSCPubCommon;->openWebContainer(Landroid/content/Context;Ljava/lang/String;ZLjava/util/Map;ZLcom/bsgamesdk/android/callbacklistener/CallbackListener;)V"
+  ],
+  "Landroid/content/Context;->getPackageManager()Landroid/content/pm/PackageManager;": [
+    "Lcom/gsc/pub/GSCPubCommon;->openWebContainer(Landroid/content/Context;Ljava/lang/String;ZLjava/util/Map;ZLcom/bsgamesdk/android/callbacklistener/CallbackListener;)V"
+  ],
+  "Landroid/content/Context;->getResources()Landroid/content/res/Resources;": [
+    "Lcom/gsc/pub/GSCPubCommon;->scanQRCode(Lcom/gsc/pub/Callback;)V"
+  ],
+  "Landroid/content/pm/PackageManager;->getApplicationLabel(Landroid/content/pm/ApplicationInfo;)Ljava/lang/CharSequence;": [
+    "Lcom/gsc/pub/GSCPubCommon;->openWebContainer(Landroid/content/Context;Ljava/lang/String;ZLjava/util/Map;ZLcom/bsgamesdk/android/callbacklistener/CallbackListener;)V"
+  ],
+  "Landroid/content/pm/PackageManager;->getPackageInfo(Ljava/lang/String;I)Landroid/content/pm/PackageInfo;": [
+    "Lcom/gsc/pub/GSCPubCommon;->a(Landroid/app/Application;)V"
+  ],
+  "Landroid/content/res/Resources;->getColor(I)I": [
+    "Lcom/gsc/pub/GSCPubCommon;->scanQRCode(Lcom/gsc/pub/Callback;)V"
+  ],
+  "Landroid/net/Uri$Builder;->appendQueryParameter(Ljava/lang/String;Ljava/lang/String;)Landroid/net/Uri$Builder;": [
+    "Lcom/gsc/pub/GSCPubCommon;->openWebContainer(Landroid/content/Context;Ljava/lang/String;ZLjava/util/Map;ZLcom/bsgamesdk/android/callbacklistener/CallbackListener;)V"
+  ],
+  "Landroid/net/Uri$Builder;->build()Landroid/net/Uri;": [
+    "Lcom/gsc/pub/GSCPubCommon;->openWebContainer(Landroid/content/Context;Ljava/lang/String;ZLjava/util/Map;ZLcom/bsgamesdk/android/callbacklistener/CallbackListener;)V"
+  ],
+  "Landroid/net/Uri;->buildUpon()Landroid/net/Uri$Builder;": [
+    "Lcom/gsc/pub/GSCPubCommon;->openWebContainer(Landroid/content/Context;Ljava/lang/String;ZLjava/util/Map;ZLcom/bsgamesdk/android/callbacklistener/CallbackListener;)V"
+  ],
+  "Landroid/net/Uri;->getQueryParameter(Ljava/lang/String;)Ljava/lang/String;": [
+    "Lcom/gsc/pub/GSCPubCommon;->openWebContainer(Landroid/content/Context;Ljava/lang/String;ZLjava/util/Map;ZLcom/bsgamesdk/android/callbacklistener/CallbackListener;)V"
+  ],
+  "Landroid/net/Uri;->parse(Ljava/lang/String;)Landroid/net/Uri;": [
+    "Lcom/gsc/pub/GSCPubCommon;->openUri(Ljava/lang/String;Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->openWebContainer(Landroid/content/Context;Ljava/lang/String;ZLjava/util/Map;ZLcom/bsgamesdk/android/callbacklistener/CallbackListener;)V"
+  ],
+  "Landroid/net/Uri;->toString()Ljava/lang/String;": [
+    "Lcom/gsc/pub/GSCPubCommon;->openWebContainer(Landroid/content/Context;Ljava/lang/String;ZLjava/util/Map;ZLcom/bsgamesdk/android/callbacklistener/CallbackListener;)V"
+  ],
+  "Landroid/os/Bundle;-><init>()V": [
+    "Lcom/gsc/pub/GSCPubCommon;->checkArchiveInit(Landroid/app/Activity;Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->logout(Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->openUri(Ljava/lang/String;Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V"
+  ],
+  "Landroid/os/Bundle;->getInt(Ljava/lang/String;)I": [
+    "Lcom/gsc/pub/GSCPubCommon;->a(Landroid/app/Application;)V"
+  ],
+  "Landroid/os/Bundle;->getString(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;": [
+    "Lcom/gsc/pub/GSCPubCommon;->a(Landroid/app/Application;)V"
+  ],
+  "Landroid/os/Bundle;->putInt(Ljava/lang/String;I)V": [
+    "Lcom/gsc/pub/GSCPubCommon;->logout(Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V"
+  ],
+  "Landroid/os/Bundle;->putString(Ljava/lang/String;Ljava/lang/String;)V": [
+    "Lcom/gsc/pub/GSCPubCommon;->logout(Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->openUri(Ljava/lang/String;Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V"
+  ],
+  "Landroid/os/Handler;-><init>(Landroid/os/Looper;)V": [
+    "Lcom/gsc/pub/GSCPubCommon;-><init>()V"
+  ],
+  "Landroid/os/Looper;->getMainLooper()Landroid/os/Looper;": [
+    "Lcom/gsc/pub/GSCPubCommon;-><init>()V"
+  ],
+  "Landroid/text/TextUtils;->isEmpty(Ljava/lang/CharSequence;)Z": [
+    "Lcom/gsc/base/model/UpDataModel;->a(Landroid/content/Context;)V",
+    "Lcom/gsc/base/model/UpDataModel;->b(Landroid/content/Context;)Ljava/lang/String;",
+    "Lcom/gsc/base/model/UpDataModel;->bdInfo()Ljava/lang/String;",
+    "Lcom/gsc/pub/GSCPubCommon;->checkArchiveInit(Landroid/app/Activity;Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->getPremiumCustomer(Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->openUri(Ljava/lang/String;Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->openWebContainer(Landroid/content/Context;Ljava/lang/String;ZLjava/util/Map;ZLcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->pay(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/bsgamesdk/android/callbacklistener/OrderCallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->payV2(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/bsgamesdk/android/callbacklistener/OrderCallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->setLogDir(Ljava/lang/String;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->trackEvent(Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->triggerScreenMonitor(Ljava/lang/String;ILjava/util/Map;)V"
+  ],
+  "Landroid/util/Log;->e(Ljava/lang/String;Ljava/lang/String;)I": [
+    "Lcom/gsc/pub/GSCPubCommon;->b(Landroid/app/Application;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->getOaid(Lcom/gsc/pub/callback/OaidListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->initAce(ILjava/lang/String;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->openWebContainer(Landroid/content/Context;Ljava/lang/String;ZLjava/util/Map;ZLcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->setLogDir(Ljava/lang/String;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->triggerScreenMonitor(Ljava/lang/String;ILjava/util/Map;)V"
+  ],
+  "Landroid/util/Log;->i(Ljava/lang/String;Ljava/lang/String;)I": [
+    "Lcom/gsc/pub/GSCPubCommon;->accountProtect(Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->appDestroy(Landroid/app/Activity;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->appOffline(Landroid/app/Activity;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->appOnline(Landroid/app/Activity;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->biliAppFriendsAuth(Lcom/gsc/pub/Callback;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->biliAppFriendsAuthCancel(Lcom/gsc/pub/Callback;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->biliAppFriendsAuthQuery(Lcom/gsc/pub/Callback;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->checkArchiveInit(Landroid/app/Activity;Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->createRole(Ljava/lang/String;Ljava/lang/String;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->deleteArchive(Landroid/app/Activity;Ljava/lang/String;Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->downloadArchive(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->exit(Lcom/bsgamesdk/android/callbacklistener/ExitCallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->fetchArchiveInfo(Landroid/app/Activity;Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->getAdChannel(Landroid/content/Context;)Ljava/lang/String;",
+    "Lcom/gsc/pub/GSCPubCommon;->getChannelId(Landroid/app/Activity;)Ljava/lang/String;",
+    "Lcom/gsc/pub/GSCPubCommon;->getFreeUrl(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->getOrderResume(Ljava/lang/String;Ljava/lang/String;Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->getSdkDeviceId(Landroid/app/Activity;)Ljava/lang/String;",
+    "Lcom/gsc/pub/GSCPubCommon;->getSdkType()Ljava/lang/String;",
+    "Lcom/gsc/pub/GSCPubCommon;->getUserInfo(Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->init(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/bsgamesdk/android/callbacklistener/InitCallbackListener;Lcom/bsgamesdk/android/callbacklistener/ExitCallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->initInternal(Landroid/app/Activity;Ljava/lang/String;Lcom/bsgamesdk/android/callbacklistener/InitCallbackListener;Lcom/bsgamesdk/android/callbacklistener/ExitCallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->initInternalV2(Landroid/app/Activity;Ljava/lang/String;Lcom/bsgamesdk/android/callbacklistener/InitCallbackListener;Lcom/bsgamesdk/android/callbacklistener/ExitCallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->internalDeleteArchiveInfo(Ljava/lang/String;Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->internalDownloadArchive(Ljava/lang/String;Ljava/lang/String;Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->internalFetchArchiveInfo(Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->internalUploadArchive(Ljava/lang/String;Ljava/lang/String;JLjava/lang/String;Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->isLogin(Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->isRealNameAuth(Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->login(Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->loginByQRCode(Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->logout(Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->notifyZone(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->openArchiveManager(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;JLcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->openUri(Ljava/lang/String;Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->openWebContainer(Landroid/content/Context;Ljava/lang/String;ZLjava/util/Map;ZLcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->pay(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/bsgamesdk/android/callbacklistener/OrderCallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->payV2(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/bsgamesdk/android/callbacklistener/OrderCallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->setGameUserType(Ljava/lang/String;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->setLogDir(Ljava/lang/String;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->setProperties(Ljava/util/Map;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->share(Landroid/app/Activity;Lcom/base/socializelib/config/SharePlatform;Lcom/base/socializelib/share/shareparam/BaseShareParam;Lcom/base/socializelib/interfcace/ShareLisener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->share(Landroid/app/Activity;Lcom/base/socializelib/share/shareparam/BaseShareParam;Lcom/base/socializelib/interfcace/ShareLisener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->showAgreementWithLicence(Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->showAgreementWithPrivacy(Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->showGeetestView(Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->startHeart(Landroid/app/Activity;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->stopHeart(Landroid/app/Activity;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->triggerFileUpload(Ljava/util/List;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->updateScene(Ljava/lang/String;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->uploadArchive(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;JLjava/lang/String;Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V"
+  ],
+  "Ljava/io/File;-><init>(Ljava/lang/String;)V": [
+    "Lcom/gsc/pub/GSCPubCommon;->setLogDir(Ljava/lang/String;)V"
+  ],
+  "Ljava/io/File;->getAbsolutePath()Ljava/lang/String;": [
+    "Lcom/gsc/pub/GSCPubCommon;->setLogDir(Ljava/lang/String;)V"
+  ],
+  "Ljava/io/File;->getParentFile()Ljava/io/File;": [
+    "Lcom/gsc/pub/GSCPubCommon;->setLogDir(Ljava/lang/String;)V"
+  ],
+  "Ljava/io/File;->getPath()Ljava/lang/String;": [
+    "Lcom/gsc/pub/GSCPubCommon;->applicationAttach(Landroid/app/Application;)V"
+  ],
+  "Ljava/io/File;->isDirectory()Z": [
+    "Lcom/gsc/pub/GSCPubCommon;->setLogDir(Ljava/lang/String;)V"
+  ],
+  "Ljava/lang/Boolean;->booleanValue()Z": [
+    "Lcom/gsc/base/model/UpDataModel;->e(Landroid/content/Context;)Z",
+    "Lcom/gsc/base/utils/TagUtils;->isActivateTagExist()Z",
+    "Lcom/gsc/base/utils/TagUtils;->isInitialAgreementTagExist()Z",
+    "Lcom/gsc/pub/GSCPubCommon;->a(Lcom/gsc/pub/b;)Z",
+    "Lcom/gsc/pub/GSCPubCommon;->applyNoticeAuth(Landroid/content/Context;)Z",
+    "Lcom/gsc/pub/GSCPubCommon;->checkNoticeSwitch(Landroid/content/Context;)Z",
+    "Lcom/gsc/pub/GSCPubCommon;->closeLiveVideo()Z",
+    "Lcom/gsc/pub/GSCPubCommon;->isDisabledQrLogin()Z",
+    "Lcom/gsc/pub/GSCPubCommon;->isTaTAdChannel(Landroid/app/Activity;)Z",
+    "Lcom/gsc/pub/GSCPubCommon;->liveState()Z",
+    "Lcom/gsc/pub/GSCPubCommon;->openLiveVideo(Landroid/app/Activity;Landroid/graphics/Point;Lcom/gs/general/base/constants/SceneOrientation;Ljava/lang/String;)Z",
+    "Lcom/gsc/pub/GSCPubCommon;->reopenLiveVideoFromBackground()Z"
+  ],
+  "Ljava/lang/Byte;-><init>(B)V": [
+    "Lcom/gsc/pub/GSCPubCommon;->onGameAddiction(Ljava/lang/String;Ljava/util/Map;Z)V",
+    "Lcom/gsc/pub/GSCPubCommon;->openWebContainer(Landroid/content/Context;Ljava/lang/String;ZLjava/util/Map;ZLcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->trackBIEvent(ZLjava/lang/String;Ljava/lang/String;Ljava/util/Map;)V"
+  ],
+  "Ljava/lang/Class;->forName(Ljava/lang/String;)Ljava/lang/Class;": [
+    "Lcom/gsc/pub/GSCPubCommon;->a(Landroid/app/Application;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->initAce(ILjava/lang/String;)V"
+  ],
+  "Ljava/lang/Enum;-><init>(Ljava/lang/String;I)V": [
+    "Lcom/gsc/base/constants/EventType;-><init>(Ljava/lang/String;ILjava/lang/String;)V"
+  ],
+  "Ljava/lang/Enum;->valueOf(Ljava/lang/Class;Ljava/lang/String;)Ljava/lang/Enum;": [
+    "Lcom/gsc/base/constants/EventType;->valueOf(Ljava/lang/String;)Lcom/gsc/base/constants/EventType;"
+  ],
+  "Ljava/lang/Exception;->getMessage()Ljava/lang/String;": [
+    "Lcom/gsc/pub/GSCPubCommon;->openWebContainer(Landroid/content/Context;Ljava/lang/String;ZLjava/util/Map;ZLcom/bsgamesdk/android/callbacklistener/CallbackListener;)V"
+  ],
+  "Ljava/lang/Exception;->printStackTrace()V": [
+    "Lcom/gsc/pub/GSCPubCommon;->applicationAttach(Landroid/app/Application;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->openWebContainer(Landroid/content/Context;Ljava/lang/String;ZLjava/util/Map;ZLcom/bsgamesdk/android/callbacklistener/CallbackListener;)V"
+  ],
+  "Ljava/lang/IllegalArgumentException;-><init>(Ljava/lang/String;)V": [
+    "Lcom/gsc/pub/GSCPubCommon;->openUri(Ljava/lang/String;Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V"
+  ],
+  "Ljava/lang/Integer;-><init>(I)V": [
+    "Lcom/gsc/pub/GSCPubCommon;->addCalendarReminder(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;JJILcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->initAce(ILjava/lang/String;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->pay(JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;IILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/bsgamesdk/android/callbacklistener/OrderCallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->pay(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/bsgamesdk/android/callbacklistener/OrderCallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->requestCalendarPermissionAndAddReminder(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;JJILcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->setAceUserInfo(ILjava/lang/String;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->triggerScreenMonitor(Ljava/lang/String;ILjava/util/Map;)V"
+  ],
+  "Ljava/lang/Integer;->intValue()I": [
+    "Lcom/gsc/pub/GSCPubCommon;->a(Lcom/gsc/pub/b;)Z"
+  ],
+  "Ljava/lang/Integer;->parseInt(Ljava/lang/String;)I": [
+    "Lcom/gsc/pub/GSCPubCommon;->appOnline(Landroid/app/Activity;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->checkArchiveInit(Landroid/app/Activity;Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->getPremiumCustomer(Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->pay(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/bsgamesdk/android/callbacklistener/OrderCallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->payV2(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/bsgamesdk/android/callbacklistener/OrderCallbackListener;)V"
+  ],
+  "Ljava/lang/Integer;->valueOf(Ljava/lang/String;)Ljava/lang/Integer;": [
+    "Lcom/gsc/pub/GSCPubCommon;->a(Lcom/gsc/pub/b;)Z"
+  ],
+  "Ljava/lang/Long;-><init>(J)V": [
+    "Lcom/gsc/pub/GSCPubCommon;->addCalendarReminder(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;JJILcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->internalUploadArchive(Ljava/lang/String;Ljava/lang/String;JLjava/lang/String;Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->openArchiveManager(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;JLcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->pay(JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;IILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/bsgamesdk/android/callbacklistener/OrderCallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->payV2(JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/bsgamesdk/android/callbacklistener/OrderCallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->requestCalendarPermissionAndAddReminder(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;JJILcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->uploadArchive(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;JLjava/lang/String;Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V"
+  ],
+  "Ljava/lang/Object;-><init>()V": [
+    "Lcom/gsc/base/model/UpDataModel;-><init>()V",
+    "Lcom/gsc/base/utils/CommonUtils;-><init>()V",
+    "Lcom/gsc/base/utils/TagUtils;-><init>()V",
+    "Lcom/gsc/pub/GSCPubCommon;-><init>()V"
+  ],
+  "Ljava/lang/Object;->toString()Ljava/lang/String;": [
+    "Lcom/gsc/pub/GSCPubCommon;->openWebContainer(Landroid/content/Context;Ljava/lang/String;ZLjava/util/Map;ZLcom/bsgamesdk/android/callbacklistener/CallbackListener;)V"
+  ],
+  "Ljava/lang/String;->contains(Ljava/lang/CharSequence;)Z": [
+    "Lcom/gsc/pub/GSCPubCommon;->trackEvent(Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V"
+  ],
+  "Ljava/lang/String;->equals(Ljava/lang/Object;)Z": [
+    "Lcom/gsc/base/constants/EventType;->convertFromType(Ljava/lang/String;)Lcom/gsc/base/constants/EventType;",
+    "Lcom/gsc/base/model/UpDataModel;->operators()Ljava/lang/String;",
+    "Lcom/gsc/pub/GSCPubCommon;->a(Landroid/app/Activity;Ljava/lang/String;Lcom/bsgamesdk/android/callbacklistener/InitCallbackListener;Lcom/bsgamesdk/android/callbacklistener/ExitCallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->a(Landroid/app/Application;)V"
+  ],
+  "Ljava/lang/String;->hashCode()I": [
+    "Lcom/gsc/base/model/UpDataModel;->operators()Ljava/lang/String;"
+  ],
+  "Ljava/lang/String;->replaceAll(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;": [
+    "Lcom/gsc/pub/GSCPubCommon;->openWebContainer(Landroid/content/Context;Ljava/lang/String;ZLjava/util/Map;ZLcom/bsgamesdk/android/callbacklistener/CallbackListener;)V"
+  ],
+  "Ljava/lang/String;->startsWith(Ljava/lang/String;)Z": [
+    "Lcom/gsc/base/model/UpDataModel;->bdInfo()Ljava/lang/String;",
+    "Lcom/gsc/pub/GSCPubCommon;->openUri(Ljava/lang/String;Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->setLogDir(Ljava/lang/String;)V"
+  ],
+  "Ljava/lang/String;->valueOf(I)Ljava/lang/String;": [
+    "Lcom/gsc/pub/GSCPubCommon;->init(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/bsgamesdk/android/callbacklistener/InitCallbackListener;Lcom/bsgamesdk/android/callbacklistener/ExitCallbackListener;)V"
+  ],
+  "Ljava/lang/String;->valueOf(Ljava/lang/Object;)Ljava/lang/String;": [
+    "Lcom/gsc/base/utils/TagUtils;->getAgreementStateNew()Ljava/lang/String;",
+    "Lcom/gsc/base/utils/TagUtils;->getAntiMessage()Lcom/gsc/base/model/EventModel;"
+  ],
+  "Ljava/lang/StringBuilder;-><init>()V": [
+    "Lcom/gsc/pub/GSCPubCommon;->trackEvent(Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V"
+  ],
+  "Ljava/lang/StringBuilder;-><init>(Ljava/lang/String;)V": [
+    "Lcom/gsc/base/model/UpDataModel;->defaultQueryString()Ljava/lang/String;",
+    "Lcom/gsc/pub/GSCPubCommon;->openWebContainer(Landroid/content/Context;Ljava/lang/String;ZLjava/util/Map;ZLcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->setLogDir(Ljava/lang/String;)V"
+  ],
+  "Ljava/lang/StringBuilder;->append(J)Ljava/lang/StringBuilder;": [
+    "Lcom/gsc/base/model/UpDataModel;->defaultQueryString()Ljava/lang/String;"
+  ],
+  "Ljava/lang/StringBuilder;->append(Ljava/lang/Object;)Ljava/lang/StringBuilder;": [
+    "Lcom/gsc/pub/GSCPubCommon;->openWebContainer(Landroid/content/Context;Ljava/lang/String;ZLjava/util/Map;ZLcom/bsgamesdk/android/callbacklistener/CallbackListener;)V"
+  ],
+  "Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;": [
+    "Lcom/gsc/base/model/UpDataModel;->defaultQueryString()Ljava/lang/String;",
+    "Lcom/gsc/pub/GSCPubCommon;->openWebContainer(Landroid/content/Context;Ljava/lang/String;ZLjava/util/Map;ZLcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->setLogDir(Ljava/lang/String;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->trackEvent(Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V"
+  ],
+  "Ljava/lang/StringBuilder;->toString()Ljava/lang/String;": [
+    "Lcom/gsc/base/model/UpDataModel;->defaultQueryString()Ljava/lang/String;",
+    "Lcom/gsc/pub/GSCPubCommon;->openWebContainer(Landroid/content/Context;Ljava/lang/String;ZLjava/util/Map;ZLcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->setLogDir(Ljava/lang/String;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->trackEvent(Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V"
+  ],
+  "Ljava/lang/Throwable;->printStackTrace()V": [
+    "Lcom/gsc/pub/GSCPubCommon;->a(Landroid/app/Application;)V"
+  ],
+  "Ljava/lang/ref/WeakReference;-><init>(Ljava/lang/Object;)V": [
+    "Lcom/gsc/base/utils/CommonUtils;->setCurrentActivity(Landroid/app/Activity;)V",
+    "Lcom/gsc/base/utils/CommonUtils;->setHostActivity(Landroid/app/Activity;)V",
+    "Lcom/gsc/base/utils/CommonUtils;->setResumedActivity(Landroid/app/Activity;)V"
+  ],
+  "Ljava/lang/ref/WeakReference;->get()Ljava/lang/Object;": [
+    "Lcom/gsc/base/utils/CommonUtils;->getCurrentActivity()Landroid/app/Activity;",
+    "Lcom/gsc/base/utils/CommonUtils;->getHostActivity()Landroid/app/Activity;",
+    "Lcom/gsc/base/utils/CommonUtils;->getResumedActivity()Landroid/app/Activity;"
+  ],
+  "Ljava/util/ArrayList;-><init>()V": [
+    "Lcom/gsc/pub/GSCPubCommon;->a(Landroid/app/Application;Ljava/lang/String;)V"
+  ],
+  "Ljava/util/Arrays;->asList([Ljava/lang/Object;)Ljava/util/List;": [
+    "Lcom/gsc/pub/GSCPubCommon;->a(Ljava/lang/String;)V"
+  ],
+  "Ljava/util/HashMap;-><init>()V": [
+    "Lcom/gsc/base/model/UpDataModel;->bdInfo()Ljava/lang/String;",
+    "Lcom/gsc/pub/GSCPubCommon;->biliAppFriendsAuth(Lcom/gsc/pub/Callback;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->notifyZone(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V"
+  ],
+  "Ljava/util/HashMap;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;": [
+    "Lcom/gsc/base/model/UpDataModel;->bdInfo()Ljava/lang/String;",
+    "Lcom/gsc/pub/GSCPubCommon;->login(Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->loginByQRCode(Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V"
+  ],
+  "Ljava/util/HashSet;->iterator()Ljava/util/Iterator;": [
+    "Lcom/gsc/pub/GSCPubCommon;->b(Landroid/app/Application;)V"
+  ],
+  "Ljava/util/Iterator;->hasNext()Z": [
+    "Lcom/gsc/pub/GSCPubCommon;->onGameAddiction(Ljava/lang/String;Ljava/util/Map;Z)V",
+    "Lcom/gsc/pub/GSCPubCommon;->openUri(Ljava/lang/String;Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->setProperties(Ljava/util/Map;)V"
+  ],
+  "Ljava/util/Iterator;->next()Ljava/lang/Object;": [
+    "Lcom/gsc/pub/GSCPubCommon;->b(Landroid/app/Application;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->onGameAddiction(Ljava/lang/String;Ljava/util/Map;Z)V",
+    "Lcom/gsc/pub/GSCPubCommon;->openUri(Ljava/lang/String;Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->setProperties(Ljava/util/Map;)V"
+  ],
+  "Ljava/util/List;->add(Ljava/lang/Object;)Z": [
+    "Lcom/gsc/pub/GSCPubCommon;->a(Landroid/app/Application;Ljava/lang/String;)V"
+  ],
+  "Ljava/util/Map$Entry;->getKey()Ljava/lang/Object;": [
+    "Lcom/gsc/pub/GSCPubCommon;->onGameAddiction(Ljava/lang/String;Ljava/util/Map;Z)V",
+    "Lcom/gsc/pub/GSCPubCommon;->setProperties(Ljava/util/Map;)V"
+  ],
+  "Ljava/util/Map$Entry;->getValue()Ljava/lang/Object;": [
+    "Lcom/gsc/pub/GSCPubCommon;->onGameAddiction(Ljava/lang/String;Ljava/util/Map;Z)V",
+    "Lcom/gsc/pub/GSCPubCommon;->setProperties(Ljava/util/Map;)V"
+  ],
+  "Ljava/util/Map;->entrySet()Ljava/util/Set;": [
+    "Lcom/gsc/pub/GSCPubCommon;->onGameAddiction(Ljava/lang/String;Ljava/util/Map;Z)V",
+    "Lcom/gsc/pub/GSCPubCommon;->setProperties(Ljava/util/Map;)V"
+  ],
+  "Ljava/util/Map;->get(Ljava/lang/Object;)Ljava/lang/Object;": [
+    "Lcom/gsc/pub/GSCPubCommon;->openUri(Ljava/lang/String;Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V"
+  ],
+  "Ljava/util/Map;->keySet()Ljava/util/Set;": [
+    "Lcom/gsc/pub/GSCPubCommon;->openUri(Ljava/lang/String;Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V"
+  ],
+  "Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;": [
+    "Lcom/gsc/pub/GSCPubCommon;->biliAppFriendsAuth(Lcom/gsc/pub/Callback;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->notifyZone(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V"
+  ],
+  "Ljava/util/Map;->size()I": [
+    "Lcom/gsc/pub/GSCPubCommon;->setProperties(Ljava/util/Map;)V"
+  ],
+  "Ljava/util/Random;-><init>(J)V": [
+    "Lcom/gsc/pub/GSCPubCommon;->b(Landroid/app/Application;)V"
+  ],
+  "Ljava/util/Random;->nextInt(I)I": [
+    "Lcom/gsc/pub/GSCPubCommon;->b(Landroid/app/Application;)V"
+  ],
+  "Ljava/util/Set;->iterator()Ljava/util/Iterator;": [
+    "Lcom/gsc/pub/GSCPubCommon;->onGameAddiction(Ljava/lang/String;Ljava/util/Map;Z)V",
+    "Lcom/gsc/pub/GSCPubCommon;->openUri(Ljava/lang/String;Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->setProperties(Ljava/util/Map;)V"
+  ],
+  "Ljava/util/concurrent/atomic/AtomicBoolean;-><init>(Z)V": [
+    "Lcom/gsc/pub/GSCPubCommon;-><init>()V"
+  ],
+  "Ljava/util/concurrent/atomic/AtomicBoolean;->get()Z": [
+    "Lcom/gsc/pub/GSCPubCommon;->a(Lcom/gsc/pub/b;)Z",
+    "Lcom/gsc/pub/GSCPubCommon;->getOaid(Lcom/gsc/pub/callback/OaidListener;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->setGameUserType(Ljava/lang/String;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->setLogDir(Ljava/lang/String;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->setProperties(Ljava/util/Map;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->triggerFileUpload(Ljava/util/List;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->updateScene(Ljava/lang/String;)V"
+  ],
+  "Lorg/json/JSONObject;-><init>()V": [
+    "Lcom/gsc/pub/GSCPubCommon;->onGameAddiction(Ljava/lang/String;Ljava/util/Map;Z)V"
+  ],
+  "Lorg/json/JSONObject;-><init>(Ljava/lang/String;)V": [
+    "Lcom/gsc/base/model/UpDataModel;->a(Landroid/content/Context;)V"
+  ],
+  "Lorg/json/JSONObject;->has(Ljava/lang/String;)Z": [
+    "Lcom/gsc/base/model/UpDataModel;->a(Landroid/content/Context;)V"
+  ],
+  "Lorg/json/JSONObject;->put(Ljava/lang/String;Ljava/lang/Object;)Lorg/json/JSONObject;": [
+    "Lcom/gsc/base/model/UpDataModel;->a(Landroid/content/Context;)V",
+    "Lcom/gsc/pub/GSCPubCommon;->onGameAddiction(Ljava/lang/String;Ljava/util/Map;Z)V"
+  ],
+  "Lorg/json/JSONObject;->toString()Ljava/lang/String;": [
+    "Lcom/gsc/base/model/UpDataModel;->a(Landroid/content/Context;)V"
+  ]
+}

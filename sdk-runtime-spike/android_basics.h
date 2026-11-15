@@ -1,0 +1,6 @@
+#pragma once
+#include "dvm/dvm_internal.h"
+void android_basics_vm_start(struct dvm *);
+dvm_ref android_basics_application(struct dvm *);
+bool android_basics_call(struct dvm *,const char *,const char *,const char *,dvm_ref,const union dvm_value *,int,union dvm_value *);
+bool android_basics_selftest(struct dvm *,unsigned *);

@@ -1,0 +1,77 @@
+{
+  "schema": 1,
+  "selected_profile": "android-api28-experimental",
+  "selection_reason": "API28 is inside APK min24/target33 and is the first public Application.getProcessName baseline. This exercises the SDK public API path; it is not a claim of complete Android9/API28 support.",
+  "profiles": {
+    "android-api24-experimental": {
+      "api": 24,
+      "release": "7.0"
+    },
+    "android-api28-experimental": {
+      "api": 28,
+      "release": "9"
+    },
+    "android-api33-experimental": {
+      "api": 33,
+      "release": "13"
+    }
+  },
+  "identity": {
+    "package": "com.bilibili.star.bili",
+    "process": "com.bilibili.star.bili",
+    "apk_sha256": "2ff2baf1b8fe78692b67507f88d3849422b672a0a929b374a878e1087d1519ec",
+    "manifest_sha256": "dc6c36c4805a29eb0f9b7ef58c8025feefcf5593965589e189821841d8da3b3a",
+    "cert_md5": "4502a02a00395dec05a4134ad593224d",
+    "cert_sha256": "8d9975b308c79d52b1703900afe35f39afd5d40a4d01c8d29064288078a7af7d",
+    "min_sdk": 24,
+    "target_sdk": 33,
+    "compile_sdk": 35,
+    "version_code": 106,
+    "version_name": "10.1.3"
+  },
+  "provenance": {
+    "apk": "BanGDream_10.1.3.0.0.0.0_20260917_031717_9932d.apk",
+    "manifest_application_process_attribute": null,
+    "process_rule": "Absent process defaults to manifest package; :name expands to package:name.",
+    "component_process_declarations": [
+      {
+        "tag": "service",
+        "name": "com.bilibili.lib.neuron.internal.NeuronRemoteService",
+        "declared_process": ":pushservice",
+        "normalized_process": "com.bilibili.star.bili:pushservice"
+      },
+      {
+        "tag": "receiver",
+        "name": "com.bilibili.lib.neuron.api.NeuronBuvidReceiver",
+        "declared_process": ":pushservice",
+        "normalized_process": "com.bilibili.star.bili:pushservice"
+      },
+      {
+        "tag": "provider",
+        "name": "com.bilibili.lib.neuron.internal2.provider.NeuronContentProvider",
+        "declared_process": ":pushservice",
+        "normalized_process": "com.bilibili.star.bili:pushservice"
+      }
+    ],
+    "public_signing_certificates": [
+      {
+        "sha256": "8d9975b308c79d52b1703900afe35f39afd5d40a4d01c8d29064288078a7af7d",
+        "md5": "4502a02a00395dec05a4134ad593224d",
+        "der_bytes": 715,
+        "source_block_id": "0x7109871a"
+      }
+    ],
+    "dex_sha256": {
+      "classes.dex": "50aa9e5b54f01f7874557421f3f2331bcdf517ac256823a8410832f9a23bbdad",
+      "classes2.dex": "3802d63079badea56de54006c41f9dc72d6d23c882b6d3ce8594cb23a42e9e47",
+      "classes3.dex": "9b7316be09836ce70f016088c990f8ea49a07b3badc399cd4d9e6de7a17c8a0c"
+    }
+  },
+  "limitations": [
+    "HarmonyOS API26 is not used as Android SDK_INT.",
+    "Experimental guest API declaration; full Android compatibility not implemented.",
+    "Public certificate inventory only; complete APK signature verification not performed.",
+    "No SDK authentication, login, risk-control or signature-check success is synthesized.",
+    "Unknown framework/business APIs fail explicitly."
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "sha256": "abac000579cf7a005374f9499d27b7a77acac14998f71e2f390bc95a28e8ebc0",
+  "recovered_from": "72rm",
+  "strict_template": "batch-validation\\base-before-progress-close-repair.c",
+  "basics_template": "archive\\retired-build-directories\\integrated-login-tls-next\\source\\java_basics_test.c",
+  "note": "Reference library identifies recovery; build compiles source overlays independently."
+}

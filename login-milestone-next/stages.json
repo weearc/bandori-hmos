@@ -1,0 +1,14 @@
+﻿{
+  "marker": "original-sdk-init-login-diagnostic-v1",
+  "source": "BanGDream_10.1.3.0.0.0.0_20260917_031717_9932d.apk; game-startup-analysis.json",
+  "status": "diagnostic_definition_only",
+  "execution_policy": "Strict original DEX calls only. Abort on unresolved original class/method, missing Android/JNI/native/WebView/network/signature/risk/business dependency, or missing real callback implementation. Never report login success absent original callback result.",
+  "stages": [
+    {"id":"application_attach","target":"Lcom/gsc/pub/GSCPubCommon;->applicationAttach(Landroid/app/Application;)V","context":"real original Application after attachBaseContext and SDK manifest/provider initialization","required":true,"evidence":"batch-stages.json contains this original method and its Track/CacheInstaller/lifecycle/router/plugin initialization call chain"},
+    {"id":"sdk_init","target":"Lcom/gsc/pub/GSCPubCommon;->init(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/bsgamesdk/android/callbacklistener/InitCallbackListener;Lcom/bsgamesdk/android/callbacklistener/ExitCallbackListener;)V","context":"real Activity, original configured app/channel credentials and actual callback instances; no synthetic defaults","required":true},
+    {"id":"login","target":"Lcom/gsc/pub/GSCPubCommon;->login(Lcom/bsgamesdk/android/callbacklistener/CallbackListener;)V","context":"same initialized SDK and foreground original Activity; real callback implementation required","required":true},
+    {"id":"ui_entry","target":"Lcom/bilibili/star/bili/PermissionActivity;->initialize()V","context":"only through original Activity lifecycle with real window/intent/permission results","required":true},
+    {"id":"result_bridge","target":"UnitySendMessage","context":"verify guest DEX native declaration/call sites and actual Unity receiver before interpreting callback; no arbitrary receiver","required":true}
+  ],
+  "hard_blockers": ["Current strict_runtime.c runner creates a diagnostic Application but has no Activity/window/WebView/UI thread or Android lifecycle.","Current runner explicitly disables network and has no guest native loader or Unity runtime.","Existing batch stages are isolated method probes and explicitly disclaim complete startup/login.","PermissionActivity and callback classes must be resolved to concrete original implementations before any invocation; do not instantiate guessed classes."]
+}

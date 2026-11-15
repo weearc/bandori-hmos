@@ -1,0 +1,18 @@
+#ifndef NATIVE_ASSET_BACKEND_NAMES_H
+#define NATIVE_ASSET_BACKEND_NAMES_H
+#define game_assets_create game_asset_backend_create
+#define game_assets_destroy game_asset_backend_destroy
+#define AAssetManager_open game_asset_backend_open
+#define AAsset_read game_asset_backend_read
+#define AAsset_seek game_asset_backend_seek
+#define AAsset_seek64 game_asset_backend_seek64
+#define AAsset_getLength game_asset_backend_getLength
+#define AAsset_getLength64 game_asset_backend_getLength64
+#define AAsset_getRemainingLength game_asset_backend_getRemainingLength
+#define AAsset_getRemainingLength64 game_asset_backend_getRemainingLength64
+#define AAsset_openFileDescriptor game_asset_backend_openFileDescriptor
+#define AAsset_openFileDescriptor64 game_asset_backend_openFileDescriptor64
+#define AAsset_getBuffer game_asset_backend_getBuffer
+#define AAsset_isAllocated game_asset_backend_isAllocated
+#define AAsset_close game_asset_backend_close
+#endif

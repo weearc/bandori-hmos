@@ -1,0 +1,161 @@
+{
+  "commit": "8ed4b75368153f2b9d1174c986e50c8fe87aee59",
+  "license": "MPL-2.0",
+  "upstream_boundaries": [
+    {
+      "file": "dvm.c",
+      "function": "dvm_gil_acquire",
+      "source_line": 4776,
+      "source_file_sha256": "97b8490c6140a5784a5317d6cec9ec4e3e5e71e0ea922d479aff163ee08e8e25"
+    },
+    {
+      "file": "dvm.c",
+      "function": "dvm_gil_release",
+      "source_line": 4860,
+      "source_file_sha256": "97b8490c6140a5784a5317d6cec9ec4e3e5e71e0ea922d479aff163ee08e8e25"
+    },
+    {
+      "file": "dvm.c",
+      "function": "dvm__tstate_reset",
+      "source_line": 4285,
+      "source_file_sha256": "97b8490c6140a5784a5317d6cec9ec4e3e5e71e0ea922d479aff163ee08e8e25"
+    },
+    {
+      "file": "dvm.c",
+      "function": "dvm__tstate_save",
+      "source_line": 4208,
+      "source_file_sha256": "97b8490c6140a5784a5317d6cec9ec4e3e5e71e0ea922d479aff163ee08e8e25"
+    },
+    {
+      "file": "dvm.c",
+      "function": "dvm__tstate_load",
+      "source_line": 4235,
+      "source_file_sha256": "97b8490c6140a5784a5317d6cec9ec4e3e5e71e0ea922d479aff163ee08e8e25"
+    },
+    {
+      "file": "dvm_runtime.c",
+      "function": "bytecode_thread_main",
+      "source_line": 5358,
+      "source_file_sha256": "e0cd9673ef5ccec744122f11a0694a34e2aed47a0ba622a2e9e93e087799967b"
+    },
+    {
+      "file": "dvm_runtime.c",
+      "function": "spawn_bytecode_thread",
+      "source_line": 5432,
+      "source_file_sha256": "e0cd9673ef5ccec744122f11a0694a34e2aed47a0ba622a2e9e93e087799967b"
+    },
+    {
+      "file": "dvm_runtime.c",
+      "function": "ht_run",
+      "source_line": 26416,
+      "source_file_sha256": "e0cd9673ef5ccec744122f11a0694a34e2aed47a0ba622a2e9e93e087799967b"
+    },
+    {
+      "file": "dvm_runtime.c",
+      "function": "ht_getLooper",
+      "source_line": 26386,
+      "source_file_sha256": "e0cd9673ef5ccec744122f11a0694a34e2aed47a0ba622a2e9e93e087799967b"
+    },
+    {
+      "file": "dvm_runtime.c",
+      "function": "looper_loop",
+      "source_line": 29955,
+      "source_file_sha256": "e0cd9673ef5ccec744122f11a0694a34e2aed47a0ba622a2e9e93e087799967b"
+    }
+  ],
+  "actual_original_sdk_paths": [
+    {
+      "dex": "classes.dex",
+      "method": "Lcom/base/trackingdata/mq/EventMessageLooper;-><init>()V",
+      "access": 65537,
+      "code_offset": 4414504,
+      "calls": [
+        {
+          "unit_offset": 2,
+          "opcode": "0x70",
+          "target": "Landroid/os/HandlerThread;-><init>(Ljava/lang/String;)V"
+        }
+      ]
+    },
+    {
+      "dex": "classes.dex",
+      "method": "Lcom/base/trackingdata/mq/EventMessageLooper;->startLooper()V",
+      "access": 1,
+      "code_offset": 4414612,
+      "calls": [
+        {
+          "unit_offset": 13,
+          "opcode": "0x77",
+          "target": "Lcom/gsc/cobbler/patch/PatchProxy;->proxy([Ljava/lang/Object;Ljava/lang/Object;Lcom/base/autopathbase/ChangeQuickRedirect;ZI[Ljava/lang/Class;Ljava/lang/Class;)Lcom/gsc/cobbler/patch/PatchProxyResult;"
+        },
+        {
+          "unit_offset": 29,
+          "opcode": "0x6e",
+          "target": "Landroid/os/HandlerThread;->start()V"
+        },
+        {
+          "unit_offset": 36,
+          "opcode": "0x6e",
+          "target": "Landroid/os/HandlerThread;->getLooper()Landroid/os/Looper;"
+        },
+        {
+          "unit_offset": 40,
+          "opcode": "0x70",
+          "target": "Lcom/base/trackingdata/mq/EventMessageLooper$1;-><init>(Lcom/base/trackingdata/mq/EventMessageLooper;Landroid/os/Looper;)V"
+        }
+      ]
+    },
+    {
+      "dex": "classes.dex",
+      "method": "Lcom/base/trackingdata/mq/EventMessageLooper$1;-><init>(Lcom/base/trackingdata/mq/EventMessageLooper;Landroid/os/Looper;)V",
+      "access": 65537,
+      "code_offset": 4414212,
+      "calls": [
+        {
+          "unit_offset": 2,
+          "opcode": "0x70",
+          "target": "Landroid/os/Handler;-><init>(Landroid/os/Looper;)V"
+        }
+      ]
+    },
+    {
+      "dex": "classes.dex",
+      "method": "Lcom/base/trackingdata/mq/EventMessageLooper$1;->handleMessage(Landroid/os/Message;)V",
+      "access": 1,
+      "code_offset": 4414240,
+      "calls": [
+        {
+          "unit_offset": 20,
+          "opcode": "0x77",
+          "target": "Lcom/gsc/cobbler/patch/PatchProxy;->proxy([Ljava/lang/Object;Ljava/lang/Object;Lcom/base/autopathbase/ChangeQuickRedirect;ZI[Ljava/lang/Class;Ljava/lang/Class;)Lcom/gsc/cobbler/patch/PatchProxyResult;"
+        },
+        {
+          "unit_offset": 29,
+          "opcode": "0x6f",
+          "target": "Landroid/os/Handler;->handleMessage(Landroid/os/Message;)V"
+        },
+        {
+          "unit_offset": 37,
+          "opcode": "0x71",
+          "target": "Lcom/base/trackingdata/mq/EventMessageHandler;->getInstance()Lcom/base/trackingdata/mq/EventMessageHandler;"
+        },
+        {
+          "unit_offset": 41,
+          "opcode": "0x71",
+          "target": "Lcom/base/trackingdata/mq/EventMessageQueue;->getInstance()Lcom/base/trackingdata/mq/EventMessageQueue;"
+        },
+        {
+          "unit_offset": 45,
+          "opcode": "0x6e",
+          "target": "Lcom/base/trackingdata/mq/EventMessageQueue;->take()Lcom/base/trackingdata/mq/EventMessage;"
+        },
+        {
+          "unit_offset": 49,
+          "opcode": "0x6e",
+          "target": "Lcom/base/trackingdata/mq/EventMessageHandler;->handleMessage(Lcom/base/trackingdata/mq/EventMessage;)V"
+        }
+      ]
+    }
+  ],
+  "adaptation": "Existing interpreter GIL/TLS primitives retained; standalone actual worker queue and lifecycle adapted without desktop ARM/JNI dependencies."
+}

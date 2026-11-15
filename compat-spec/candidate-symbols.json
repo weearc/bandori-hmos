@@ -1,0 +1,495 @@
+{
+  "schema_version": 1,
+  "scope": "candidate symbol inventory for CRI Atom Android audio compatibility specification; not an implementation contract",
+  "evidence": {
+    "apk_library": "libcri_ware_unity.so",
+    "cri_versions": [
+      "CRI ADX Decoder/Android_ARMv8A Ver.1.00.08 Build:Jun 12 2025 18:52:59",
+      "CRI Atom Aux/Android_ARMv8A Ver.1.4.23 Build:Jun 12 2025 18:55:22",
+      "CRI Atom Unity/Android_ARMv8A Ver.1.04.15 Build:Jun 12 2025 18:58:38",
+      "CRI Atom/Android_ARMv8A Ver.2.29.310 Build:Jun 12 2025 18:55:24",
+      "CRI AtomEx Monitor/Android_ARMv8A Ver.1.23.71 Build:Jun 12 2025 18:55:40",
+      "CRI AtomEx/Android_ARMv8A Ver.2.29.4 Build:Jun 12 2025 18:55:30",
+      "CRI Audio Effect/Android_ARMv8A Ver.1.2.63 Build:Jun 12 2025 18:55:37",
+      "CRI Base/Android_ARMv8A Ver.2.55.24 Build:Jun 12 2025 18:52:59",
+      "CRI CPK Analyzer/Android_ARMv8A Ver.0.99.55 Build:Jun 12 2025 18:53:24",
+      "CRI File System Net/Android_ARMv8A Ver.1.9.1 Build:Jun 12 2025 18:54:27",
+      "CRI File System Unity/Android_ARMv8A Ver.0.95.06 Build:Jun 12 2025 18:58:39",
+      "CRI File System/Android_ARMv8A Ver.2.88.13 Build:Jun 12 2025 18:53:24",
+      "CRI Mana Unity/Android_ARMv8A Ver.2.02.51 Build:Jun 12 2025 18:58:39",
+      "CRI Mana/Android_ARMv8A Ver.2.29.26 Build:Jun 12 2025 18:57:57",
+      "CRI Movie/Android_ARMv8A Ver.4.20.23 Build:Jun 12 2025 18:57:54",
+      "CRI MvCore/Android_ARMv8A Ver.1.27.6 Build:Jun 12 2025 18:57:50",
+      "CRI SBX Ver.0.86.1",
+      "CRI SBX/Android_ARMv8A Ver.0.86.1 Build:Jun 12 2025 18:54:27"
+    ],
+    "aaudio_name_count": 59,
+    "aaudio_names_reference_missing_count": 25,
+    "meaning": "Names are observed strings in the APK native library. Reference-missing means absent from the compared reference export inventory only; it does not mean each is required, invoked, or needed for playback.",
+    "opensles_needed": [],
+    "opensles_dynamic_missing_package_exports": [
+      "AAsset_getLength64",
+      "AAsset_openFileDescriptor64",
+      "AAsset_seek",
+      "SL_IID_ANDROIDACOUSTICECHOCANCELLATION",
+      "SL_IID_ANDROIDAUTOMATICGAINCONTROL",
+      "SL_IID_ANDROIDCONFIGURATION",
+      "SL_IID_ANDROIDNOISESUPPRESSION",
+      "SL_IID_ANDROIDSIMPLEBUFFERQUEUE",
+      "SL_IID_BUFFERQUEUE",
+      "SL_IID_ENGINE",
+      "SL_IID_PLAY",
+      "SL_IID_RECORD",
+      "SL_IID_VOLUME",
+      "slCreateEngine"
+    ]
+  },
+  "aaudio_candidates": [
+    {
+      "name": "AAudioStreamBuilder_delete",
+      "evidence": "APK string inventory",
+      "reference_export_missing": false,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStreamBuilder_openStream",
+      "evidence": "APK string inventory",
+      "reference_export_missing": false,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStreamBuilder_setAllowedCapturePolicy",
+      "evidence": "APK string inventory",
+      "reference_export_missing": true,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStreamBuilder_setAttributionTag",
+      "evidence": "APK string inventory",
+      "reference_export_missing": true,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStreamBuilder_setBufferCapacityInFrames",
+      "evidence": "APK string inventory",
+      "reference_export_missing": false,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStreamBuilder_setChannelCount",
+      "evidence": "APK string inventory",
+      "reference_export_missing": false,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStreamBuilder_setChannelMask",
+      "evidence": "APK string inventory",
+      "reference_export_missing": false,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStreamBuilder_setContentType",
+      "evidence": "APK string inventory",
+      "reference_export_missing": true,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStreamBuilder_setDataCallback",
+      "evidence": "APK string inventory",
+      "reference_export_missing": false,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStreamBuilder_setDeviceId",
+      "evidence": "APK string inventory",
+      "reference_export_missing": false,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStreamBuilder_setDirection",
+      "evidence": "APK string inventory",
+      "reference_export_missing": false,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStreamBuilder_setErrorCallback",
+      "evidence": "APK string inventory",
+      "reference_export_missing": false,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStreamBuilder_setFormat",
+      "evidence": "APK string inventory",
+      "reference_export_missing": false,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStreamBuilder_setFramesPerDataCallback",
+      "evidence": "APK string inventory",
+      "reference_export_missing": true,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStreamBuilder_setInputPreset",
+      "evidence": "APK string inventory",
+      "reference_export_missing": false,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStreamBuilder_setIsContentSpatialized",
+      "evidence": "APK string inventory",
+      "reference_export_missing": true,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStreamBuilder_setPackageName",
+      "evidence": "APK string inventory",
+      "reference_export_missing": true,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStreamBuilder_setPerformanceMode",
+      "evidence": "APK string inventory",
+      "reference_export_missing": false,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStreamBuilder_setPrivacySensitive",
+      "evidence": "APK string inventory",
+      "reference_export_missing": true,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStreamBuilder_setSampleRate",
+      "evidence": "APK string inventory",
+      "reference_export_missing": false,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStreamBuilder_setSamplesPerFrame",
+      "evidence": "APK string inventory",
+      "reference_export_missing": true,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStreamBuilder_setSessionId",
+      "evidence": "APK string inventory",
+      "reference_export_missing": true,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStreamBuilder_setSharingMode",
+      "evidence": "APK string inventory",
+      "reference_export_missing": true,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStreamBuilder_setSpatializationBehavior",
+      "evidence": "APK string inventory",
+      "reference_export_missing": true,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStreamBuilder_setUsage",
+      "evidence": "APK string inventory",
+      "reference_export_missing": false,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStream_close",
+      "evidence": "APK string inventory",
+      "reference_export_missing": false,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStream_getAllowedCapturePolicy",
+      "evidence": "APK string inventory",
+      "reference_export_missing": true,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStream_getBufferCapacityInFrames",
+      "evidence": "APK string inventory",
+      "reference_export_missing": false,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStream_getBufferSizeInFrames",
+      "evidence": "APK string inventory",
+      "reference_export_missing": false,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStream_getChannelCount",
+      "evidence": "APK string inventory",
+      "reference_export_missing": false,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStream_getChannelMask",
+      "evidence": "APK string inventory",
+      "reference_export_missing": true,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStream_getDeviceId",
+      "evidence": "APK string inventory",
+      "reference_export_missing": false,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStream_getDirection",
+      "evidence": "APK string inventory",
+      "reference_export_missing": false,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStream_getFormat",
+      "evidence": "APK string inventory",
+      "reference_export_missing": false,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStream_getFramesPerBurst",
+      "evidence": "APK string inventory",
+      "reference_export_missing": false,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStream_getFramesRead",
+      "evidence": "APK string inventory",
+      "reference_export_missing": false,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStream_getFramesWritten",
+      "evidence": "APK string inventory",
+      "reference_export_missing": false,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStream_getPerformanceMode",
+      "evidence": "APK string inventory",
+      "reference_export_missing": true,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStream_getSampleRate",
+      "evidence": "APK string inventory",
+      "reference_export_missing": false,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStream_getSamplesPerFrame",
+      "evidence": "APK string inventory",
+      "reference_export_missing": true,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStream_getSharingMode",
+      "evidence": "APK string inventory",
+      "reference_export_missing": true,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStream_getSpatializationBehavior",
+      "evidence": "APK string inventory",
+      "reference_export_missing": true,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStream_getState",
+      "evidence": "APK string inventory",
+      "reference_export_missing": false,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStream_getTimestamp",
+      "evidence": "APK string inventory",
+      "reference_export_missing": false,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStream_getXRunCount",
+      "evidence": "APK string inventory",
+      "reference_export_missing": false,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStream_isContentSpatialized",
+      "evidence": "APK string inventory",
+      "reference_export_missing": true,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStream_isPrivacySensitive",
+      "evidence": "APK string inventory",
+      "reference_export_missing": true,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStream_read",
+      "evidence": "APK string inventory",
+      "reference_export_missing": false,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStream_release",
+      "evidence": "APK string inventory",
+      "reference_export_missing": true,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStream_requestFlush",
+      "evidence": "APK string inventory",
+      "reference_export_missing": true,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStream_requestPause",
+      "evidence": "APK string inventory",
+      "reference_export_missing": true,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStream_requestStart",
+      "evidence": "APK string inventory",
+      "reference_export_missing": false,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStream_requestStop",
+      "evidence": "APK string inventory",
+      "reference_export_missing": false,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStream_setBufferSizeInFrames",
+      "evidence": "APK string inventory",
+      "reference_export_missing": false,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStream_waitForStateChange",
+      "evidence": "APK string inventory",
+      "reference_export_missing": true,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudioStream_write",
+      "evidence": "APK string inventory",
+      "reference_export_missing": true,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudio_convertResultToText",
+      "evidence": "APK string inventory",
+      "reference_export_missing": false,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudio_convertStreamStateToText",
+      "evidence": "APK string inventory",
+      "reference_export_missing": true,
+      "requirement_status": "candidate_only"
+    },
+    {
+      "name": "AAudio_createStreamBuilder",
+      "evidence": "APK string inventory",
+      "reference_export_missing": false,
+      "requirement_status": "candidate_only"
+    }
+  ],
+  "opensles_candidates": [
+    {
+      "name": "AAsset_getLength64",
+      "requirement_status": "observed unresolved package import; runtime provider may be OS/dynamic"
+    },
+    {
+      "name": "AAsset_openFileDescriptor64",
+      "requirement_status": "observed unresolved package import; runtime provider may be OS/dynamic"
+    },
+    {
+      "name": "AAsset_seek",
+      "requirement_status": "observed unresolved package import; runtime provider may be OS/dynamic"
+    },
+    {
+      "name": "SL_IID_ANDROIDACOUSTICECHOCANCELLATION",
+      "requirement_status": "observed unresolved package import; runtime provider may be OS/dynamic"
+    },
+    {
+      "name": "SL_IID_ANDROIDAUTOMATICGAINCONTROL",
+      "requirement_status": "observed unresolved package import; runtime provider may be OS/dynamic"
+    },
+    {
+      "name": "SL_IID_ANDROIDCONFIGURATION",
+      "requirement_status": "observed unresolved package import; runtime provider may be OS/dynamic"
+    },
+    {
+      "name": "SL_IID_ANDROIDNOISESUPPRESSION",
+      "requirement_status": "observed unresolved package import; runtime provider may be OS/dynamic"
+    },
+    {
+      "name": "SL_IID_ANDROIDSIMPLEBUFFERQUEUE",
+      "requirement_status": "observed unresolved package import; runtime provider may be OS/dynamic"
+    },
+    {
+      "name": "SL_IID_BUFFERQUEUE",
+      "requirement_status": "observed unresolved package import; runtime provider may be OS/dynamic"
+    },
+    {
+      "name": "SL_IID_ENGINE",
+      "requirement_status": "observed unresolved package import; runtime provider may be OS/dynamic"
+    },
+    {
+      "name": "SL_IID_PLAY",
+      "requirement_status": "observed unresolved package import; runtime provider may be OS/dynamic"
+    },
+    {
+      "name": "SL_IID_RECORD",
+      "requirement_status": "observed unresolved package import; runtime provider may be OS/dynamic"
+    },
+    {
+      "name": "SL_IID_VOLUME",
+      "requirement_status": "observed unresolved package import; runtime provider may be OS/dynamic"
+    },
+    {
+      "name": "slCreateEngine",
+      "requirement_status": "observed unresolved package import; runtime provider may be OS/dynamic"
+    }
+  ],
+  "unity_opensles": {
+    "status": "must investigate separately",
+    "note": "Unity libunity.so has its own native imports and may use OpenSL ES independently of CRI backend selection."
+  },
+  "runtime_validation_required": true,
+  "openharmony_sdk_opensles": {
+    "sdk_api": "26",
+    "library": "C:/Program Files/Huawei/DevEco Studio/sdk/default/openharmony/native/sysroot/usr/lib/aarch64-linux-ohos/libOpenSLES.so",
+    "library_size_bytes": 7376,
+    "export_count": 50,
+    "headers": [
+      "OpenSLES.h",
+      "OpenSLES_Platform.h",
+      "OpenSLES_OpenHarmony.h"
+    ],
+    "matching_exports": [
+      "slCreateEngine",
+      "SL_IID_ENGINE",
+      "SL_IID_PLAY",
+      "SL_IID_RECORD",
+      "SL_IID_VOLUME",
+      "SL_IID_BUFFERQUEUE"
+    ],
+    "not_exported_android_iids": [
+      "SL_IID_ANDROIDACOUSTICECHOCANCELLATION",
+      "SL_IID_ANDROIDAUTOMATICGAINCONTROL",
+      "SL_IID_ANDROIDCONFIGURATION",
+      "SL_IID_ANDROIDNOISESUPPRESSION",
+      "SL_IID_ANDROIDSIMPLEBUFFERQUEUE"
+    ],
+    "oh_queue_iid": "SL_IID_OH_BUFFERQUEUE",
+    "oh_queue_callback_signature": "(caller, context, size)",
+    "caveat": "Export-name overlap and headers do not establish Android libOpenSLES ABI/behavior compatibility or low latency; validate with a no-playback native probe and runtime loader evidence."
+  }
+}

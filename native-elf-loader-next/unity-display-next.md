@@ -1,0 +1,9 @@
+﻿# Unity Display 最小需求
+
+原 APK SHA-256 `2ff2baf1b8fe78692b67507f88d3849422b672a0a929b374a878e1087d1519ec`，REA 定点 `ev_37cc184019d9cb95143c036adb71861b6355dd67a5316bbcfae128dfb37d6972`：`UnityPlayer.getNaturalOrientation(I)I` 使用 `this.mContext.getSystemService("window")`，转换成 WindowManager，再调用 `getDefaultDisplay()Landroid/view/Display;`、`getRotation()I`。原方法中 rotation 0/2 且 configuration orientation=2，或 rotation 1/3 且 configuration orientation=1，返回0；否则返回1。调用边 `dex-call-edges.json` 对应 offset 4/10/14。结论是静态代码推导，不代表设备已执行成功。
+
+当前 `sdk-init-next/platform_runtime.c` 的真实宿主快照含屏幕宽高、密度和 `Configuration.orientation`，但没有 Android Display 对象或四态旋转值；`Index.ets` 的 mapOrientation将正向和倒置折叠为横/竖，不可反推出 Display.getRotation 的相对自然方向值。`application-lifecycle-next/activity_runtime.c` 的 WindowManager facade 当前明确对 `getDefaultDisplay` 抛 UnsupportedOperationException；`sdk-init-next/network_runtime.c` 的 Context.getSystemService 已处理 activity/connectivity/phone，未处理 window。`getWindowManager()` facade可作为身份一致的候选，但必须真实接到 Context service，与 Display对象/后端生命周期一致。
+
+最短支持：让同一 Activity Context 的 `getSystemService("window")` 与 Activity.getWindowManager 返回同一有效 WindowManager；其 getDefaultDisplay 返回本VM稳定的 Display guest对象；Display.getRotation() 从宿主读取并验证 Android 0/1/2/3，缺失/非法值明确失败。鸿蒙 `display.rotation` 的具体枚举与自然方向映射需按SDK文档/设备方向验证，不从 Configuration.orientation 或宽高推断。回调跨UI线程时释放DVM锁且不持模块锁；VM、回调及user生命周期必须覆盖在途请求，旋转读取后的对象需重验身份。旋转/Configuration 应基于相同或可追溯更新快照，记录方向变化竞态。getWidth/getMetrics并非本方法调用，不得因这一最小路径宣称完整Display实现。真实UI、Surface、渲染与首帧仍未证实。
+
+补充SDK证据：安装的 `@ohos.display.d.ts` 对 `Display.rotation` 写明0/1/2/3分别是显示屏顺时针0/90/180/270度；[Android Display.getRotation](https://developer.android.com/reference/android/view/Display#getRotation()) 将值定义为绘制图像相对自然方向的旋转，方向与设备物理转动相反。尚需核实OH“显示屏旋转”的坐标含义与Android绘制旋转是否相同，或通过设备不同方向验证；数值同阶不单独证明语义等价。此Unity方法仅使用旋转奇偶性，但仍须确保旋转和configuration来自一致的显示状态。

@@ -1,0 +1,21 @@
+Static evidence cache; source artifacts are in rea-analysis-20261104.
+
+Source: il2cpp-s.txt (dynsym import table)
+37 OBJECT UND __sF@LIBC
+40 FUNC UND fprintf@LIBC
+181 FUNC UND fclose@LIBC
+182 FUNC UND fflush@LIBC
+183 FUNC UND fopen@LIBC
+184 FUNC UND fread@LIBC
+185 FUNC UND fseek@LIBC
+186 FUNC UND fseeko@LIBC
+187 FUNC UND ftello@LIBC
+188 FUNC UND fwrite@LIBC
+214 FUNC UND vfprintf@LIBC
+
+Source: il2cpp-r.txt (.rela.dyn)
+000000000644ba28 0000002500000401 R_AARCH64_GLOB_DAT 0000000000000000 __sF@LIBC + 0
+Interpretation: one GOT relocation for address resolution; not a call-site/use classification.
+
+Original ELF SHA-256 per ABI audit: 3f9886b904fd7cba01c38880229d2f301a108edf9ca68ad9753daa6283378a33
+AOSP bionic android-14.0.0_r1 bits/struct_file.h SHA-256 per ABI audit: cdb9276a375a2a90c2654313b00f134e30680f163148ed1b7bb095de9fbef7b9

@@ -1,0 +1,9 @@
+{
+  "source": "https://curl.se/ca/cacert.pem",
+  "sha256_source": "https://curl.se/ca/cacert.pem.sha256",
+  "sha256": "427c064216761a1e72a8b30f0d954d08cb6e4435a82091fb865afd20c8497285",
+  "bytes": 200116,
+  "certificates": 118,
+  "retrieved_utc": "2026-11-11T20:32:22.813747+00:00",
+  "purpose": "Guest default CA roots exported through X509TrustManager; verification retained"
+}

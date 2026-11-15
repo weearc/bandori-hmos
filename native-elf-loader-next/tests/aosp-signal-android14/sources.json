@@ -1,0 +1,10 @@
+{
+  "source": "https://android.googlesource.com/platform/bionic/+/android-14.0.0_r1/",
+  "files": {
+    "libc_include_bits_signal_types.h": "49ce8c4f86d2d616adbe4d6c4adc1f733b7c6c809e70169901ad56190bb189d9",
+    "libc_include_signal.h": "9c362076c460348ca843977c77017ee262166ece59eb6a2641ca281fe019b9fe",
+    "libc_kernel_uapi_asm-generic_signal.h": "9bee932ee0886190fd41f88e9a73c1090be2a9038f7beab054a985cf1c5658f6"
+  },
+  "ohos_sdk_aarch64_bits_signal_h_sha256": "82bc3d39e13cbb85ba355fc6e8e2b2d157e31d46e5c37369e67c22c5807cefa4",
+  "ohos_sdk_signal_h_sha256": "e7898ef2098e4b1bd9a0bcd02be0bdb6a5034a393560a5a010dfc9cefd6b942a"
+}

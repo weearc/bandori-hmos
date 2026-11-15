@@ -1,0 +1,20 @@
+# Unity native assets: current static assessment
+
+2026-11-10 update (supersedes historical missing-bridge assessment below): native_asset_bridge.c is now built; elf_loader_android_abi_symbol explicitly binds the supported AAsset family. fromJava validates this VM JNI manager identity, private-prefixed extracted backend prevents system symbol preemption. 72fe confirms configuration and real metadata length 29633644. Device root /data/storage/el2/base/haps/entry/files/sdkdex/native-assets has 3757 files / 472105751 bytes; metadata fetched back with exact original SHA. 72fe still prints boot-config defaults; per-open requests/results were not logged, so actual original Unity reads remain unproven. 72fg adds bounded fromJava/open diagnostics. Current limits: native-asset-bridge.md and root README/handoff. Below is historical pre-integration research.
+
+
+## Binding
+
+`native-elf-loader-next/elf_loader.c:622` has no AAsset override: `elf_loader_android_abi_symbol` returns NULL for `AAssetManager_fromJava`, `AAssetManager_open`, `AAsset_close`, `AAsset_getBuffer`, `AAsset_read`, `AAsset_getLength` and related names. `resolve_symbol_name` then searches scoped guest dependencies, opened system dependency handles, RTLD_DEFAULT, and finally shim_lookup. No explicit asset binding appears in this loader. Thus an actual address depends on the loaded dependencies/system namespace and cannot be asserted from the source alone; a strong unresolved import fails resolution. There is no evidence here that `native-compat/libgame_assets.so` is linked or loaded into that scope. Record actual symbol provenance at runtime before assuming it is safe.
+
+`native-compat/assets.c` implements open, close, read, buffer, seek, length, remaining length and file descriptor operations over a host-supplied extracted directory (`game_assets_create`). It does not implement `AAssetManager_fromJava`, directory enumeration or APK extraction. Its README explicitly says integration and JNI identity association are pending. A system AAssetManager implementation and this backend's opaque handles must not be mixed.
+
+## Java identity and bytes
+
+`asset-reader-next/asset_reader.c` creates a DVM AssetManager facade for the singleton Resources and its Java `open` accepts that identity. No association to a `game_assets_create` native manager or implementation of `AAssetManager_fromJava` was found in these components. Other Resources objects may carry their own mAssets reference; this does not establish a native mapping. `generate.py` indexes APK assets, embeds only files <=65536 bytes outside `assets/bin/` and not ending `.bin`; Java open throws UnsupportedOperationException for indexed but unembedded data. Therefore the index is not a native file provider.
+
+The existing inventory (`batch-validation/unity-bootstrap-20261109/il2cpp-next-inventory.md`) identifies APK `assets/bin/Data/Managed/Metadata/global-metadata.dat`, 29,633,644 bytes, and reports a byte-identical extracted copy. The asset-reader manifest indexes that name, but its generation policy excludes `assets/bin/` contents. The inventory explicitly says metadata staging is a later runtime requirement; a local extracted copy or manifest entry does not establish visibility at an OH process path or through native AAsset APIs. Unity's requested path and any APK/sourceDir mapping remain unverified.
+
+## Acceptance still needed
+
+Capture the first actual Unity AAsset resolution and call, manager JNI identity, requested names and host root, without passing DVM object pointers to an unrelated system implementation. Verify a real manager maps to the extracted backend with consistent lifetime and a complete immutable extracted tree, then exercise open/read/getBuffer/length/close on real Unity files including metadata, missing/traversal paths and both FD/offset and mmap behavior. Confirm the actual runtime metadata path and bytes independently. These are recommendations, not observed device results; Unity has not yet reached this asset path in the current run.

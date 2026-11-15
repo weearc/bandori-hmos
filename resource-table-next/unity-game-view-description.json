@@ -1,0 +1,16 @@
+{
+  "apk_sha256": "2ff2baf1b8fe78692b67507f88d3849422b672a0a929b374a878e1087d1519ec",
+  "arsc_sha256": "09b0269cd7667ae385091ec44322c58ea5ad7616ad64a653f632cb469c345e66",
+  "record": {
+    "id": 2131558526,
+    "type": "string",
+    "name": "game_view_content_description",
+    "data_type": 3,
+    "data": 999,
+    "complex": false,
+    "config_score": 0,
+    "config_size": 64,
+    "package": "com.bilibili.star.bili"
+  },
+  "text": "Game view"
+}

@@ -1,0 +1,39 @@
+{
+  "source_apk_sha256": "2ff2baf1b8fe78692b67507f88d3849422b672a0a929b374a878e1087d1519ec",
+  "entry": "PermissionActivity.initialize -> GSCPubCommon.init",
+  "resources": {
+    "sdk_app_id": {
+      "id": 2131558826,
+      "hex_id": "0x7f0d01aa",
+      "name": "sdk_app_id",
+      "type": "string",
+      "value": "330",
+      "configuration_nonzero_bytes": 0
+    },
+    "sdk_app_key": {
+      "id": 2131558827,
+      "hex_id": "0x7f0d01ab",
+      "name": "sdk_app_key",
+      "type": "string",
+      "value": "0e814339fb45488db2f0a3462fe17690",
+      "configuration_nonzero_bytes": 0
+    },
+    "sdk_merchant_id": {
+      "id": 2131558829,
+      "hex_id": "0x7f0d01ad",
+      "name": "sdk_merchant_id",
+      "type": "string",
+      "value": "1",
+      "configuration_nonzero_bytes": 0
+    },
+    "sdk_server_id": {
+      "id": 2131558830,
+      "hex_id": "0x7f0d01ae",
+      "name": "sdk_server_id",
+      "type": "string",
+      "value": "557",
+      "configuration_nonzero_bytes": 0
+    }
+  },
+  "note": "Original local SDK configuration values; do not print key values in device trace. No SDK init executed by this script."
+}

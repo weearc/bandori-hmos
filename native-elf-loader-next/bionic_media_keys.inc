@@ -1,0 +1,18 @@
+/* Android media-format key data ABI. Values verified against pinned AOSP
+ * source in batch-validation/unity-bootstrap-20261109/aosp-media/source.json.
+ * Intentionally included with different MEDIA_KEY definitions. */
+MEDIA_KEY(AMEDIAFORMAT_KEY_CHANNEL_COUNT, "channel-count")
+MEDIA_KEY(AMEDIAFORMAT_KEY_COLOR_FORMAT, "color-format")
+MEDIA_KEY(AMEDIAFORMAT_KEY_COLOR_RANGE, "color-range")
+MEDIA_KEY(AMEDIAFORMAT_KEY_COLOR_STANDARD, "color-standard")
+MEDIA_KEY(AMEDIAFORMAT_KEY_DURATION, "durationUs")
+MEDIA_KEY(AMEDIAFORMAT_KEY_ENCODER_DELAY, "encoder-delay")
+MEDIA_KEY(AMEDIAFORMAT_KEY_FRAME_RATE, "frame-rate")
+MEDIA_KEY(AMEDIAFORMAT_KEY_HEIGHT, "height")
+MEDIA_KEY(AMEDIAFORMAT_KEY_LANGUAGE, "language")
+MEDIA_KEY(AMEDIAFORMAT_KEY_MIME, "mime")
+MEDIA_KEY(AMEDIAFORMAT_KEY_ROTATION, "rotation-degrees")
+MEDIA_KEY(AMEDIAFORMAT_KEY_SAMPLE_RATE, "sample-rate")
+MEDIA_KEY(AMEDIAFORMAT_KEY_SLICE_HEIGHT, "slice-height")
+MEDIA_KEY(AMEDIAFORMAT_KEY_STRIDE, "stride")
+MEDIA_KEY(AMEDIAFORMAT_KEY_WIDTH, "width")

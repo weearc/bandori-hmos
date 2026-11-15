@@ -1,0 +1,7 @@
+{
+  "base": "https://android.googlesource.com/platform/bionic/+/android-14.0.0_r1/libc/include/",
+  "sha256": {
+    "bits/struct_file.h": "cdb9276a375a2a90c2654313b00f134e30680f163148ed1b7bb095de9fbef7b9",
+    "stdio.h": "ea8bef12f701553592e4333da18552191dee6a7424503fe6eebdeb3a3b99b1e1"
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "status": "experimental, review only; not integrated or device tested",
+  "supported": [
+    "callback output PCM16 or float",
+    "builder creation and parameter subset",
+    "open",
+    "start",
+    "pause",
+    "stop",
+    "flush",
+    "close",
+    "renderer state",
+    "sample rate",
+    "channel count",
+    "format",
+    "direction",
+    "frames written",
+    "timestamp",
+    "underflow count",
+    "LOW_LATENCY requests OH FAST and verifies reported latency mode; NONE requests NORMAL",
+    "Android GAME+MUSIC, MEDIA+MUSIC and MEDIA+MOVIE map to OH GAME, MUSIC and MOVIE",
+    "renderer error callback mapped to AAudio errors; service death maps to disconnected"
+  ],
+  "unsupported": [
+    "capture",
+    "blocking read/write",
+    "non-default device",
+    "exclusive sharing",
+    "fixed callback size",
+    "explicit buffer capacity",
+    "missing dynamic symbols in export-comparison.json",
+    "interrupt callbacks",
+    "other usage/content combinations; OH has no independent content type"
+  ],
+  "limitations": [
+    "CRI AAudio selection and dlsym call sites unverified",
+    "OpenSL dependency unresolved",
+    "callback STOP requests stop asynchronously on worker",
+    "closed stream tombstone intentionally retained because SDK release callback quiescence is undocumented; memory grows per close",
+    "caller must serialize close with other API calls",
+    "timestamp and frame semantics require device validation",
+    "no device test",
+    "immutable format, sample rate, channel count and direction getters work in data callback; dynamic renderer queries and control operations reject callback thread",
+    "unsupported builder setters cause open to fail",
+    "STOP remains latched until asynchronous stop completes",
+    "thread creation and guest C++ exceptions are contained",
+    "OH latency mode is a reported mode, not measured latency or proof of fast playback",
+    "error mapping is approximate except explicit service death; callback delivery and lifecycle need device testing",
+    "57 exported symbols do not imply 57 supported operations"
+  ],
+  "query_policy": {
+    "unavailable": [
+      "buffer capacity",
+      "buffer size",
+      "frames per burst",
+      "device id",
+      "sharing mode",
+      "channel mask",
+      "capture policy",
+      "spatialization behavior",
+      "frames read",
+      "performance mode"
+    ],
+    "unimplemented": [
+      "release",
+      "set buffer size"
+    ],
+    "implemented": [
+      "wait for state change by polling actual renderer state with timeout",
+      "result and state text conversions"
+    ],
+    "not_exported": [
+      "isContentSpatialized",
+      "isPrivacySensitive"
+    ],
+    "reason": "Boolean ABI has no error value; OH renderer configuration does not establish equivalent Android privacy or spatialization semantics. FrameSizeInCallback is not a hardware burst. OH GetLatencyMode does not prove Android performance mode. FramesRead for Android output is advanced by endpoint, not zero.",
+    "sources": [
+      "https://developer.android.com/ndk/reference/group/audio",
+      "local SDK native_audiorenderer.h GetFrameSizeInCallback and GetLatencyMode"
+    ]
+  },
+  "sources": [
+    "https://developer.android.com/ndk/reference/group/audio",
+    "local OH SDK native_audiostream_base.h, native_audiostreambuilder.h and native_audiorenderer.h"
+  ]
+}

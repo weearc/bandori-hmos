@@ -1,0 +1,21 @@
+LIBC {
+  global:
+    __errno;
+    __sF;
+    __open_2;
+    __read_chk;
+    __memmove_chk;
+    __strcpy_chk;
+    __strcat_chk;
+    __strlen_chk;
+    __vsnprintf_chk;
+    __vsprintf_chk;
+    strtoll_l;
+    strtoull_l;
+    strtold_l;
+    __ctype_get_mb_cur_max;
+    __system_property_get;
+    android_set_abort_message;
+  local:
+    *;
+};

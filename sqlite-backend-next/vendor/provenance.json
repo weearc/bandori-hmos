@@ -1,0 +1,19 @@
+{
+  "source": "DevEco bundled better-sqlite3 SQLite amalgamation; source copied, no SDK binary reused",
+  "source_directory": "C:\\Program Files\\Huawei\\DevEco Studio\\plugins\\openharmony\\ace-server\\node_modules\\better-sqlite3\\deps\\sqlite3",
+  "files": {
+    "sqlite3.c": {
+      "sha256": "4845b2554eee2fd629fa305a599f80f5e8b989756ecb92fa323c2d38db41f4e8",
+      "bytes": 9391389
+    },
+    "sqlite3.h": {
+      "sha256": "19585c8b5230e9d4f223bf31b709ece7b6a0bb3faf00d8310625d8e58cda1b1d",
+      "bytes": 671786
+    },
+    "sqlite3ext.h": {
+      "sha256": "ea81fb7bd05882e0e0b92c4d60f677b205f7f1fbf085f218b12f0b5b3f0b9e48",
+      "bytes": 38632
+    }
+  },
+  "version": "3.51.3"
+}

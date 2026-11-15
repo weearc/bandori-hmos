@@ -1,0 +1,745 @@
+{
+  "sdk_lib_directory": "C:\\Program Files\\Huawei\\DevEco Studio\\sdk\\default\\openharmony\\native\\sysroot\\usr\\lib\\aarch64-linux-ohos",
+  "system_dependency_names": {
+    "libEGL.so": {
+      "present_in_sdk": true,
+      "export_count": 53,
+      "note": ""
+    },
+    "libGLESv2.so": {
+      "present_in_sdk": true,
+      "export_count": 675,
+      "note": ""
+    },
+    "libOpenSLES.so": {
+      "present_in_sdk": true,
+      "export_count": 50,
+      "note": ""
+    },
+    "libandroid.so": {
+      "present_in_sdk": false,
+      "export_count": 0,
+      "note": ""
+    },
+    "libc.so": {
+      "present_in_sdk": true,
+      "export_count": 1592,
+      "note": ""
+    },
+    "libdl.so": {
+      "present_in_sdk": false,
+      "export_count": 0,
+      "note": ""
+    },
+    "liblog.so": {
+      "present_in_sdk": false,
+      "export_count": 0,
+      "note": ""
+    },
+    "libm.so": {
+      "present_in_sdk": false,
+      "export_count": 0,
+      "note": ""
+    },
+    "libmediandk.so": {
+      "present_in_sdk": false,
+      "export_count": 0,
+      "note": ""
+    },
+    "libstdc++.so": {
+      "present_in_sdk": false,
+      "export_count": 0,
+      "note": ""
+    },
+    "libz.so": {
+      "present_in_sdk": true,
+      "export_count": 95,
+      "note": ""
+    }
+  },
+  "libraries": {
+    "libBugly_Native.so": {
+      "needed": [
+        "libc.so",
+        "libdl.so",
+        "liblog.so",
+        "libm.so"
+      ],
+      "dependency_names_absent_from_apk_and_sdk": [
+        "libdl.so",
+        "liblog.so",
+        "libm.so"
+      ],
+      "imports": 107,
+      "name_only_matches": 103,
+      "name_only_unmatched": [
+        "_U_dyn_info_list_addr",
+        "__android_log_vprint",
+        "__errno",
+        "__system_property_get"
+      ],
+      "version_requirements": [
+        {
+          "library": "libdl.so",
+          "versions": [
+            "LIBC"
+          ]
+        },
+        {
+          "library": "libc.so",
+          "versions": [
+            "LIBC"
+          ]
+        }
+      ]
+    },
+    "libCtaApiLib.so": {
+      "needed": [
+        "libc.so",
+        "libdl.so",
+        "liblog.so",
+        "libm.so",
+        "libstdc++.so"
+      ],
+      "dependency_names_absent_from_apk_and_sdk": [
+        "libdl.so",
+        "liblog.so",
+        "libm.so",
+        "libstdc++.so"
+      ],
+      "imports": 65,
+      "name_only_matches": 60,
+      "name_only_unmatched": [
+        "__android_log_print",
+        "__google_potentially_blocking_region_begin",
+        "__google_potentially_blocking_region_end",
+        "__sF",
+        "_ctype_"
+      ],
+      "version_requirements": [
+        {
+          "library": "libdl.so",
+          "versions": [
+            "LIBC"
+          ]
+        },
+        {
+          "library": "libc.so",
+          "versions": [
+            "LIBC"
+          ]
+        }
+      ]
+    },
+    "lib_burst_generated.so": {
+      "needed": [
+        "libc.so",
+        "libdl.so",
+        "libm.so"
+      ],
+      "dependency_names_absent_from_apk_and_sdk": [
+        "libdl.so",
+        "libm.so"
+      ],
+      "imports": 2,
+      "name_only_matches": 2,
+      "name_only_unmatched": [],
+      "version_requirements": [
+        {
+          "library": "libc.so",
+          "versions": [
+            "LIBC"
+          ]
+        }
+      ]
+    },
+    "libbili.so": {
+      "needed": [
+        "libc.so",
+        "libdl.so",
+        "liblog.so",
+        "libm.so",
+        "libstdc++.so"
+      ],
+      "dependency_names_absent_from_apk_and_sdk": [
+        "libdl.so",
+        "liblog.so",
+        "libm.so",
+        "libstdc++.so"
+      ],
+      "imports": 71,
+      "name_only_matches": 68,
+      "name_only_unmatched": [
+        "__android_log_print",
+        "__errno",
+        "__system_property_get"
+      ],
+      "version_requirements": [
+        {
+          "library": "libdl.so",
+          "versions": [
+            "LIBC"
+          ]
+        },
+        {
+          "library": "libc.so",
+          "versions": [
+            "LIBC"
+          ]
+        }
+      ]
+    },
+    "libblkv.so": {
+      "needed": [
+        "libc.so",
+        "libdl.so",
+        "liblog.so",
+        "libm.so"
+      ],
+      "dependency_names_absent_from_apk_and_sdk": [
+        "libdl.so",
+        "liblog.so",
+        "libm.so"
+      ],
+      "imports": 66,
+      "name_only_matches": 63,
+      "name_only_unmatched": [
+        "__errno",
+        "__sF",
+        "android_set_abort_message"
+      ],
+      "version_requirements": [
+        {
+          "library": "libdl.so",
+          "versions": [
+            "LIBC"
+          ]
+        },
+        {
+          "library": "libc.so",
+          "versions": [
+            "LIBC"
+          ]
+        }
+      ]
+    },
+    "libcri_ware_unity.so": {
+      "needed": [
+        "libEGL.so",
+        "libGLESv2.so",
+        "libOpenSLES.so",
+        "libandroid.so",
+        "libc.so",
+        "libdl.so",
+        "liblog.so",
+        "libm.so"
+      ],
+      "dependency_names_absent_from_apk_and_sdk": [
+        "libandroid.so",
+        "libdl.so",
+        "liblog.so",
+        "libm.so"
+      ],
+      "imports": 177,
+      "name_only_matches": 159,
+      "name_only_unmatched": [
+        "AAssetManager_fromJava",
+        "AAssetManager_open",
+        "AAsset_close",
+        "AAsset_getLength64",
+        "AAsset_openFileDescriptor64",
+        "AAsset_read",
+        "AAsset_seek",
+        "SL_IID_ANDROIDACOUSTICECHOCANCELLATION",
+        "SL_IID_ANDROIDAUTOMATICGAINCONTROL",
+        "SL_IID_ANDROIDCONFIGURATION",
+        "SL_IID_ANDROIDNOISESUPPRESSION",
+        "SL_IID_ANDROIDSIMPLEBUFFERQUEUE",
+        "__FD_ISSET_chk",
+        "__FD_SET_chk",
+        "__android_log_vprint",
+        "__errno",
+        "__sF",
+        "android_set_abort_message"
+      ],
+      "version_requirements": [
+        {
+          "library": "libdl.so",
+          "versions": [
+            "LIBC"
+          ]
+        },
+        {
+          "library": "libm.so",
+          "versions": [
+            "LIBC"
+          ]
+        },
+        {
+          "library": "libc.so",
+          "versions": [
+            "LIBC"
+          ]
+        }
+      ]
+    },
+    "libcrypto_1_1.so": {
+      "needed": [
+        "libc.so",
+        "libdl.so"
+      ],
+      "dependency_names_absent_from_apk_and_sdk": [
+        "libdl.so"
+      ],
+      "imports": 125,
+      "name_only_matches": 122,
+      "name_only_unmatched": [
+        "__errno",
+        "__sF",
+        "__system_property_get"
+      ],
+      "version_requirements": [
+        {
+          "library": "libdl.so",
+          "versions": [
+            "LIBC"
+          ]
+        },
+        {
+          "library": "libc.so",
+          "versions": [
+            "LIBC"
+          ]
+        }
+      ]
+    },
+    "libcustom_rules.so": {
+      "needed": [
+        "libc.so",
+        "libcrypto_1_1.so",
+        "libdl.so",
+        "liblog.so",
+        "libm.so",
+        "libssl_1_1.so"
+      ],
+      "dependency_names_absent_from_apk_and_sdk": [
+        "libdl.so",
+        "liblog.so",
+        "libm.so"
+      ],
+      "imports": 157,
+      "name_only_matches": 150,
+      "name_only_unmatched": [
+        "__android_log_print",
+        "__errno",
+        "__open_2",
+        "__sF",
+        "android_set_abort_message",
+        "strtoll_l",
+        "strtoull_l"
+      ],
+      "version_requirements": [
+        {
+          "library": "libm.so",
+          "versions": [
+            "LIBC"
+          ]
+        },
+        {
+          "library": "libcrypto_1_1.so",
+          "versions": [
+            "OPENSSL_1_1_0"
+          ]
+        },
+        {
+          "library": "libdl.so",
+          "versions": [
+            "LIBC"
+          ]
+        },
+        {
+          "library": "libc.so",
+          "versions": [
+            "LIBC"
+          ]
+        }
+      ]
+    },
+    "libil2cpp.so": {
+      "needed": [
+        "libc.so",
+        "libdl.so",
+        "liblog.so",
+        "libm.so"
+      ],
+      "dependency_names_absent_from_apk_and_sdk": [
+        "libdl.so",
+        "liblog.so",
+        "libm.so"
+      ],
+      "imports": 292,
+      "name_only_matches": 285,
+      "name_only_unmatched": [
+        "__FD_SET_chk",
+        "__android_log_print",
+        "__errno",
+        "__sF",
+        "android_set_abort_message",
+        "strtoll_l",
+        "strtoull_l"
+      ],
+      "version_requirements": [
+        {
+          "library": "libm.so",
+          "versions": [
+            "LIBC"
+          ]
+        },
+        {
+          "library": "libdl.so",
+          "versions": [
+            "LIBC"
+          ]
+        },
+        {
+          "library": "libc.so",
+          "versions": [
+            "LIBC"
+          ]
+        }
+      ]
+    },
+    "libmain.so": {
+      "needed": [
+        "libc.so",
+        "libdl.so",
+        "liblog.so",
+        "libm.so"
+      ],
+      "dependency_names_absent_from_apk_and_sdk": [
+        "libdl.so",
+        "liblog.so",
+        "libm.so"
+      ],
+      "imports": 11,
+      "name_only_matches": 11,
+      "name_only_unmatched": [],
+      "version_requirements": [
+        {
+          "library": "libdl.so",
+          "versions": [
+            "LIBC"
+          ]
+        },
+        {
+          "library": "libc.so",
+          "versions": [
+            "LIBC"
+          ]
+        }
+      ]
+    },
+    "libmsaoaidauth.so": {
+      "needed": [
+        "libc.so",
+        "libdl.so",
+        "liblog.so",
+        "libm.so",
+        "libstdc++.so",
+        "libz.so"
+      ],
+      "dependency_names_absent_from_apk_and_sdk": [
+        "libdl.so",
+        "liblog.so",
+        "libm.so",
+        "libstdc++.so"
+      ],
+      "imports": 101,
+      "name_only_matches": 95,
+      "name_only_unmatched": [
+        "__android_log_write",
+        "__errno",
+        "__google_potentially_blocking_region_begin",
+        "__google_potentially_blocking_region_end",
+        "__sF",
+        "__system_property_get"
+      ],
+      "version_requirements": []
+    },
+    "libmsaoaidsec.so": {
+      "needed": [
+        "libc.so",
+        "libdl.so",
+        "liblog.so",
+        "libm.so",
+        "libstdc++.so",
+        "libz.so"
+      ],
+      "dependency_names_absent_from_apk_and_sdk": [
+        "libdl.so",
+        "liblog.so",
+        "libm.so",
+        "libstdc++.so"
+      ],
+      "imports": 113,
+      "name_only_matches": 107,
+      "name_only_unmatched": [
+        "__android_log_write",
+        "__errno",
+        "__google_potentially_blocking_region_begin",
+        "__google_potentially_blocking_region_end",
+        "__sF",
+        "__system_property_get"
+      ],
+      "version_requirements": []
+    },
+    "libsigner.so": {
+      "needed": [
+        "libc.so",
+        "libdl.so",
+        "liblog.so",
+        "libm.so"
+      ],
+      "dependency_names_absent_from_apk_and_sdk": [
+        "libdl.so",
+        "liblog.so",
+        "libm.so"
+      ],
+      "imports": 60,
+      "name_only_matches": 57,
+      "name_only_unmatched": [
+        "__android_log_print",
+        "__errno",
+        "__system_property_get"
+      ],
+      "version_requirements": [
+        {
+          "library": "libm.so",
+          "versions": [
+            "LIBC"
+          ]
+        },
+        {
+          "library": "libc.so",
+          "versions": [
+            "LIBC"
+          ]
+        }
+      ]
+    },
+    "libssl_1_1.so": {
+      "needed": [
+        "libc.so",
+        "libcrypto_1_1.so",
+        "libdl.so"
+      ],
+      "dependency_names_absent_from_apk_and_sdk": [
+        "libdl.so"
+      ],
+      "imports": 457,
+      "name_only_matches": 455,
+      "name_only_unmatched": [
+        "__errno",
+        "__system_property_get"
+      ],
+      "version_requirements": [
+        {
+          "library": "libcrypto_1_1.so",
+          "versions": [
+            "OPENSSL_1_1_0",
+            "OPENSSL_1_1_0d",
+            "OPENSSL_1_1_0f",
+            "OPENSSL_1_1_0i",
+            "OPENSSL_1_1_1"
+          ]
+        },
+        {
+          "library": "libc.so",
+          "versions": [
+            "LIBC"
+          ]
+        }
+      ]
+    },
+    "libunity.so": {
+      "needed": [
+        "libEGL.so",
+        "libandroid.so",
+        "libc.so",
+        "libdl.so",
+        "liblog.so",
+        "libm.so",
+        "libmediandk.so",
+        "libz.so"
+      ],
+      "dependency_names_absent_from_apk_and_sdk": [
+        "libandroid.so",
+        "libdl.so",
+        "liblog.so",
+        "libm.so",
+        "libmediandk.so"
+      ],
+      "imports": 427,
+      "name_only_matches": 315,
+      "name_only_unmatched": [
+        "AHardwareBuffer_acquire",
+        "AHardwareBuffer_describe",
+        "AHardwareBuffer_release",
+        "AImageReader_acquireLatestImage",
+        "AImageReader_delete",
+        "AImageReader_getWindow",
+        "AImageReader_newWithUsage",
+        "AImageReader_setBufferRemovedListener",
+        "AImageReader_setImageListener",
+        "AImage_delete",
+        "AImage_deleteAsync",
+        "AImage_getHardwareBuffer",
+        "AImage_getTimestamp",
+        "AImage_getWidth",
+        "ALooper_acquire",
+        "ALooper_forThread",
+        "ALooper_pollOnce",
+        "ALooper_prepare",
+        "ALooper_release",
+        "ALooper_wake",
+        "AMEDIAFORMAT_KEY_CHANNEL_COUNT",
+        "AMEDIAFORMAT_KEY_COLOR_FORMAT",
+        "AMEDIAFORMAT_KEY_COLOR_RANGE",
+        "AMEDIAFORMAT_KEY_COLOR_STANDARD",
+        "AMEDIAFORMAT_KEY_DURATION",
+        "AMEDIAFORMAT_KEY_ENCODER_DELAY",
+        "AMEDIAFORMAT_KEY_FRAME_RATE",
+        "AMEDIAFORMAT_KEY_HEIGHT",
+        "AMEDIAFORMAT_KEY_LANGUAGE",
+        "AMEDIAFORMAT_KEY_MIME",
+        "AMEDIAFORMAT_KEY_ROTATION",
+        "AMEDIAFORMAT_KEY_SAMPLE_RATE",
+        "AMEDIAFORMAT_KEY_SLICE_HEIGHT",
+        "AMEDIAFORMAT_KEY_STRIDE",
+        "AMEDIAFORMAT_KEY_WIDTH",
+        "AMediaCodec_configure",
+        "AMediaCodec_createDecoderByType",
+        "AMediaCodec_delete",
+        "AMediaCodec_dequeueInputBuffer",
+        "AMediaCodec_dequeueOutputBuffer",
+        "AMediaCodec_flush",
+        "AMediaCodec_getInputBuffer",
+        "AMediaCodec_getOutputBuffer",
+        "AMediaCodec_getOutputFormat",
+        "AMediaCodec_queueInputBuffer",
+        "AMediaCodec_releaseOutputBuffer",
+        "AMediaCodec_setOutputSurface",
+        "AMediaCodec_start",
+        "AMediaCodec_stop",
+        "AMediaDataSource_delete",
+        "AMediaDataSource_new",
+        "AMediaDataSource_setClose",
+        "AMediaDataSource_setGetSize",
+        "AMediaDataSource_setReadAt",
+        "AMediaDataSource_setUserdata",
+        "AMediaExtractor_advance",
+        "AMediaExtractor_delete",
+        "AMediaExtractor_getSampleTime",
+        "AMediaExtractor_getSampleTrackIndex",
+        "AMediaExtractor_getTrackCount",
+        "AMediaExtractor_getTrackFormat",
+        "AMediaExtractor_new",
+        "AMediaExtractor_readSampleData",
+        "AMediaExtractor_seekTo",
+        "AMediaExtractor_selectTrack",
+        "AMediaExtractor_setDataSource",
+        "AMediaExtractor_setDataSourceCustom",
+        "AMediaExtractor_setDataSourceFd",
+        "AMediaFormat_delete",
+        "AMediaFormat_getFloat",
+        "AMediaFormat_getInt32",
+        "AMediaFormat_getInt64",
+        "AMediaFormat_getString",
+        "AMediaFormat_setInt32",
+        "ANativeWindow_acquire",
+        "ANativeWindow_fromSurface",
+        "ANativeWindow_getHeight",
+        "ANativeWindow_getWidth",
+        "ANativeWindow_release",
+        "ANativeWindow_setBuffersGeometry",
+        "ANativeWindow_toSurface",
+        "ASensorEventQueue_disableSensor",
+        "ASensorEventQueue_enableSensor",
+        "ASensorEventQueue_getEvents",
+        "ASensorEventQueue_hasEvents",
+        "ASensorEventQueue_setEventRate",
+        "ASensorManager_createEventQueue",
+        "ASensorManager_destroyEventQueue",
+        "ASensorManager_getDefaultSensor",
+        "ASensorManager_getInstance",
+        "ASensorManager_getSensorList",
+        "ASensor_getMinDelay",
+        "ASensor_getName",
+        "ASensor_getResolution",
+        "ASensor_getType",
+        "ASensor_getVendor",
+        "_ZTH15gDeferredAction",
+        "__FD_ISSET_chk",
+        "__FD_SET_chk",
+        "__android_log_buf_write",
+        "__android_log_print",
+        "__android_log_vprint",
+        "__android_log_write",
+        "__errno",
+        "__sF",
+        "__system_property_find",
+        "__system_property_get",
+        "__system_property_read",
+        "_ctype_",
+        "android_set_abort_message",
+        "strtoll_l",
+        "strtoull_l"
+      ],
+      "version_requirements": [
+        {
+          "library": "libm.so",
+          "versions": [
+            "LIBC"
+          ]
+        },
+        {
+          "library": "libdl.so",
+          "versions": [
+            "LIBC"
+          ]
+        },
+        {
+          "library": "libc.so",
+          "versions": [
+            "LIBC"
+          ]
+        }
+      ]
+    },
+    "libweibosdkcore.so": {
+      "needed": [
+        "libc.so",
+        "libdl.so",
+        "liblog.so",
+        "libm.so",
+        "libstdc++.so"
+      ],
+      "dependency_names_absent_from_apk_and_sdk": [
+        "libdl.so",
+        "liblog.so",
+        "libm.so",
+        "libstdc++.so"
+      ],
+      "imports": 17,
+      "name_only_matches": 17,
+      "name_only_unmatched": [],
+      "version_requirements": []
+    }
+  },
+  "limitations": [
+    "Static name-only preflight, not dlopen, JNI execution, or a runtime link test.",
+    "SDK link stubs do not prove device namespace visibility or behavior.",
+    "Matching symbol names do not prove Bionic/musl ABI, structure, TLS, or symbol-version compatibility.",
+    "Unmatched imports may include optional weak symbols; dlsym/JNI dependencies are not covered."
+  ]
+}

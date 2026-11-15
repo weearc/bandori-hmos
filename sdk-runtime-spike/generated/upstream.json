@@ -1,0 +1,11 @@
+{
+  "upstream_commit": "8ed4b75368153f2b9d1174c986e50c8fe87aee59",
+  "license": "MPL-2.0",
+  "files": {
+    "dex.h": "e07679c5226abff369da0d6196653eaa92d64eb71c33e66997c4e3704d139d0d",
+    "dex.c": "fba7200c29a245867393ee798c42dd767fc3e1b1b52a28f06722e233d9a58b78",
+    "dvm.h": "c1c306f4146f027bed8dfcc1eb88feed4cb7b5211c4a19460624f1dad8ba2a32",
+    "dvm_internal.h": "ea10109a78191d8c1588ef8f0e42ff75f662ed76b66d23a824af5ec6fab39203",
+    "dvm.c": "97b8490c6140a5784a5317d6cec9ec4e3e5e71e0ea922d479aff163ee08e8e25"
+  }
+}
