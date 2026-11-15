@@ -13,9 +13,71 @@ jobs:
       - name: Refuse game assets and decompiled material
         run: |
           set -e
-          bad=$(git ls-files | grep -Ei '(\.apk$|\.dex$|^assets/|\.smali\.txt$|libil2cpp|libunity|libcri_ware|libsigner|libbili|libcrypto_1_1|libssl_1_1|libblkv|libcustom_rules|asset-reader-next/assets\.inc|source-manifest\.json)' || true)
+          # Whole-game artifacts and APK-derived tables
+          bad=$(git ls-files | grep -Ei '(\.apk$|\.dex$|^assets/|^\./assets/|assets\.inc$|source-manifest\.json$|\.smali\.txt$)' || true)
+          # Game-shipped shared libraries (exact basenames; our own libunity*.so are fine)
+          game_libs='^(libil2cpp|libunity|libmain|libcri_ware_unity|libcrypto_1_1|libssl_1_1|libblkv|libcustom_rules)\.so      - name: Refuse signing material
+        run: |
+          set -e
+          bad=$(git ls-files | grep -Ei '(\.p12$|\.p7b$|\.cer$|\.keystore$|\.jks$)' || true)
           if [ -n "$bad" ]; then
-            echo "These files must not be committed:"; echo "$bad"; exit 1
+            echo "Signing material must not be committed:"; echo "$bad"; exit 1
+          fi
+
+      - name: Python syntax
+        run: |
+          python3 - <<'PY'
+          import compileall, sys
+          ok = compileall.compile_dir('tools', quiet=1) & compileall.compile_dir('asset-reader-next', quiet=1)
+          sys.exit(0 if ok else 1)
+          PY
+
+      - name: LICENSE must be the verbatim AGPL header
+        run: |
+          set -e
+          head -1 LICENSE | grep -q 'GNU AFFERO GENERAL PUBLIC LICENSE'
+
+      - name: Third-party notice present
+        run: |
+          grep -q 'MPL-2.0' docs/LEGAL.md
+          grep -q 'PCRE2' docs/LEGAL.md
+          grep -q 'Mbed TLS' docs/LEGAL.md
+          grep -q 'SQLite' docs/LEGAL.md
+
+          while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            base=$(basename "$f")
+            if echo "$base" | grep -Eq "$game_libs"; then bad="$bad$f"      - name: Refuse signing material
+        run: |
+          set -e
+          bad=$(git ls-files | grep -Ei '(\.p12$|\.p7b$|\.cer$|\.keystore$|\.jks$)' || true)
+          if [ -n "$bad" ]; then
+            echo "Signing material must not be committed:"; echo "$bad"; exit 1
+          fi
+
+      - name: Python syntax
+        run: |
+          python3 - <<'PY'
+          import compileall, sys
+          ok = compileall.compile_dir('tools', quiet=1) & compileall.compile_dir('asset-reader-next', quiet=1)
+          sys.exit(0 if ok else 1)
+          PY
+
+      - name: LICENSE must be the verbatim AGPL header
+        run: |
+          set -e
+          head -1 LICENSE | grep -q 'GNU AFFERO GENERAL PUBLIC LICENSE'
+
+      - name: Third-party notice present
+        run: |
+          grep -q 'MPL-2.0' docs/LEGAL.md
+          grep -q 'PCRE2' docs/LEGAL.md
+          grep -q 'Mbed TLS' docs/LEGAL.md
+          grep -q 'SQLite' docs/LEGAL.md
+\n'; fi
+          done <<< "$(git ls-files '*.so')"
+          if [ -n "$(echo "$bad" | tr -d '[:space:]')" ]; then
+            echo "These files must not be committed:"; printf '%s\n' "$bad"; exit 1
           fi
 
       - name: Refuse signing material
