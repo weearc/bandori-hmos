@@ -6,7 +6,8 @@
 作者：**weearc** · 许可证：**AGPL-3.0**（见 [LICENSE](LICENSE)）
 
 > 本项目原创代码以 **AGPL-3.0** 发布；其中继承自 **Project Lunaria** 的 DEX 解释器文件仍为 **MPL-2.0**。
-> 第三方组件与合规说明见 [docs/LEGAL.md](docs/LEGAL.md)，环境与版本矩阵见 [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md)。
+> 第三方组件与合规说明见 [docs/LEGAL.md](docs/LEGAL.md)，环境与版本矩阵见 [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md)，
+> 变更记录见 [docs/CHANGELOG.md](docs/CHANGELOG.md)，对外部审查的处理见 [docs/REVIEW-RESPONSE.md](docs/REVIEW-RESPONSE.md)。。
 
 ## 构建前必须知道的三件事
 
@@ -62,7 +63,7 @@ guest：classes*.dex + libil2cpp.so + libunity.so + 游戏自带 so（用户自�
 | `*-next/` | 兼容层各子模块的 C 源码（按功能命名，共 57 个） |
 | `sdk-runtime-spike/` | 运行时组装脚本 `build_tls_candidate.py` 与保留的基线模板 |
 | `tools/` | 素材准备与构建脚本 |
-| `docs/` | 架构、构建、排错、实测结论 |
+| `docs/` | 架构、构建、排错、变更记录、兼容矩阵、合规 |
 
 ## 快速开始
 
@@ -146,6 +147,19 @@ hdc shell aa start -a EntryAbility -b <bundleName>
 
 排错见 [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)。
 
+
+## 文档索引
+
+| 文档 | 内容 |
+|---|---|
+| [docs/BUILD.md](docs/BUILD.md) | 完整构建步骤、随仓库提供的二进制、换 APK 版本 |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 分层架构与各模块职责 |
+| [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | 常见错误与排查 |
+| **[docs/CHANGELOG.md](docs/CHANGELOG.md)** | **变更记录（修复、新增、未完成）** |
+| [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md) | SDK/设备/APK 版本矩阵与 4KB 页约束 |
+| [docs/LEGAL.md](docs/LEGAL.md) | 许可证、第三方组件、素材政策 |
+| [docs/TLS-JAVA-INTERFACE.md](docs/TLS-JAVA-INTERFACE.md) | TLS 相关 Java 接口签名与行为 |
+| [docs/REVIEW-RESPONSE.md](docs/REVIEW-RESPONSE.md) | 对外部代码审查意见的逐条处理 |
 ## 当前状态（诚实版）
 
 | 能力 | 状态 |
