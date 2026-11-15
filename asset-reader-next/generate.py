@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate asset-reader-next/assets.inc from a user-supplied game APK.
+r"""Generate asset-reader-next/assets.inc from a user-supplied game APK.
 
 This file is NOT committed: it is derived from your own copy of the game.
 Run it once (or let tools/build_native.ps1 / build_tls_candidate.py call it)

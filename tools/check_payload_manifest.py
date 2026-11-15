@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check whether host/entry/src/main/cpp/apk_payload_manifest.h matches your APK.
+r"""Check whether host/entry/src/main/cpp/apk_payload_manifest.h matches your APK.
 
 The manifest is bound to one APK build: it records the APK size/CRC and, for
 every extracted asset, its size and CRC. Switching APK versions therefore

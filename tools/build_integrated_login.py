@@ -34,6 +34,13 @@ for name in ['throwable_reference.c', 'throwable_reference.h']:
 shutil.copy2(workspace/'package-metadata-next/reviewed_metadata.c', src/'package_metadata.c')
 for name in ['package_metadata.h', 'metadata_values.inc']:
     shutil.copy2(workspace/'package-metadata-next'/name, src/name)
+# assets.inc is derived from the user's APK and never committed
+if not (workspace / 'asset-reader-next/assets.inc').is_file():
+    import subprocess as _sp
+    _apk = os.environ.get('BG_APK')
+    if not _apk:
+        raise SystemExit('assets.inc missing: run "python asset-reader-next/generate.py --apk <your.apk>"')
+    _sp.run([__import__('sys').executable, str(workspace / 'asset-reader-next/generate.py'), '--apk', _apk], check=True)
 for name in ['asset_reader.c', 'asset_reader.h', 'assets.inc']:
     shutil.copy2(workspace/'asset-reader-next'/name, src/name)
 for directory, names in [
