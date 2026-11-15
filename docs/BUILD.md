@@ -150,3 +150,26 @@ python tools/check_payload_manifest.py --apk D:\path\to\your.apk
 ```
 
 返回 MISMATCH 就必须为新 APK 重新生成该头文件，否则提取阶段会校验失败。
+
+## 仓库随附的运行时二进制
+
+`host/entry/libs/arm64-v8a/` 内的 14 个 `.so` 是**本项目自己代码的构建产物**（AGPL-3.0），随仓库提供，
+以保证「干净克隆 → 直接可构建出可运行的 HAP」：
+
+```text
+libsdktrace.so              运行时（DEX 解释器/JNI/ELF/网络/TLS/SQLite 等）
+libgame_sqlite.so           SQLite 适配
+libgame_aaudio_bridge.so    音频桥
+libjnibatch.so / libunitybatch.so     批处理辅助
+libandroid_compat.so / liblog.so      兼容垫片
+libprobe_android_guest.so / libprobe_android_libc.so   guest 侧垫片
+libnested_caller.so / libnested_leaf.so / libnested_skipped.so  dlopen 嵌套测试件
+libunity_spike_loader.so / libspike_original_main.so   早期 spike 件
+```
+
+它们**不含游戏代码**，也不含任何游戏资源；游戏侧 `.so`（`libil2cpp.so` / `libunity.so` / `libmain.so` /
+`libcri_ware_unity.so` / `libcrypto_1_1.so` / `libssl_1_1.so` / `libblkv.so` / `libcustom_rules.so`）
+在 `.gitignore` 中显式排除，必须由使用者从自己的 APK 提供。
+
+需要自行重建运行时：见 `sdk-runtime-spike/build.ps1`、`tools/build_tls_candidate.py`、
+`sqlite-backend-next/build_*.py`，把产物覆盖到 `host/entry/libs/arm64-v8a/` 即可。

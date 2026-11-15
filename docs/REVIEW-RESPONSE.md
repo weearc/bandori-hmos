@@ -26,7 +26,8 @@ python asset-reader-next/generate.py --apk D:\path\to\your.apk
 
 | 问题 | 处理 |
 |---|---|
-| 干净克隆缺 `sdk-runtime-spike/preserved-template/libsdktrace.so` | **已随仓库提供**（4.48 MB，本项目代码冻结的基线二进制，AGPL，非游戏内容），干净克隆直接可构建 |
+| 干净克隆缺 `sdk-runtime-spike/preserved-template/libsdktrace.so` | **已随仓库提供**（4.48 MB，本项目代码冻结的基线二进制，AGPL，非游戏内容） |
+| 干净克隆缺 `host/entry/libs/arm64-v8a/*.so`（运行时及其垫片共 14 个） | **已随仓库提供**（本项目 AGPL 产物，不是游戏内容）；游戏侧 `.so` 仍在 `.gitignore` 中要求用户自备 |
 | `asset_reader.c` 的 `asset_probe_log()` 每次 fopen/write/fclose | **已修复**：默认关闭（仅当 `files/sdkdex/engine-probe-observe` 含 `1` 才启用）；启用时流只开一次并保持，VM 结束时 flush+close；不再在热路径做同步 IO |
 
 ## P2 维护性与合规
