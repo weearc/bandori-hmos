@@ -1,3 +1,4 @@
+#include "gc_operation.h"
 /* TASK6j diagnostics only. No guest calls, allocations, buffer reads or writes.
  * All JSON string values are masked except decimal "code". Unknown text is
  * opaque. We observe the original return object, never call string()/bytes(). */
@@ -7,7 +8,7 @@ static void diag6j_log(struct dvm *v,const char *fmt,...){
  int saved=errno;FILE *f=fopen("/data/storage/el2/base/haps/entry/files/sdkdex/task6j-diagnosis.txt","a");
  if(f){dprintf(fileno(f),"TASK6J pid=%d vm=%llu time=%lld mono_ms=%llu thread=%u ",getpid(),(unsigned long long)v->serial,(long long)time(NULL),(unsigned long long)monotonic_ms(),v->cur_thread);va_list a;va_start(a,fmt);vdprintf(fileno(f),fmt,a);va_end(a);dprintf(fileno(f),"\n");fclose(f);}errno=saved;
 }
-static struct dvm_object *diag6j_obj(struct dvm *v,dvm_ref r){return r?dvm__obj(v,r):NULL;}
+static struct dvm_object *diag6j_obj(struct dvm *v,dvm_ref r){if(r&&!gc_operation_admit(v,r))return NULL;return r?dvm__obj(v,r):NULL;}
 static dvm_ref diag6j_ref(struct dvm *v,dvm_ref r,const char *name){
  struct dvm_object *o=diag6j_obj(v,r);if(!o||!o->slots)return 0;
  for(struct dvm_class *c=o->cls;c;c=c->super)for(int i=0;i<c->nifields;i++)if(!strcmp(c->ifields[i].name,name)&&c->ifields[i].slot<o->cls->islots)return o->slots[c->ifields[i].slot].l;return 0;
@@ -86,6 +87,10 @@ static struct {uint64_t vm,generation,source_generation;dvm_ref ref,source;unsig
 static unsigned diag6j_next;
 static int diag6j_fixture;
 static void diag6j_call(struct dvm *v,struct dvm_method *m,dvm_ref self,const uint32_t *a,int n,const union dvm_value *out,int entering,int ok){
+ /* GC-STEP6: this operation owns all raw diagnostic/fixture borrows. */
+ struct gc_operation gc6_operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&gc6_operation))return;
+
  if(!m||!m->cls)return;const char *c=m->cls->name;
  if(diag6j_fixture&&!strcmp(m->name,"toString")&&self){struct dvm_object *o=diag6j_obj(v,self);if(o&&o->cls&&!strcmp(o->cls->name,"java/io/StringWriter"))diag6j_log(v,"kind=fixture_writer stage=%s resolved_owner=%s receiver=%s pc=0x%x",entering?"enter":"return",c,o->cls->name,v->cur_pc);}
  bool body=diag6j_class(v,self,"okhttp3/ResponseBody");
@@ -129,6 +134,10 @@ static void diag6j_call(struct dvm *v,struct dvm_method *m,dvm_ref self,const ui
  if(!strcmp(c,"com/gsc/pub/GSCPubCommon$d")&&!strcmp(m->name,"onFailed")&&entering&&n)diag6j_string(v,a[0],"GSCPubCommon$d.onFailed.input");
 }
 void task6j_diagnostic_catch(struct dvm *v,struct dvm_method *m,uint32_t pc,uint32_t handler){
+ /* GC-STEP6: this operation owns all raw diagnostic/fixture borrows. */
+ struct gc_operation gc6_operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&gc6_operation))return;
+
  if(!m||!m->cls||strcmp(m->cls->name,"com/gsc/pub/GSCPubCommon$d")||strcmp(m->name,"onFailed"))return;
  struct dvm_object *e=diag6j_obj(v,v->exception);diag6j_log(v,"kind=2001_caught owner=%s method=%s pc=0x%x handler=0x%x original_type=%s exception_ref=%u parked=%d",m->cls->name,m->name,pc,handler,e&&e->cls?e->cls->name:"unknown",v->exception,v->parked);
  dvm_ref message=diag6j_ref(v,v->exception,"detailMessage");diag6j_string(v,message,"2001.original_exception_message");

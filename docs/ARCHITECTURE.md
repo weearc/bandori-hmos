@@ -62,3 +62,29 @@ Index 首帧
        ├─ 解包 rawfile/sdkdex/base.apk → 私有目录（首次）
        └─ 进入 Unity 的 main loop（mono_ns 开始递增）
 ```
+
+## 内存与对象模型
+
+运行时不自带「整堆扫描」式 GC，而是把对象身份、世代与借用关系做成可判定的数据结构：
+
+| 模块 | 职责 |
+|---|---|
+| `gc_directory.inc/.h` | 正向槽位表 + 反向 `body` 地址，内部引用 = `[32 位世代票据 \| 32 位槽号]` |
+| `gc_reverse.inc` | 反向 ID 映射（65,536 桶链式哈希） |
+| `gc_generation.c/.h`、`gc_generation_publish.inc` | 世代发行、发布顺序、槽复用后旧引用失效 |
+| `gc_metrics.h/.inc` | live charge / committed / metadata / 分配与复用计数 |
+| `gc_contract.inc`、`gc_operation.h`、`gc_scope_generation.inc` | 准入契约与作用域借用（pin / borrow / monitor） |
+| `sdk-runtime-spike/overlay/leak_release_candidate.*` | 逐帧临时对象释放（proxy 的 `Object[1]` 与装箱 `Long`） |
+
+设计取舍：搬移式 GC 需要根集合完整，而 guest 的 native 侧（引擎自己持有的引用）
+无法从运行时侧枚举。因此本项目不移动对象、不使用整堆 STW，而是：
+
+1. 用世代票据让「槽复用」不会造成旧引用指错对象；
+2. 用准入契约把「跨分配点使用裸指针」变成可检测的失败；
+3. 对能够确证生命周期的一对逐帧临时对象做显式释放（见 overlay 模块）。
+
+## 观测与诊断
+
+诊断一律走「锁内只取内存快照、锁外格式化与写盘」，帧路径不等待任何导出锁。
+触摸录制使用环形缓冲 + 后台批量写入；帧间隔在 `nativeRender` 返回边界采样。
+设备端可直接读 `leak-release-status.txt` 等 0644 文件，详见 TROUBLESHOOTING。

@@ -1,6 +1,7 @@
 #include "native_scratch.h"
 #include "gc_runtime.h"
 #include "reflection_runtime.h"
+#include "gc_operation.h"
 #include "prefs_runtime.h"
 #include "java_basics.h"
 #include "small_boxes.h"
@@ -26,10 +27,10 @@ static void install_fixture_method(struct dvm_class *c,int index,const char *nam
  * ordinary Class/Field/Method reflection; no application types are special. */
 static bool unsafe_allocate_instance(struct dvm *v,dvm_ref self,const union dvm_value *a,int n,union dvm_value *out){
  (void)self;out->l=0;
- struct dvm_object *co=n==1?dvm__obj(v,a[0].l):NULL;
- if(!co){dvm__throw(v,"java/lang/NullPointerException","allocateInstance class");return false;}
- if(co->kind!=DVM_OBJ_CLASS||!co->klass){dvm__throw(v,"java/lang/IllegalArgumentException","allocateInstance requires Class");return false;}
- struct dvm_class *k=co->klass;
+ const dvm_ref gc_ref_co_0=((n==1)?(a[0].l):0); if(!gc_operation_admit(v,gc_ref_co_0))return false;
+ if(!dvm__obj(v,gc_ref_co_0)){dvm__throw(v,"java/lang/NullPointerException","allocateInstance class");return false;}
+ if(dvm__obj(v,gc_ref_co_0)->kind!=DVM_OBJ_CLASS||!dvm__obj(v,gc_ref_co_0)->klass){dvm__throw(v,"java/lang/IllegalArgumentException","allocateInstance requires Class");return false;}
+ struct dvm_class *k=dvm__obj(v,gc_ref_co_0)->klass;
  if(k->is_primitive||k->is_array||k->is_interface||(k->access&(DEX_ACC_INTERFACE|DEX_ACC_ABSTRACT))){dvm__throw(v,"java/lang/InstantiationException","%s",k->name);return false;}
  if(!dvm_init_class(v,k))return false;
  out->l=dvm_new_object(v,k);
@@ -65,7 +66,7 @@ static bool install_variable_methods(struct dvm *v,struct dvm_class *impl){if(im
 static const char *class_signature(struct dvm_class *k,char *buffer,size_t size){if(k->runtime_signature)return k->runtime_signature;return k->dex&&dex_class_signature(k->dex,k->class_def_idx,buffer,size)?buffer:NULL;}
 static const char *skip_signature_type(const char *p){if(!p)return NULL;while(*p=='[')p++;if(*p=='L'){int nesting=0;do{if(*p=='<')nesting++;else if(*p=='>')nesting--;else if(*p==';'&&!nesting)return p+1;p++;}while(*p);return NULL;}if(*p=='T'){const char *end=strchr(p,';');return end?end+1:NULL;}return NULL;}
 static bool formal_names(struct dvm_class *k,const char *wanted,char names[32][128],int *count){char buffer[4096];const char *p=class_signature(k,buffer,sizeof buffer);*count=0;if(!p||*p!='<')return !wanted;p++;while(*p&&*p!='>'){const char *colon=strchr(p,':');if(!colon||colon==p||colon-p>=128||*count>=32)return false;size_t n=(size_t)(colon-p);memcpy(names[*count],p,n);names[(*count)++][n]=0;p=colon;do{p++;if(*p!=':'){p=skip_signature_type(p);if(!p)return false;}}while(*p==':');}if(*p!='>')return false;if(wanted){for(int i=0;i<*count;i++)if(!strcmp(names[i],wanted))return true;return false;}return true;}
-static dvm_ref new_variable(struct dvm *v,struct dvm_class *declaration,const char *name){char names[32][128];int count;if(!declaration||!formal_names(declaration,name,names,&count)){dvm__throw(v,"java/lang/reflect/GenericSignatureFormatError","undeclared type variable %s",name);return 0;}struct dvm_class *iface=dvm_find_class_or_external(v,"java/lang/reflect/TypeVariable"),*impl=dvm_find_class_or_external(v,"sdktrace/reflect/TypeVariable");iface->is_interface=true;iface->access|=DEX_ACC_INTERFACE|DEX_ACC_ABSTRACT;if(!iface->ifaces){iface->ifaces=calloc(1,sizeof *iface->ifaces);if(!iface->ifaces)return 0;iface->ifaces[0]=dvm_find_class_or_external(v,"java/lang/reflect/Type");iface->nifaces=1;}if(!impl->ifaces){impl->ifaces=calloc(1,sizeof *impl->ifaces);if(!impl->ifaces)return 0;impl->ifaces[0]=iface;impl->nifaces=1;}if(!install_variable_methods(v,impl))return 0;dvm_ref result=dvm_new_object(v,impl);struct dvm_object *o=dvm__obj(v,result);generic_variable *t=calloc(1,sizeof *t);if(!o||!t){free(t);dvm__throw(v,"java/lang/OutOfMemoryError","type variable");return 0;}t->declaration=declaration;t->name=strdup(name);if(!t->name){free(t);dvm__throw(v,"java/lang/OutOfMemoryError","type variable name");return 0;}o->data=t;o->data_destroy=variable_free;return result;}
+static dvm_ref new_variable(struct dvm *v,struct dvm_class *declaration,const char *name){char names[32][128];int count;if(!declaration||!formal_names(declaration,name,names,&count)){dvm__throw(v,"java/lang/reflect/GenericSignatureFormatError","undeclared type variable %s",name);return 0;}struct dvm_class *iface=dvm_find_class_or_external(v,"java/lang/reflect/TypeVariable"),*impl=dvm_find_class_or_external(v,"sdktrace/reflect/TypeVariable");iface->is_interface=true;iface->access|=DEX_ACC_INTERFACE|DEX_ACC_ABSTRACT;if(!iface->ifaces){iface->ifaces=calloc(1,sizeof *iface->ifaces);if(!iface->ifaces)return 0;iface->ifaces[0]=dvm_find_class_or_external(v,"java/lang/reflect/Type");iface->nifaces=1;}if(!impl->ifaces){impl->ifaces=calloc(1,sizeof *impl->ifaces);if(!impl->ifaces)return 0;impl->ifaces[0]=iface;impl->nifaces=1;}if(!install_variable_methods(v,impl))return 0;dvm_ref result=dvm_new_object(v,impl);const dvm_ref gc_ref_o_1=(result); if(!gc_operation_admit(v,gc_ref_o_1))return false;generic_variable *t=calloc(1,sizeof *t);if(!dvm__obj(v,gc_ref_o_1)||!t){free(t);dvm__throw(v,"java/lang/OutOfMemoryError","type variable");return 0;}t->declaration=declaration;t->name=strdup(name);if(!t->name){free(t);dvm__throw(v,"java/lang/OutOfMemoryError","type variable name");return 0;}dvm__obj(v,gc_ref_o_1)->data=t;dvm__obj(v,gc_ref_o_1)->data_destroy=variable_free;return result;}
 static void generic_free(void *data){generic_type *t=data;if(t){dvm_unpin(t->vm,t->raw);if(t->owner)dvm_unpin(t->vm,t->owner);dvm_unpin(t->vm,t->args);free(t);}}
 /* Parse class signatures and class-declared type variables from DEX Signature.
  * Wildcards and generic arrays remain explicit unsupported cases. */
@@ -79,32 +80,32 @@ static dvm_ref generic_parse(struct dvm *v,const char **cursor,int depth,struct 
  p++;dvm_ref args[32];uint32_t count=0;
  while(*p&&*p!='>'){if(count==32){dvm__throw(v,"java/lang/UnsupportedOperationException","generic argument limit");return 0;}args[count]=generic_parse(v,&p,depth+1,declaration);if(!args[count++])return 0;}
  if(!count||*p++!='>'||*p++!=';'){dvm__throw(v,"java/lang/reflect/GenericSignatureFormatError","parameterized signature");return 0;}
- dvm_ref array=dvm_new_array(v,'L',"Ljava/lang/reflect/Type;",count);if(!array)return 0;memcpy(dvm_array_data(v,array),args,count*sizeof *args);
+ dvm_ref array=dvm_new_array(v,'L',"Ljava/lang/reflect/Type;",count);if(!array)return 0;memcpy(({const dvm_ref gc_payload_ref_0=(array);if(!gc_operation_admit(v,gc_payload_ref_0))return 0;dvm_array_data(v,gc_payload_ref_0);}),args,count*sizeof *args);
  struct dvm_class *impl=dvm_find_class_or_external(v,"sdktrace/reflect/ParameterizedType");
  struct dvm_class *iface=dvm_find_class_or_external(v,"java/lang/reflect/ParameterizedType");iface->is_interface=true;iface->access|=DEX_ACC_INTERFACE|DEX_ACC_ABSTRACT;
  if(!iface->ifaces){iface->ifaces=calloc(1,sizeof *iface->ifaces);if(!iface->ifaces){dvm__throw(v,"java/lang/OutOfMemoryError","Type interface");return 0;}iface->ifaces[0]=dvm_find_class_or_external(v,"java/lang/reflect/Type");iface->nifaces=1;iface->ifaces[0]->is_interface=true;}
  if(!impl->ifaces){impl->ifaces=calloc(1,sizeof *impl->ifaces);if(!impl->ifaces){dvm__throw(v,"java/lang/OutOfMemoryError","parameterized interfaces");return 0;}impl->ifaces[0]=dvm_find_class_or_external(v,"java/lang/reflect/ParameterizedType");impl->nifaces=1;}
- dvm_ref result=dvm_new_object(v,impl);struct dvm_object *o=dvm__obj(v,result);generic_type *t=calloc(1,sizeof *t);
- if(!o||!t){free(t);dvm__throw(v,"java/lang/OutOfMemoryError","parameterized type");return 0;}
+ dvm_ref result=dvm_new_object(v,impl);const dvm_ref gc_ref_o_2=(result); if(!gc_operation_admit(v,gc_ref_o_2))return false;generic_type *t=calloc(1,sizeof *t);
+ if(!dvm__obj(v,gc_ref_o_2)||!t){free(t);dvm__throw(v,"java/lang/OutOfMemoryError","parameterized type");return 0;}
  t->vm=v;t->raw=raw_ref;t->args=array;
  const char *owner=raw->dex?dex_class_enclosing_type(raw->dex,raw->class_def_idx):NULL;
  if(owner){struct dvm_class *k=dvm__class_by_desc(v,owner);if(k)t->owner=dvm_class_object(v,k);}
- dvm_pin(v,t->raw);dvm_pin(v,t->args);if(t->owner)dvm_pin(v,t->owner);o->data=t;o->data_destroy=generic_free;*cursor=p;return result;
+ dvm_pin(v,t->raw);dvm_pin(v,t->args);if(t->owner)dvm_pin(v,t->owner);dvm__obj(v,gc_ref_o_2)->data=t;dvm__obj(v,gc_ref_o_2)->data_destroy=generic_free;*cursor=p;return result;
 }
 static bool generic_superclass(struct dvm *v,dvm_ref self,bool interfaces,union dvm_value *out){
- struct dvm_object *co=dvm__obj(v,self);if(!co||co->kind!=DVM_OBJ_CLASS||!co->klass){dvm__throw(v,"java/lang/NullPointerException","generic superclass receiver");return true;}
- struct dvm_class *k=co->klass;if(!interfaces&&(k->is_primitive||k->is_interface)){out->l=0;return true;}
+ const dvm_ref gc_ref_co_3=(self); if(!gc_operation_admit(v,gc_ref_co_3))return false;if(!dvm__obj(v,gc_ref_co_3)||dvm__obj(v,gc_ref_co_3)->kind!=DVM_OBJ_CLASS||!dvm__obj(v,gc_ref_co_3)->klass){dvm__throw(v,"java/lang/NullPointerException","generic superclass receiver");return true;}
+ struct dvm_class *k=dvm__obj(v,gc_ref_co_3)->klass;if(!interfaces&&(k->is_primitive||k->is_interface)){out->l=0;return true;}
  char signature[4096];const char *p=k->runtime_signature;
  if(!p&&k->dex&&dex_class_signature(k->dex,k->class_def_idx,signature,sizeof signature))p=signature;
  if(!p||!*p){
-  if(interfaces){uint32_t count=k->is_primitive?0:k->is_array?2:(uint32_t)k->nifaces;out->l=dvm_new_array(v,'L',"Ljava/lang/reflect/Type;",count);if(!out->l)return true;for(uint32_t i=0;i<count;i++){struct dvm_class *iface=k->is_array?dvm_find_class_or_external(v,i?"java/io/Serializable":"java/lang/Cloneable"):k->ifaces[i];((dvm_ref*)dvm_array_data(v,out->l))[i]=dvm_class_object(v,iface);}return true;}
+  if(interfaces){uint32_t count=k->is_primitive?0:k->is_array?2:(uint32_t)k->nifaces;out->l=dvm_new_array(v,'L',"Ljava/lang/reflect/Type;",count);if(!out->l)return true;for(uint32_t i=0;i<count;i++){struct dvm_class *iface=k->is_array?dvm_find_class_or_external(v,i?"java/io/Serializable":"java/lang/Cloneable"):k->ifaces[i];((dvm_ref*)({const dvm_ref gc_payload_ref_1=(out->l);if(!gc_operation_admit(v,gc_payload_ref_1))return 0;dvm_array_data(v,gc_payload_ref_1);}))[i]=dvm_class_object(v,iface);}return true;}
   struct dvm_class *parent=k->is_array?dvm_find_class_or_external(v,"java/lang/Object"):k->super;out->l=parent?dvm_class_object(v,parent):0;return true;
  }
  if(*p=='<'){int nesting=0;do{if(*p=='<')nesting++;else if(*p=='>')nesting--;p++;}while(*p&&nesting);if(nesting){dvm__throw(v,"java/lang/reflect/GenericSignatureFormatError","formal type parameters");return true;}}
  dvm_ref parent=generic_parse(v,&p,0,k);if(!parent||dvm_exception(v))return true;
  if(!interfaces){out->l=parent;return true;}
  dvm_ref types[64];uint32_t count=0;while(*p){if(count==64){dvm__throw(v,"java/lang/UnsupportedOperationException","generic interface limit");return true;}types[count]=generic_parse(v,&p,0,k);if(!types[count++]||dvm_exception(v))return true;}
- out->l=dvm_new_array(v,'L',"Ljava/lang/reflect/Type;",count);if(out->l&&count)memcpy(dvm_array_data(v,out->l),types,count*sizeof *types);return true;
+ out->l=dvm_new_array(v,'L',"Ljava/lang/reflect/Type;",count);if(out->l&&count)memcpy(({const dvm_ref gc_payload_ref_2=(out->l);if(!gc_operation_admit(v,gc_payload_ref_2))return 0;dvm_array_data(v,gc_payload_ref_2);}),types,count*sizeof *types);return true;
 }
 typedef struct suppressed_entry {dvm_ref owner; dvm_gc_handle owner_key; dvm_ref *items; size_t count,capacity; struct suppressed_entry *next;} suppressed_entry;
 static suppressed_entry *suppressed_head;
@@ -329,9 +330,9 @@ static bool fail(struct dvm *v,const char *type,const char *message) { dvm__thro
 struct package_box { char *name; };
 static void package_box_destroy(void *p) { struct package_box *b=p; if(b){free(b->name);free(b);} }
 static struct package_box *package_box_of(struct dvm *v,dvm_ref ref) {
- struct dvm_object *o=dvm__obj(v,ref);
- if(!o||!o->cls||strcmp(o->cls->name,"java/lang/Package")||o->data_destroy!=package_box_destroy||!o->data)return NULL;
- return o->data;
+ const dvm_ref gc_ref_o_4=(ref); if(!gc_operation_admit(v,gc_ref_o_4))return false;
+ if(!dvm__obj(v,gc_ref_o_4)||!dvm__obj(v,gc_ref_o_4)->cls||strcmp(dvm__obj(v,gc_ref_o_4)->cls->name,"java/lang/Package")||dvm__obj(v,gc_ref_o_4)->data_destroy!=package_box_destroy||!dvm__obj(v,gc_ref_o_4)->data)return NULL;
+ return dvm__obj(v,gc_ref_o_4)->data;
 }
 static dvm_ref package_create(struct dvm *v,const char *name) {
  if(!package_class)install_package_class(v);
@@ -339,15 +340,15 @@ static dvm_ref package_create(struct dvm *v,const char *name) {
  if(!c)return 0;
  dvm_ref ref=dvm_new_object(v,c);
  if(!ref)return 0;
- struct dvm_object *o=dvm__obj(v,ref);
- if(!o)return 0;
+ const dvm_ref gc_ref_o_5=(ref); if(!gc_operation_admit(v,gc_ref_o_5))return false;
+ if(!dvm__obj(v,gc_ref_o_5))return 0;
  struct package_box *b=calloc(1,sizeof *b);
  if(!b)return 0;
  size_t n=strlen(name);
  b->name=malloc(n+1);
  if(!b->name){free(b);return 0;}
  memcpy(b->name,name,n+1);
- o->data=b;o->data_destroy=package_box_destroy;
+ dvm__obj(v,gc_ref_o_5)->data=b;dvm__obj(v,gc_ref_o_5)->data_destroy=package_box_destroy;
  return ref;
 }
 static bool package_get_name_call(struct dvm *v,dvm_ref self,union dvm_value *out) {
@@ -394,7 +395,7 @@ static void install_package_class(struct dvm *v) {
  package_vm=v;
  package_class=c;
 }
-static bool throwable(struct dvm *v,dvm_ref ref){struct dvm_class *base=dvm_find_class_or_external(v,"java/lang/Throwable");struct dvm_object *o=dvm__obj(v,ref);return o&&base&&dvm__class_assignable(v,o->cls,base);}
+static bool throwable(struct dvm *v,dvm_ref ref){struct dvm_class *base=dvm_find_class_or_external(v,"java/lang/Throwable");const dvm_ref gc_ref_o_6=(ref); if(!gc_operation_admit(v,gc_ref_o_6))return false;return dvm__obj(v,gc_ref_o_6)&&base&&dvm__class_assignable(v,dvm__obj(v,gc_ref_o_6)->cls,base);}
 static suppressed_entry *suppressed_for(dvm_ref owner){for(suppressed_entry *p=suppressed_head;p;p=p->next)if(p->owner==owner&&dvm_gc_handle_ref(active,p->owner_key)==owner)return p;return NULL;}
 /* Suppression is a Throwable owner edge, never a global strong root. */
 bool reflection_runtime_gc_visit_owner(struct dvm *v,dvm_ref owner,dvm_gc_visit_fn visit,void *user){
@@ -418,17 +419,17 @@ static bool get_suppressed(struct dvm *v,dvm_ref owner,union dvm_value *out){
  suppressed_entry *p=suppressed_for(owner);size_t count=p?p->count:0;
  out->l=dvm_new_array(v,'L',"Ljava/lang/Throwable;",(uint32_t)count);
  if(!out->l)return fail(v,"java/lang/OutOfMemoryError","suppressed array");
- if(count)memcpy(dvm_array_data(v,out->l),p->items,count*sizeof(dvm_ref));return true;
+ if(count)memcpy(({const dvm_ref gc_payload_ref_3=(out->l);if(!gc_operation_admit(v,gc_payload_ref_3))return 0;dvm_array_data(v,gc_payload_ref_3);}),p->items,count*sizeof(dvm_ref));return true;
 }
 static bool is_class_array(struct dvm *v,dvm_ref r) {
  if(!r)return true;
- struct dvm_object *o=dvm__obj(v,r);
- return o&&o->kind==DVM_OBJ_ARRAY&&o->cls&&o->cls->desc&&!strcmp(o->cls->desc,"[Ljava/lang/Class;");
+ const dvm_ref gc_ref_o_7=(r); if(!gc_operation_admit(v,gc_ref_o_7))return false;
+ return dvm__obj(v,gc_ref_o_7)&&dvm__obj(v,gc_ref_o_7)->kind==DVM_OBJ_ARRAY&&dvm__obj(v,gc_ref_o_7)->cls&&dvm__obj(v,gc_ref_o_7)->cls->desc&&!strcmp(dvm__obj(v,gc_ref_o_7)->cls->desc,"[Ljava/lang/Class;");
 }
 static bool is_object_array(struct dvm *v,dvm_ref r) {
  if(!r)return true;
- struct dvm_object *o=dvm__obj(v,r);
- return o&&o->kind==DVM_OBJ_ARRAY&&o->cls&&o->cls->desc&&!strcmp(o->cls->desc,"[Ljava/lang/Object;");
+ const dvm_ref gc_ref_o_8=(r); if(!gc_operation_admit(v,gc_ref_o_8))return false;
+ return dvm__obj(v,gc_ref_o_8)&&dvm__obj(v,gc_ref_o_8)->kind==DVM_OBJ_ARRAY&&dvm__obj(v,gc_ref_o_8)->cls&&dvm__obj(v,gc_ref_o_8)->cls->desc&&!strcmp(dvm__obj(v,gc_ref_o_8)->cls->desc,"[Ljava/lang/Object;");
 }
 /* Class.getMethod()/getDeclaredMethod() look up one method by name and exact
  * parameter descriptors.  The methods come from the same dvm_method tables
@@ -495,22 +496,22 @@ static struct dvm_method *lookup_public_method(struct dvm_class *owner,const cha
  * hook through an earlier reflective call, so it is rejected explicitly. */
 static bool method_parameter_prefix(struct dvm *v,dvm_ref types,char **out,size_t *length) {
  uint32_t count=dvm_array_length(v,types);
- dvm_ref *items=types?(dvm_ref*)dvm_array_data(v,types):NULL;
+ dvm_ref *items=types?(dvm_ref*)({const dvm_ref gc_payload_ref_4=(types);if(!gc_operation_admit(v,gc_payload_ref_4))return 0;dvm_array_data(v,gc_payload_ref_4);}):NULL;
  if(count&&!items){dvm__throw(v,"java/lang/InternalError","method parameter array");return false;}
  size_t cap=2;
  for(uint32_t i=0;i<count;i++) {
   if(!items[i]){dvm__throw(v,"java/lang/NullPointerException","parameter type");return false;}
-  struct dvm_object *o=dvm__obj(v,items[i]);
-  if(!o||o->kind!=DVM_OBJ_CLASS||!o->klass||!o->klass->desc||!o->klass->desc[0]){dvm__throw(v,"java/lang/IllegalArgumentException","getMethod parameter type");return false;}
-  cap+=strlen(o->klass->desc);
+  const dvm_ref gc_ref_o_9=(items[i]); if(!gc_operation_admit(v,gc_ref_o_9))return false;
+  if(!dvm__obj(v,gc_ref_o_9)||dvm__obj(v,gc_ref_o_9)->kind!=DVM_OBJ_CLASS||!dvm__obj(v,gc_ref_o_9)->klass||!dvm__obj(v,gc_ref_o_9)->klass->desc||!dvm__obj(v,gc_ref_o_9)->klass->desc[0]){dvm__throw(v,"java/lang/IllegalArgumentException","getMethod parameter type");return false;}
+  cap+=strlen(dvm__obj(v,gc_ref_o_9)->klass->desc);
  }
  char *prefix=malloc(cap+1);
  if(!prefix){dvm__throw(v,"java/lang/OutOfMemoryError","method parameter signature");return false;}
  size_t at=0;prefix[at++]='(';
  for(uint32_t i=0;i<count;i++) {
-  struct dvm_object *o=dvm__obj(v,items[i]);
-  size_t n=strlen(o->klass->desc);
-  memcpy(prefix+at,o->klass->desc,n);at+=n;
+  const dvm_ref gc_ref_o_10=(items[i]); if(!gc_operation_admit(v,gc_ref_o_10))return false;
+  size_t n=strlen(dvm__obj(v,gc_ref_o_10)->klass->desc);
+  memcpy(prefix+at,dvm__obj(v,gc_ref_o_10)->klass->desc,n);at+=n;
  }
  prefix[at++]=')';prefix[at]=0;
  *out=prefix;*length=at;return true;
@@ -526,15 +527,15 @@ static bool new_method_object(struct dvm *v,struct dvm_class *owner,int kind,str
  if(!r)return fail(v,"java/lang/OutOfMemoryError","Method");
  r->owner=owner;r->kind=kind;r->method=method;
  out->l=dvm_new_object(v,method_class);
- struct dvm_object *mo=dvm__obj(v,out->l);
- if(!mo){out->l=0;free(r);return fail(v,"java/lang/OutOfMemoryError","Method");}
- mo->data=r;mo->data_destroy=reflected_free;return true;
+ const dvm_ref gc_ref_mo_11=(out->l); if(!gc_operation_admit(v,gc_ref_mo_11))return false;
+ if(!dvm__obj(v,gc_ref_mo_11)){out->l=0;free(r);return fail(v,"java/lang/OutOfMemoryError","Method");}
+ dvm__obj(v,gc_ref_mo_11)->data=r;dvm__obj(v,gc_ref_mo_11)->data_destroy=reflected_free;return true;
 }
 /* JNI ToReflectedMethod（slot 9）把 jmethodID 还原成 java.lang.reflect.Method
  * 对象；new_method_object 的 kind 5 就是该句柄语义。owner 为 NULL 时用
  * method->cls。72pz 实测引擎在 worker 分派路径调用该槽失败留 pending
  * UnsatisfiedLinkError，打断 nativeRender 的帧回调链。 */
-bool reflection_runtime_method_object(struct dvm *v,struct dvm_class *owner,struct dvm_method *method,dvm_ref *out) {
+static bool reflection_runtime_method_object_operation(struct dvm *v,struct dvm_class *owner,struct dvm_method *method,dvm_ref *out) {
  if(!v||!method||!out)return false;
  if(!strcmp(method->name,"<init>")){
   struct dvm_class *klass=dvm_find_class_or_external(v,"java/lang/reflect/Constructor");
@@ -542,21 +543,29 @@ bool reflection_runtime_method_object(struct dvm *v,struct dvm_class *owner,stru
   if(!klass||!r)return fail(v,"java/lang/OutOfMemoryError","reflected Constructor");
   r->owner=method->cls;r->kind=3;r->ctor=method;r->sig=strdup(method->sig);
   if(!r->sig){free(r);return fail(v,"java/lang/OutOfMemoryError","Constructor signature");}
-  *out=dvm_new_object(v,klass);struct dvm_object *o=dvm__obj(v,*out);
-  if(!o){reflected_free(r);return fail(v,"java/lang/OutOfMemoryError","Constructor object");}
-  o->data=r;o->data_destroy=reflected_free;return true;
+  *out=dvm_new_object(v,klass);const dvm_ref gc_ref_o_12=(*out); if(!gc_operation_admit(v,gc_ref_o_12))return false;
+  if(!dvm__obj(v,gc_ref_o_12)){reflected_free(r);return fail(v,"java/lang/OutOfMemoryError","Constructor object");}
+  dvm__obj(v,gc_ref_o_12)->data=r;dvm__obj(v,gc_ref_o_12)->data_destroy=reflected_free;return true;
  }
  union dvm_value value={0};
  if(!new_method_object(v,owner?owner:method->cls,5,method,&value))return false;
  *out=value.l;return true;
 }
+bool reflection_runtime_method_object(struct dvm *v,struct dvm_class *owner,struct dvm_method *method,dvm_ref *out){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return false;
+ bool result=reflection_runtime_method_object_operation(v,owner,method,out);
+ gc_operation_result(&operation,"()Ljava/lang/reflect/Method;",result&&!dvm_exception(v)&&out?*out:0);
+ return result;
+}
+
 static char *parameter_signature(struct dvm *v,dvm_ref types){
- uint32_t count=types?dvm_array_length(v,types):0;dvm_ref *items=types?(dvm_ref*)dvm_array_data(v,types):NULL;
+ uint32_t count=types?dvm_array_length(v,types):0;dvm_ref *items=types?(dvm_ref*)({const dvm_ref gc_payload_ref_5=(types);if(!gc_operation_admit(v,gc_payload_ref_5))return 0;dvm_array_data(v,gc_payload_ref_5);}):NULL;
  size_t cap=4;
- for(uint32_t i=0;i<count;i++){struct dvm_object *o=items[i]?dvm__obj(v,items[i]):NULL;if(!o||o->kind!=DVM_OBJ_CLASS||!o->klass||!o->klass->desc){dvm__throw(v,"java/lang/NullPointerException","parameter type");return NULL;}cap+=strlen(o->klass->desc);}
+ for(uint32_t i=0;i<count;i++){const dvm_ref gc_ref_o_13=((items[i])?(items[i]):0); if(!gc_operation_admit(v,gc_ref_o_13))return false;if(!dvm__obj(v,gc_ref_o_13)||dvm__obj(v,gc_ref_o_13)->kind!=DVM_OBJ_CLASS||!dvm__obj(v,gc_ref_o_13)->klass||!dvm__obj(v,gc_ref_o_13)->klass->desc){dvm__throw(v,"java/lang/NullPointerException","parameter type");return NULL;}cap+=strlen(dvm__obj(v,gc_ref_o_13)->klass->desc);}
  char *sig=malloc(cap+1);if(!sig){dvm__throw(v,"java/lang/OutOfMemoryError","signature");return NULL;}
  size_t at=0;sig[at++]='(';
- for(uint32_t i=0;i<count;i++){struct dvm_object *o=dvm__obj(v,items[i]);size_t n=strlen(o->klass->desc);memcpy(sig+at,o->klass->desc,n);at+=n;}
+ for(uint32_t i=0;i<count;i++){const dvm_ref gc_ref_o_14=(items[i]); if(!gc_operation_admit(v,gc_ref_o_14))return false;size_t n=strlen(dvm__obj(v,gc_ref_o_14)->klass->desc);memcpy(sig+at,dvm__obj(v,gc_ref_o_14)->klass->desc,n);at+=n;}
  sig[at++]=')';sig[at++]='V';sig[at]=0;return sig;
 }
 static bool malformed_signature(struct dvm *v,union dvm_value *args){native_scratch_release(args);dvm__throw(v,"java/lang/InternalError","malformed signature");return false;}
@@ -624,9 +633,9 @@ static bool read_wrapper_value(struct dvm *v,enum wrapper_kind kind,dvm_ref valu
  }
 }
 static bool unbox_primitive(struct dvm *v,char kind,dvm_ref value,union dvm_value *out) {
- struct dvm_object *o=dvm__obj(v,value);
- if(!o||!o->cls||!o->cls->name)return false;
- enum wrapper_kind from=wrapper_kind_of(o->cls->name);
+ const dvm_ref gc_ref_o_15=(value); if(!gc_operation_admit(v,gc_ref_o_15))return false;
+ if(!dvm__obj(v,gc_ref_o_15)||!dvm__obj(v,gc_ref_o_15)->cls||!dvm__obj(v,gc_ref_o_15)->cls->name)return false;
+ enum wrapper_kind from=wrapper_kind_of(dvm__obj(v,gc_ref_o_15)->cls->name);
  if(from==WK_NONE||!primitive_widens_to(from,kind))return false;
  union dvm_value boxed={0};
  if(!read_wrapper_value(v,from,value,&boxed))return false;
@@ -653,7 +662,7 @@ static bool unbox_primitive(struct dvm *v,char kind,dvm_ref value,union dvm_valu
 }
 static bool reflection_arguments(struct dvm *v,const char *sig,dvm_ref values,union dvm_value **out,int *count){
  if(!sig)return malformed_signature(v,NULL);
- uint32_t n=values?dvm_array_length(v,values):0;dvm_ref *items=values?(dvm_ref*)dvm_array_data(v,values):NULL;
+ uint32_t n=values?dvm_array_length(v,values):0;dvm_ref *items=values?(dvm_ref*)({const dvm_ref gc_payload_ref_6=(values);if(!gc_operation_admit(v,gc_payload_ref_6))return 0;dvm_array_data(v,gc_payload_ref_6);}):NULL;
  int wanted=0;
  for(const char *p=sig+1;*p&&*p!=')';++wanted){const char *end=field_desc_end(p);if(!end)return malformed_signature(v,NULL);p=end;}
  if((uint32_t)wanted!=n){dvm__throw(v,"java/lang/IllegalArgumentException","argument count");return false;}
@@ -672,8 +681,8 @@ static bool reflection_arguments(struct dvm *v,const char *sig,dvm_ref values,un
    if(value){
     struct dvm_class *target=parameter_class(v,p,(size_t)(end-p));
     if(!target){native_scratch_release(args);if(!dvm_exception(v))dvm__throw(v,"java/lang/InternalError","parameter type");return false;}
-    struct dvm_object *o=dvm__obj(v,value);
-    if(!o||!o->cls||!dvm__class_assignable(v,o->cls,target)){native_scratch_release(args);dvm__throw(v,"java/lang/IllegalArgumentException","argument type");return false;}
+    const dvm_ref gc_ref_o_16=(value); if(!gc_operation_admit(v,gc_ref_o_16))return false;
+    if(!dvm__obj(v,gc_ref_o_16)||!dvm__obj(v,gc_ref_o_16)->cls||!dvm__class_assignable(v,dvm__obj(v,gc_ref_o_16)->cls,target)){native_scratch_release(args);dvm__throw(v,"java/lang/IllegalArgumentException","argument type");return false;}
    }
    args[index++].l=value;
   }else{
@@ -720,8 +729,8 @@ static void wrap_invocation_exception(struct dvm *v) {
  * wrapper valueOf caches; the constructor helper is defined below. */
 static dvm_ref box_value(struct dvm *v,const char *cls,const char *sig,union dvm_value arg);
 static bool field_reflected(struct dvm *v,dvm_ref self,reflected **out) {
- struct dvm_object *o=dvm__obj(v,self);
- reflected *r=o&&o->data_destroy==reflected_free?o->data:NULL;
+ const dvm_ref gc_ref_o_17=(self); if(!gc_operation_admit(v,gc_ref_o_17))return false;
+ reflected *r=dvm__obj(v,gc_ref_o_17)&&dvm__obj(v,gc_ref_o_17)->data_destroy==reflected_free?dvm__obj(v,gc_ref_o_17)->data:NULL;
  if(!r||r->kind!=4||!r->owner||!r->field||!r->field->cls||!r->field->name||!r->field->type)return false;
  *out=r;return true;
 }
@@ -802,13 +811,13 @@ static bool create_java_proxy(struct dvm *vm,const union dvm_value *args,union d
 {
  if(!args[1].l||!args[2].l)return fail(vm,"java/lang/NullPointerException","proxy interfaces or handler");
  if(!is_class_array(vm,args[1].l))return fail(vm,"java/lang/IllegalArgumentException","proxy interfaces");
- struct dvm_object *handler=dvm__obj(vm,args[2].l);
+ const dvm_ref gc_ref_handler_18=(args[2].l); if(!gc_operation_admit(vm,gc_ref_handler_18))return false;
  struct dvm_class *contract=dvm_find_class_or_external(vm,"java/lang/reflect/InvocationHandler");
- if(!handler||!contract||!dvm__class_assignable(vm,handler->cls,contract))
+ if(!dvm__obj(vm,gc_ref_handler_18)||!contract||!dvm__class_assignable(vm,dvm__obj(vm,gc_ref_handler_18)->cls,contract))
   return fail(vm,"java/lang/IllegalArgumentException","proxy handler");
  if(args[0].l){
   union dvm_value loader={0};
-  dvm_ref type=dvm_class_object(vm,handler->cls);
+  dvm_ref type=dvm_class_object(vm,dvm__obj(vm,gc_ref_handler_18)->cls);
   if(!type||!discovery_runtime_call(vm,"java/lang/Class","getClassLoader","()Ljava/lang/ClassLoader;",type,NULL,0,&loader)||
      loader.l!=args[0].l)
    return fail(vm,"java/lang/IllegalArgumentException","proxy loader");
@@ -817,30 +826,30 @@ static bool create_java_proxy(struct dvm *vm,const union dvm_value *args,union d
  struct dvm_class *interfaces[64];
  if(count>sizeof interfaces/sizeof interfaces[0])
   return fail(vm,"java/lang/UnsupportedOperationException","proxy interface limit");
- const dvm_ref *entries=dvm_array_data(vm,args[1].l);
+ const dvm_ref *entries=({const dvm_ref gc_payload_ref_7=(args[1].l);if(!gc_operation_admit(vm,gc_payload_ref_7))return 0;dvm_array_data(vm,gc_payload_ref_7);});
  for(uint32_t i=0;i<count;i++){
   if(!entries[i])return fail(vm,"java/lang/NullPointerException","proxy interface");
-  struct dvm_object *type=dvm__obj(vm,entries[i]);
-  if(!type||type->kind!=DVM_OBJ_CLASS||!type->klass||!type->klass->is_interface||
-     (!args[0].l&&!type->klass->external)){
-   if(type&&type->kind==DVM_OBJ_CLASS&&type->klass){
+  const dvm_ref gc_ref_type_19=(entries[i]); if(!gc_operation_admit(vm,gc_ref_type_19))return false;
+  if(!dvm__obj(vm,gc_ref_type_19)||dvm__obj(vm,gc_ref_type_19)->kind!=DVM_OBJ_CLASS||!dvm__obj(vm,gc_ref_type_19)->klass||!dvm__obj(vm,gc_ref_type_19)->klass->is_interface||
+     (!args[0].l&&!dvm__obj(vm,gc_ref_type_19)->klass->external)){
+   if(dvm__obj(vm,gc_ref_type_19)&&dvm__obj(vm,gc_ref_type_19)->kind==DVM_OBJ_CLASS&&dvm__obj(vm,gc_ref_type_19)->klass){
     static unsigned proxy_reject_probe;
     if(proxy_reject_probe<8){proxy_reject_probe++;FILE*f=fopen("/data/storage/el2/base/haps/entry/files/sdkdex/engine-probe.txt","a");
      if(f){fprintf(f,"PROXY_IFACE_REJECT name=%s is_interface=%d external=%d loader_null=%d\n",
-       type->klass->name?type->klass->name:"?",type->klass->is_interface?1:0,
-       type->klass->external?1:0,args[0].l?0:1);fclose(f);}}
+       dvm__obj(vm,gc_ref_type_19)->klass->name?dvm__obj(vm,gc_ref_type_19)->klass->name:"?",dvm__obj(vm,gc_ref_type_19)->klass->is_interface?1:0,
+       dvm__obj(vm,gc_ref_type_19)->klass->external?1:0,args[0].l?0:1);fclose(f);}}
    }
    return fail(vm,"java/lang/IllegalArgumentException","proxy interface or loader visibility");
   }
   for(uint32_t j=0;j<i;j++)
-   if(interfaces[j]==type->klass)return fail(vm,"java/lang/IllegalArgumentException","duplicate proxy interface");
-  interfaces[i]=type->klass;
+   if(interfaces[j]==dvm__obj(vm,gc_ref_type_19)->klass)return fail(vm,"java/lang/IllegalArgumentException","duplicate proxy interface");
+  interfaces[i]=dvm__obj(vm,gc_ref_type_19)->klass;
  }
  struct dvm_class *klass=proxy_class_for(vm,args[0].l,interfaces,(int)count);
  out->l=klass?dvm_new_object(vm,klass):0;
- struct dvm_object *proxy=dvm__obj(vm,out->l);
- if(!proxy)return fail(vm,"java/lang/OutOfMemoryError","proxy instance");
- proxy->slots[klass->ifields[0].slot].l=args[2].l;
+ const dvm_ref gc_ref_proxy_20=(out->l); if(!gc_operation_admit(vm,gc_ref_proxy_20))return false;
+ if(!dvm__obj(vm,gc_ref_proxy_20))return fail(vm,"java/lang/OutOfMemoryError","proxy instance");
+ dvm__obj(vm,gc_ref_proxy_20)->slots[klass->ifields[0].slot].l=args[2].l;
  FILE *log=fopen("/data/storage/el2/base/haps/entry/files/sdkdex/engine-probe.txt","a");
  if(log){
   fprintf(log,"JAVA_PROXY_CREATED ref=%u handler=%u interfaces=%u first=%s\n",
@@ -850,29 +859,38 @@ static bool create_java_proxy(struct dvm *vm,const union dvm_value *args,union d
  return true;
 }
 
-bool dvm_proxy_try_invoke(struct dvm *vm,dvm_ref self,struct dvm_class *decl,
+static bool dvm_proxy_try_invoke_operation(struct dvm *vm,dvm_ref self,struct dvm_class *decl,
                           const char *name,const char *sig,const union dvm_value *args,
                           int nargs,union dvm_value *out)
 {
- struct dvm_object *proxy=dvm__obj(vm,self);
- if(vm!=active||!proxy||!proxy->cls||!proxy->cls->generated_proxy)return false;
+ if(!gc_operation_admit(vm,self))return false;
+ const dvm_ref proxy_ref=self;
+ if(vm!=active||!dvm__obj(vm,proxy_ref)||!dvm__obj(vm,proxy_ref)->cls||!dvm__obj(vm,proxy_ref)->cls->generated_proxy)return false;
  if(leak_scope_current)leak_scope_cancel(vm,LEAK_NESTED);
  dvm_leak_reap_pairs(vm);
- struct dvm_class *klass=proxy->cls;
+ struct dvm_class *klass=dvm__obj(vm,proxy_ref)->cls;
  struct dvm_method *method=NULL;
  if(decl&&!strcmp(decl->name,"java/lang/Object"))
   method=dvm_find_method(vm,decl,name,sig);
  for(int i=0;!method&&i<klass->nifaces;i++)
   method=dvm_find_method(vm,klass->ifaces[i],name,sig);
  if(!method||(method->access&DEX_ACC_STATIC))return false;
- dvm_ref handler=proxy->slots[klass->ifields[0].slot].l;
- struct dvm_object *handler_object=dvm__obj(vm,handler);
- struct dvm_method *invoke=handler_object?dvm_find_method(vm,handler_object->cls,"invoke",
+ dvm_ref handler=dvm__obj(vm,proxy_ref)->slots[klass->ifields[0].slot].l;
+ const dvm_ref gc_ref_handler_object_21=(handler); if(!gc_operation_admit(vm,gc_ref_handler_object_21))return false;
+ struct dvm_method *invoke=dvm__obj(vm,gc_ref_handler_object_21)?dvm_find_method(vm,dvm__obj(vm,gc_ref_handler_object_21)->cls,"invoke",
     "(Ljava/lang/Object;Ljava/lang/reflect/Method;[Ljava/lang/Object;)Ljava/lang/Object;"):NULL;
  if(!invoke)return fail(vm,"java/lang/AbstractMethodError","InvocationHandler.invoke");
  union dvm_value reflected_method={0};
  proxy_method_cache *cached=proxy_methods;for(;cached&&(cached->proxy!=klass||cached->method!=method);cached=cached->next);
- if(cached){reflected_method.l=dvm_gc_handle_ref(vm,cached->root);if(!reflected_method.l)return fail(vm,"java/lang/IllegalStateException","proxy Method cache lost strong identity");proxy_method_hits++;}
+ if(cached){
+  /* Strong handle checks token generation and object identity generation. */
+  reflected_method.l=dvm_gc_handle_ref(vm,cached->root);
+  if(!reflected_method.l||reflected_method.l!=cached->object||!gc_operation_admit(vm,reflected_method.l))return fail(vm,"java/lang/IllegalStateException","proxy Method cache lost strong identity");
+  struct dvm_object *body=dvm__obj(vm,reflected_method.l);
+  reflected *entry=body&&body->data_destroy==reflected_free?body->data:NULL;
+  if(!entry||entry->kind!=5||entry->method!=method)return fail(vm,"java/lang/IllegalStateException","proxy Method cache metadata identity");
+  proxy_method_hits++;
+ }
  else{
   new_method_object(vm,method->cls,5,method,&reflected_method);
   if(reflected_method.l&&!dvm_exception(vm)){
@@ -896,7 +914,7 @@ bool dvm_proxy_try_invoke(struct dvm *vm,dvm_ref self,struct dvm_class *decl,
   if(kind=='L')boxed.l=args[i].l;
   else box_kind(vm,kind,args[i],&boxed);
   if(dvm_exception(vm))break;
-  ((dvm_ref*)dvm_array_data(vm,values))[i]=boxed.l;
+  ((dvm_ref*)({const dvm_ref gc_payload_ref_8=(values);if(!gc_operation_admit(vm,gc_payload_ref_8))return 0;dvm_array_data(vm,gc_payload_ref_8);}))[i]=boxed.l;
   parameter=end;
  }
  union dvm_value result={0};
@@ -904,8 +922,8 @@ bool dvm_proxy_try_invoke(struct dvm *vm,dvm_ref self,struct dvm_class *decl,
  struct leak_scope ownership={0};
  if(perf_leak_proxy_reclaim()&&!dvm_exception(vm)&&nargs==1&&!strcmp(name,"doFrame")&&!strcmp(sig,"(J)V")&&
     method->cls&&method->cls->name&&!strcmp(method->cls->name,"android/view/Choreographer$FrameCallback")&&
-    handler_object->cls->name&&!strcmp(handler_object->cls->name,"bitter/jnibridge/a")){
-  dvm_ref box=((dvm_ref*)dvm_array_data(vm,values))[0];
+    dvm__obj(vm,gc_ref_handler_object_21)->cls->name&&!strcmp(dvm__obj(vm,gc_ref_handler_object_21)->cls->name,"bitter/jnibridge/a")){
+  dvm_ref box=((dvm_ref*)({const dvm_ref gc_payload_ref_9=(values);if(!gc_operation_admit(vm,gc_payload_ref_9))return 0;dvm_array_data(vm,gc_payload_ref_9);}))[0];
   leak_scope_begin(&ownership,vm,values,box,args[0].j);
  }
  if(!dvm_exception(vm)&&!dvm_call(vm,invoke,handler,invoke_args,3,&result)&&!dvm_exception(vm))
@@ -917,8 +935,8 @@ bool dvm_proxy_try_invoke(struct dvm *vm,dvm_ref self,struct dvm_class *decl,
  if(method->ret_kind=='V')return true;
  if(method->ret_kind=='L'){
   const char *return_type=strchr(sig,')')+1;
-  struct dvm_object *value=dvm__obj(vm,result.l);
-  if(result.l&&(!value||!dvm__class_assignable(vm,value->cls,dvm__class_by_desc(vm,return_type))))
+  const dvm_ref gc_ref_value_22=(result.l); if(!gc_operation_admit(vm,gc_ref_value_22))return false;
+  if(result.l&&(!dvm__obj(vm,gc_ref_value_22)||!dvm__class_assignable(vm,dvm__obj(vm,gc_ref_value_22)->cls,dvm__class_by_desc(vm,return_type))))
    return fail(vm,"java/lang/ClassCastException","proxy return type");
   out->l=result.l;
   return true;
@@ -928,6 +946,17 @@ bool dvm_proxy_try_invoke(struct dvm *vm,dvm_ref self,struct dvm_class *decl,
   return fail(vm,"java/lang/ClassCastException","proxy primitive return");
  return true;
 }
+bool dvm_proxy_try_invoke(struct dvm *vm,dvm_ref self,struct dvm_class *decl,
+                          const char *name,const char *sig,const union dvm_value *args,
+                          int nargs,union dvm_value *out){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(vm,&operation))return false;
+ bool result=dvm_proxy_try_invoke_operation(vm,self,decl,name,sig,args,nargs,out);
+ const char *return_type=sig?strchr(sig,')'):NULL;
+ gc_operation_result(&operation,sig,result&&!dvm_exception(vm)&&out&&return_type&&(return_type[1]=='L'||return_type[1]=='[')?out->l:0);
+ return result;
+}
+
 static bool field_get(struct dvm *v,dvm_ref self,dvm_ref receiver,union dvm_value *out) {
  reflected *r;
  if(!field_reflected(v,self,&r))return fail(v,"java/lang/IllegalArgumentException","Field.get receiver");
@@ -941,10 +970,10 @@ static bool field_get(struct dvm *v,dvm_ref self,dvm_ref receiver,union dvm_valu
   value=f->cls->sslots[f->slot];
  }else{
   if(!receiver)return fail(v,"java/lang/NullPointerException","Field.get receiver");
-  struct dvm_object *o=dvm__obj(v,receiver);
-  if(!o||!o->cls||!dvm__class_assignable(v,o->cls,r->owner))return fail(v,"java/lang/IllegalArgumentException","Field.get receiver type");
-  if(!o->slots||f->slot>=o->cls->islots)return fail(v,"java/lang/InternalError","instance field slot");
-  value=o->slots[f->slot];
+  const dvm_ref gc_ref_o_23=(receiver); if(!gc_operation_admit(v,gc_ref_o_23))return false;
+  if(!dvm__obj(v,gc_ref_o_23)||!dvm__obj(v,gc_ref_o_23)->cls||!dvm__class_assignable(v,dvm__obj(v,gc_ref_o_23)->cls,r->owner))return fail(v,"java/lang/IllegalArgumentException","Field.get receiver type");
+  if(!dvm__obj(v,gc_ref_o_23)->slots||f->slot>=dvm__obj(v,gc_ref_o_23)->cls->islots)return fail(v,"java/lang/InternalError","instance field slot");
+  value=dvm__obj(v,gc_ref_o_23)->slots[f->slot];
  }
  if(f->kind=='L'){out->l=value.l;return true;}
  return field_box(v,f,value,out);
@@ -953,21 +982,21 @@ static bool field_set(struct dvm *v,dvm_ref self,dvm_ref receiver,dvm_ref input)
  reflected *r;if(!field_reflected(v,self,&r))return fail(v,"java/lang/IllegalArgumentException","Field.set receiver");struct dvm_field *f=r->field;
  if(!r->accessible&&(!(f->access&DEX_ACC_PUBLIC)||!(r->owner->access&DEX_ACC_PUBLIC)))return fail(v,"java/lang/IllegalAccessException","field is not accessible");
  if((f->access&DEX_ACC_FINAL)&&(r->statics||!r->accessible))return fail(v,"java/lang/IllegalAccessException","final field");
- if(!r->statics){struct dvm_object *o=dvm__obj(v,receiver);if(!receiver)return fail(v,"java/lang/NullPointerException","Field.set target");if(!o||!o->cls||!dvm__class_assignable(v,o->cls,r->owner))return fail(v,"java/lang/IllegalArgumentException","Field.set target type");}
- union dvm_value value={0};if(f->kind=='L'){if(input){struct dvm_object *o=dvm__obj(v,input);struct dvm_class *type=dvm__class_by_desc(v,f->type);if(!o||!o->cls||!type||!dvm__class_assignable(v,o->cls,type))return fail(v,"java/lang/IllegalArgumentException","Field.set value type");}value.l=input;}else if(!unbox_primitive(v,f->kind,input,&value)){if(dvm_exception(v))return true;return fail(v,"java/lang/IllegalArgumentException","Field.set primitive value");}
+ if(!r->statics){const dvm_ref gc_ref_o_24=(receiver); if(!gc_operation_admit(v,gc_ref_o_24))return false;if(!receiver)return fail(v,"java/lang/NullPointerException","Field.set target");if(!dvm__obj(v,gc_ref_o_24)||!dvm__obj(v,gc_ref_o_24)->cls||!dvm__class_assignable(v,dvm__obj(v,gc_ref_o_24)->cls,r->owner))return fail(v,"java/lang/IllegalArgumentException","Field.set target type");}
+ union dvm_value value={0};if(f->kind=='L'){if(input){const dvm_ref gc_ref_o_25=(input); if(!gc_operation_admit(v,gc_ref_o_25))return false;struct dvm_class *type=dvm__class_by_desc(v,f->type);if(!dvm__obj(v,gc_ref_o_25)||!dvm__obj(v,gc_ref_o_25)->cls||!type||!dvm__class_assignable(v,dvm__obj(v,gc_ref_o_25)->cls,type))return fail(v,"java/lang/IllegalArgumentException","Field.set value type");}value.l=input;}else if(!unbox_primitive(v,f->kind,input,&value)){if(dvm_exception(v))return true;return fail(v,"java/lang/IllegalArgumentException","Field.set primitive value");}
  if(r->statics){if(!dvm_init_class(v,f->cls))return true;if(!f->cls->sslots||f->slot>=f->cls->nsslots)return fail(v,"java/lang/InternalError","static field slot");f->cls->sslots[f->slot]=value;}else if(!dvm__set_field_from(v,receiver,r->owner,f->name,f->type,value))return fail(v,"java/lang/InternalError","Field.set slot");return true;
 }
 static bool method_reflected(struct dvm *v,dvm_ref self,reflected **out) {
- struct dvm_object *o=dvm__obj(v,self);
- reflected *r=o&&o->data_destroy==reflected_free?o->data:NULL;
+ const dvm_ref gc_ref_o_26=(self); if(!gc_operation_admit(v,gc_ref_o_26))return false;
+ reflected *r=dvm__obj(v,gc_ref_o_26)&&dvm__obj(v,gc_ref_o_26)->data_destroy==reflected_free?dvm__obj(v,gc_ref_o_26)->data:NULL;
  if(!r||r->kind!=5||!r->method||!r->method->cls||!r->method->name||!r->method->sig)return false;
  *out=r;return true;
 }
 /* Method.getName()/getParameterTypes() also answer for the two special
  * methods, so they accept kinds 1, 2 and 5. */
 static bool any_method_reflected(struct dvm *v,dvm_ref self,reflected **out) {
- struct dvm_object *o=dvm__obj(v,self);
- reflected *r=o&&o->data_destroy==reflected_free?o->data:NULL;
+ const dvm_ref gc_ref_o_27=(self); if(!gc_operation_admit(v,gc_ref_o_27))return false;
+ reflected *r=dvm__obj(v,gc_ref_o_27)&&dvm__obj(v,gc_ref_o_27)->data_destroy==reflected_free?dvm__obj(v,gc_ref_o_27)->data:NULL;
  if(!r||(r->kind!=1&&r->kind!=2&&r->kind!=5))return false;
  *out=r;return true;
 }
@@ -977,9 +1006,9 @@ static bool any_method_reflected(struct dvm *v,dvm_ref self,reflected **out) {
  * through an earlier reflective call, so it is rejected explicitly. */
 static bool annotation_class(struct dvm *v,dvm_ref ref,struct dvm_class **out) {
  if(!ref){dvm__throw(v,"java/lang/NullPointerException","annotation class");return false;}
- struct dvm_object *o=dvm__obj(v,ref);
- if(!o||o->kind!=DVM_OBJ_CLASS||!o->klass||!o->klass->desc){dvm__throw(v,"java/lang/IllegalArgumentException","annotation class");return false;}
- *out=o->klass;return true;
+ const dvm_ref gc_ref_o_28=(ref); if(!gc_operation_admit(v,gc_ref_o_28))return false;
+ if(!dvm__obj(v,gc_ref_o_28)||dvm__obj(v,gc_ref_o_28)->kind!=DVM_OBJ_CLASS||!dvm__obj(v,gc_ref_o_28)->klass||!dvm__obj(v,gc_ref_o_28)->klass->desc){dvm__throw(v,"java/lang/IllegalArgumentException","annotation class");return false;}
+ *out=dvm__obj(v,gc_ref_o_28)->klass;return true;
 }
 /* Runtime-visible annotations are read straight from the declaring dex.
  * dex_field_annotation()/dex_method_annotation() only match visibility==1
@@ -1001,9 +1030,9 @@ static bool method_annotation(struct dvm_method *m,const char *desc,uint32_t *of
  * Both the dex and the class metadata live until dvm_destroy(). */
 static bool new_annotation(struct dvm *v,struct dvm_class *type,struct dex_file *dex,uint32_t off,union dvm_value *out) {
  dvm_ref ref=dvm_new_object(v,type);
- struct dvm_object *o=dvm__obj(v,ref);
- if(!o)return fail(v,"java/lang/OutOfMemoryError","annotation instance");
- o->annotation_dex=dex;o->annotation_off=off;out->l=ref;return true;
+ const dvm_ref gc_ref_o_29=(ref); if(!gc_operation_admit(v,gc_ref_o_29))return false;
+ if(!dvm__obj(v,gc_ref_o_29))return fail(v,"java/lang/OutOfMemoryError","annotation instance");
+ dvm__obj(v,gc_ref_o_29)->annotation_dex=dex;dvm__obj(v,gc_ref_o_29)->annotation_off=off;out->l=ref;return true;
 }
 /* Preserve the pre-wrap cause of a failed Method.invoke: the guest catches
  * InvocationTargetException and drops the field, so the original type and
@@ -1012,7 +1041,7 @@ static bool new_annotation(struct dvm *v,struct dvm_class *type,struct dex_file 
 static void trace_invoke_cause(struct dvm *v,struct dvm_class *owner,const char *name) {
  dvm_ref exception=dvm_exception(v);
  const char *type="none";
- if(exception){struct dvm_object *e=dvm__obj(v,exception);if(e&&e->cls&&e->cls->name)type=e->cls->name;}
+ if(exception){const dvm_ref gc_ref_e_30=(exception); if(!gc_operation_admit(v,gc_ref_e_30))return ;if(dvm__obj(v,gc_ref_e_30)&&dvm__obj(v,gc_ref_e_30)->cls&&dvm__obj(v,gc_ref_e_30)->cls->name)type=dvm__obj(v,gc_ref_e_30)->cls->name;}
  const struct dvm_method *at=v->nexc_trace>0?v->exc_trace[0]:NULL;
  sdk_trace_fprintf(stderr,"REFLECT_INVOKE_CAUSE class=%s name=%s cause_type=%s throwing=%s.%s wrapped=InvocationTargetException\n",
   owner&&owner->name?owner->name:"?",name?name:"?",type,
@@ -1023,30 +1052,48 @@ static void trace_invoke_cause(struct dvm *v,struct dvm_class *owner,const char 
  * member metadata.  Zero declared members is the truthful answer for them.
  * Any other external class still fails closed because nothing models its
  * members, and inventing an empty list there would be a silent lie. */
-bool reflection_runtime_method_handle(struct dvm *v, dvm_ref object,
+static bool reflection_runtime_method_handle_operation(struct dvm *v, dvm_ref object,
                                       struct dvm_method **out) {
  if(!out)return false;
  *out=NULL;
- struct dvm_object *o=dvm__obj(v,object);
- reflected *r=o&&o->data_destroy==reflected_free?o->data:NULL;
+ const dvm_ref gc_ref_o_31=(object); if(!gc_operation_admit(v,gc_ref_o_31))return false;
+ reflected *r=dvm__obj(v,gc_ref_o_31)&&dvm__obj(v,gc_ref_o_31)->data_destroy==reflected_free?dvm__obj(v,gc_ref_o_31)->data:NULL;
  if(!r)return false;
  if(r->kind==3&&r->ctor){*out=r->ctor;return true;}
  if(r->kind!=5||!r->method)return false;
  *out=r->method;
  return true;
 }
-bool reflection_runtime_field_handle(struct dvm *v, dvm_ref object,
+bool reflection_runtime_method_handle(struct dvm *v, dvm_ref object,
+                                      struct dvm_method **out){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return false;
+ bool result=reflection_runtime_method_handle_operation(v,object,out);
+ return result;
+}
+
+static bool reflection_runtime_field_handle_operation(struct dvm *v, dvm_ref object,
                                      struct dvm_field **field,
                                      struct dvm_class **owner,
                                      bool *is_static) {
  if(!field||!owner||!is_static)return false;
  *field=NULL;*owner=NULL;*is_static=false;
- struct dvm_object *o=dvm__obj(v,object);
- reflected *r=o&&o->data_destroy==reflected_free?o->data:NULL;
+ const dvm_ref gc_ref_o_32=(object); if(!gc_operation_admit(v,gc_ref_o_32))return false;
+ reflected *r=dvm__obj(v,gc_ref_o_32)&&dvm__obj(v,gc_ref_o_32)->data_destroy==reflected_free?dvm__obj(v,gc_ref_o_32)->data:NULL;
  if(!r||r->kind!=4||!r->field||!r->owner)return false;
  *field=r->field;*owner=r->owner;*is_static=r->statics;
  return true;
 }
+bool reflection_runtime_field_handle(struct dvm *v, dvm_ref object,
+                                     struct dvm_field **field,
+                                     struct dvm_class **owner,
+                                     bool *is_static){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return false;
+ bool result=reflection_runtime_field_handle_operation(v,object,field,owner,is_static);
+ return result;
+}
+
 static bool external_without_metadata(struct dvm_class *klass) {
  if(!klass||!klass->external||!klass->name)return false;
  return !strcmp(klass->name,"android/widget/FrameLayout")||
@@ -1067,12 +1114,12 @@ static bool external_without_metadata(struct dvm_class *klass) {
         !strcmp(klass->name,"android/content/ContextWrapper")||
         !strcmp(klass->name,"android/content/Context");
 }
-bool reflection_runtime_call(struct dvm *v,const char *c,const char *m,const char *s,dvm_ref self,const union dvm_value *a,int n,union dvm_value *out) {
+static bool reflection_runtime_call_operation(struct dvm *v,const char *c,const char *m,const char *s,dvm_ref self,const union dvm_value *a,int n,union dvm_value *out) {
  if(v!=active)return false;
  if(!strcmp(c,"java/lang/Class")&&!strcmp(m,"toString")&&!strcmp(s,"()Ljava/lang/String;")&&!n){
-  struct dvm_object *object=dvm__obj(v,self);
-  if(!object||object->kind!=DVM_OBJ_CLASS||!object->klass)return fail(v,"java/lang/NullPointerException","Class.toString receiver");
-  struct dvm_class *type=object->klass;
+  const dvm_ref gc_ref_object_33=(self); if(!gc_operation_admit(v,gc_ref_object_33))return true;
+  if(!dvm__obj(v,gc_ref_object_33)||dvm__obj(v,gc_ref_object_33)->kind!=DVM_OBJ_CLASS||!dvm__obj(v,gc_ref_object_33)->klass)return fail(v,"java/lang/NullPointerException","Class.toString receiver");
+  struct dvm_class *type=dvm__obj(v,gc_ref_object_33)->klass;
   const char *name=type->is_array?type->desc:type->name;
   const char *prefix=type->is_primitive?"":type->is_interface?"interface ":"class ";
   if(type->is_primitive){
@@ -1093,30 +1140,30 @@ bool reflection_runtime_call(struct dvm *v,const char *c,const char *m,const cha
   return true;
  }
  if(!strcmp(c,"java/lang/reflect/AccessibleObject")&&!strcmp(m,"setAccessible")&&!strcmp(s,"(Z)V")&&n==1){
-  struct dvm_object *object=dvm__obj(v,self);reflected *r=object&&object->data_destroy==reflected_free?object->data:NULL;
+  const dvm_ref gc_ref_object_34=(self); if(!gc_operation_admit(v,gc_ref_object_34))return true;reflected *r=dvm__obj(v,gc_ref_object_34)&&dvm__obj(v,gc_ref_object_34)->data_destroy==reflected_free?dvm__obj(v,gc_ref_object_34)->data:NULL;
   if(!self)return fail(v,"java/lang/NullPointerException","AccessibleObject receiver");
   if(!r)return fail(v,"java/lang/IllegalArgumentException","AccessibleObject receiver");
   const char *target=r->kind==3?"java/lang/reflect/Constructor":r->kind==4?"java/lang/reflect/Field":"java/lang/reflect/Method";
   return reflection_runtime_call(v,target,m,s,self,a,n,out);
  }
  if(!strcmp(c,"java/lang/Class")&&!strcmp(m,"getAnnotation")&&!strcmp(s,"(Ljava/lang/Class;)Ljava/lang/annotation/Annotation;")&&n==1){
-  struct dvm_object *co=dvm__obj(v,self);struct dvm_class *type=NULL;
-  if(!co||co->kind!=DVM_OBJ_CLASS||!co->klass)return fail(v,"java/lang/NullPointerException","Class.getAnnotation receiver");
+  const dvm_ref gc_ref_co_35=(self); if(!gc_operation_admit(v,gc_ref_co_35))return true;struct dvm_class *type=NULL;
+  if(!dvm__obj(v,gc_ref_co_35)||dvm__obj(v,gc_ref_co_35)->kind!=DVM_OBJ_CLASS||!dvm__obj(v,gc_ref_co_35)->klass)return fail(v,"java/lang/NullPointerException","Class.getAnnotation receiver");
   if(!annotation_class(v,a[0].l,&type))return true;
   uint32_t inherited_off=0;bool inherited=type->dex&&dex_class_annotation(type->dex,type->class_def_idx,"Ljava/lang/annotation/Inherited;",&inherited_off);
-  for(struct dvm_class *k=co->klass;k;k=inherited&&!k->is_interface?k->super:NULL){uint32_t offset=0;if(k->dex&&dex_class_annotation(k->dex,k->class_def_idx,type->desc,&offset))return new_annotation(v,type,k->dex,offset,out);}
+  for(struct dvm_class *k=dvm__obj(v,gc_ref_co_35)->klass;k;k=inherited&&!k->is_interface?k->super:NULL){uint32_t offset=0;if(k->dex&&dex_class_annotation(k->dex,k->class_def_idx,type->desc,&offset))return new_annotation(v,type,k->dex,offset,out);}
   out->l=0;return true;
  }
  if(!strcmp(c,"java/lang/Class")&&!strcmp(m,"getGenericSuperclass")&&!strcmp(s,"()Ljava/lang/reflect/Type;")&&!n)return generic_superclass(v,self,false,out);
  if(!strcmp(c,"java/lang/Class")&&!strcmp(m,"getGenericInterfaces")&&!strcmp(s,"()[Ljava/lang/reflect/Type;")&&!n)return generic_superclass(v,self,true,out);
- if(!strcmp(c,"java/lang/Class")&&!strcmp(m,"getTypeParameters")&&!strcmp(s,"()[Ljava/lang/reflect/TypeVariable;")&&!n){struct dvm_object *co=dvm__obj(v,self);if(!co||co->kind!=DVM_OBJ_CLASS||!co->klass)return fail(v,"java/lang/NullPointerException","type parameters receiver");char names[32][128];int count;if(!formal_names(co->klass,NULL,names,&count))return fail(v,"java/lang/reflect/GenericSignatureFormatError","formal parameters");out->l=dvm_new_array(v,'L',"Ljava/lang/reflect/TypeVariable;",count);for(int i=0;out->l&&i<count;i++){dvm_ref t=new_variable(v,co->klass,names[i]);if(!t)return true;((dvm_ref*)dvm_array_data(v,out->l))[i]=t;}return true;}
- struct dvm_object *generic_object=self?dvm__obj(v,self):NULL;
- if(generic_object&&generic_object->data_destroy==variable_free){generic_variable *t=generic_object->data;if(!n&&!strcmp(m,"getGenericDeclaration")&&!strcmp(s,"()Ljava/lang/reflect/GenericDeclaration;")){out->l=dvm_class_object(v,t->declaration);return true;}if(!n&&(!strcmp(m,"getName")||!strcmp(m,"toString")||!strcmp(m,"getTypeName"))&&!strcmp(s,"()Ljava/lang/String;")){out->l=dvm_new_string(v,t->name);return true;}if(n==1&&!strcmp(m,"equals")&&!strcmp(s,"(Ljava/lang/Object;)Z")){struct dvm_object *other=dvm__obj(v,a[0].l);generic_variable *u=other&&other->data_destroy==variable_free?other->data:NULL;out->i=u&&u->declaration==t->declaration&&!strcmp(u->name,t->name);return true;}if(!n&&!strcmp(m,"hashCode")&&!strcmp(s,"()I")){uint32_t hash=0;for(const unsigned char *p=(const unsigned char*)t->name;*p;p++)hash=hash*31+*p;out->i=(int32_t)(hash^dvm_class_object(v,t->declaration));return true;}}
- if(generic_object&&generic_object->data_destroy==generic_free&&!n){
-  generic_type *t=generic_object->data;
+ if(!strcmp(c,"java/lang/Class")&&!strcmp(m,"getTypeParameters")&&!strcmp(s,"()[Ljava/lang/reflect/TypeVariable;")&&!n){const dvm_ref gc_ref_co_36=(self); if(!gc_operation_admit(v,gc_ref_co_36))return true;if(!dvm__obj(v,gc_ref_co_36)||dvm__obj(v,gc_ref_co_36)->kind!=DVM_OBJ_CLASS||!dvm__obj(v,gc_ref_co_36)->klass)return fail(v,"java/lang/NullPointerException","type parameters receiver");char names[32][128];int count;if(!formal_names(dvm__obj(v,gc_ref_co_36)->klass,NULL,names,&count))return fail(v,"java/lang/reflect/GenericSignatureFormatError","formal parameters");out->l=dvm_new_array(v,'L',"Ljava/lang/reflect/TypeVariable;",count);for(int i=0;out->l&&i<count;i++){dvm_ref t=new_variable(v,dvm__obj(v,gc_ref_co_36)->klass,names[i]);if(!t)return true;((dvm_ref*)({const dvm_ref gc_payload_ref_10=(out->l);if(!gc_operation_admit(v,gc_payload_ref_10))return true;dvm_array_data(v,gc_payload_ref_10);}))[i]=t;}return true;}
+ const dvm_ref gc_ref_generic_object_37=((self)?(self):0); if(!gc_operation_admit(v,gc_ref_generic_object_37))return true;
+ if(dvm__obj(v,gc_ref_generic_object_37)&&dvm__obj(v,gc_ref_generic_object_37)->data_destroy==variable_free){generic_variable *t=dvm__obj(v,gc_ref_generic_object_37)->data;if(!n&&!strcmp(m,"getGenericDeclaration")&&!strcmp(s,"()Ljava/lang/reflect/GenericDeclaration;")){out->l=dvm_class_object(v,t->declaration);return true;}if(!n&&(!strcmp(m,"getName")||!strcmp(m,"toString")||!strcmp(m,"getTypeName"))&&!strcmp(s,"()Ljava/lang/String;")){out->l=dvm_new_string(v,t->name);return true;}if(n==1&&!strcmp(m,"equals")&&!strcmp(s,"(Ljava/lang/Object;)Z")){const dvm_ref gc_ref_other_38=(a[0].l); if(!gc_operation_admit(v,gc_ref_other_38))return true;generic_variable *u=dvm__obj(v,gc_ref_other_38)&&dvm__obj(v,gc_ref_other_38)->data_destroy==variable_free?dvm__obj(v,gc_ref_other_38)->data:NULL;out->i=u&&u->declaration==t->declaration&&!strcmp(u->name,t->name);return true;}if(!n&&!strcmp(m,"hashCode")&&!strcmp(s,"()I")){uint32_t hash=0;for(const unsigned char *p=(const unsigned char*)t->name;*p;p++)hash=hash*31+*p;out->i=(int32_t)(hash^dvm_class_object(v,t->declaration));return true;}}
+ if(dvm__obj(v,gc_ref_generic_object_37)&&dvm__obj(v,gc_ref_generic_object_37)->data_destroy==generic_free&&!n){
+  generic_type *t=dvm__obj(v,gc_ref_generic_object_37)->data;
   if(!strcmp(m,"getRawType")&&!strcmp(s,"()Ljava/lang/reflect/Type;")){out->l=t->raw;return true;}
   if(!strcmp(m,"getOwnerType")&&!strcmp(s,"()Ljava/lang/reflect/Type;")){out->l=t->owner;return true;}
-  if(!strcmp(m,"getActualTypeArguments")&&!strcmp(s,"()[Ljava/lang/reflect/Type;")){uint32_t count=dvm_array_length(v,t->args);out->l=dvm_new_array(v,'L',"Ljava/lang/reflect/Type;",count);if(out->l)memcpy(dvm_array_data(v,out->l),dvm_array_data(v,t->args),count*sizeof(dvm_ref));return true;}
+  if(!strcmp(m,"getActualTypeArguments")&&!strcmp(s,"()[Ljava/lang/reflect/Type;")){uint32_t count=dvm_array_length(v,t->args);out->l=dvm_new_array(v,'L',"Ljava/lang/reflect/Type;",count);if(out->l)memcpy(({const dvm_ref gc_payload_ref_11=(out->l);if(!gc_operation_admit(v,gc_payload_ref_11))return true;dvm_array_data(v,gc_payload_ref_11);}),({const dvm_ref gc_payload_ref_12=(t->args);if(!gc_operation_admit(v,gc_payload_ref_12))return true;dvm_array_data(v,gc_payload_ref_12);}),count*sizeof(dvm_ref));return true;}
  }
  /* java.lang.reflect.Modifier: pure bit tests over the int the VM already
   * publishes from getModifiers().  No class metadata is consulted and no
@@ -1137,10 +1184,10 @@ bool reflection_runtime_call(struct dvm *v,const char *c,const char *m,const cha
    return create_java_proxy(v,a,out);
   if(!strcmp(m,"getInvocationHandler")&&n==1&&
      !strcmp(s,"(Ljava/lang/Object;)Ljava/lang/reflect/InvocationHandler;")){
-   struct dvm_object *proxy=dvm__obj(v,a[0].l);
-   if(!proxy||!proxy->cls||!proxy->cls->generated_proxy)
+   const dvm_ref gc_ref_proxy_39=(a[0].l); if(!gc_operation_admit(v,gc_ref_proxy_39))return true;
+   if(!dvm__obj(v,gc_ref_proxy_39)||!dvm__obj(v,gc_ref_proxy_39)->cls||!dvm__obj(v,gc_ref_proxy_39)->cls->generated_proxy)
     return fail(v,"java/lang/IllegalArgumentException","not a proxy");
-   out->l=proxy->slots[proxy->cls->ifields[0].slot].l;
+   out->l=dvm__obj(v,gc_ref_proxy_39)->slots[dvm__obj(v,gc_ref_proxy_39)->cls->ifields[0].slot].l;
    return true;
   }
  }
@@ -1152,9 +1199,9 @@ bool reflection_runtime_call(struct dvm *v,const char *c,const char *m,const cha
   * primitive, a primitive array, or the default package.  Android resolves an
   * array through its component class, so [Lcom/foo/Bar; yields com.foo. */
  if(!strcmp(c,"java/lang/Class")&&!strcmp(m,"getPackage")&&!strcmp(s,"()Ljava/lang/Package;")&&n==0) {
-  struct dvm_object *co=dvm__obj(v,self);
-  if(!co||co->kind!=DVM_OBJ_CLASS||!co->klass)return fail(v,"java/lang/NullPointerException","Class.getPackage");
-  struct dvm_class *k=co->klass;
+  const dvm_ref gc_ref_co_40=(self); if(!gc_operation_admit(v,gc_ref_co_40))return true;
+  if(!dvm__obj(v,gc_ref_co_40)||dvm__obj(v,gc_ref_co_40)->kind!=DVM_OBJ_CLASS||!dvm__obj(v,gc_ref_co_40)->klass)return fail(v,"java/lang/NullPointerException","Class.getPackage");
+  struct dvm_class *k=dvm__obj(v,gc_ref_co_40)->klass;
   if(k->is_array)k=k->elem;
   if(!k||k->is_primitive){out->l=0;return true;}
   char pkg[512];
@@ -1166,23 +1213,23 @@ bool reflection_runtime_call(struct dvm *v,const char *c,const char *m,const cha
  if(!strcmp(c,"java/lang/Class")&&(!strcmp(m,"getConstructor")||!strcmp(m,"getDeclaredConstructor"))&&
     !strcmp(s,"([Ljava/lang/Class;)Ljava/lang/reflect/Constructor;")&&n==1) {
   bool declared=!strcmp(m,"getDeclaredConstructor");
-  struct dvm_object *co=dvm__obj(v,self);
-  if(!co||co->kind!=DVM_OBJ_CLASS||!co->klass)return fail(v,"java/lang/NullPointerException","Class.getConstructor");
+  const dvm_ref gc_ref_co_41=(self); if(!gc_operation_admit(v,gc_ref_co_41))return true;
+  if(!dvm__obj(v,gc_ref_co_41)||dvm__obj(v,gc_ref_co_41)->kind!=DVM_OBJ_CLASS||!dvm__obj(v,gc_ref_co_41)->klass)return fail(v,"java/lang/NullPointerException","Class.getConstructor");
   if(!is_class_array(v,a[0].l))return fail(v,"java/lang/IllegalArgumentException","getConstructor parameter types");
   char *sig=parameter_signature(v,a[0].l);if(!sig)return true;
-  struct dvm_method *ctor=dvm_find_method(v,co->klass,"<init>",sig);
+  struct dvm_method *ctor=dvm_find_method(v,dvm__obj(v,gc_ref_co_41)->klass,"<init>",sig);
   /* Class.getConstructor exposes public constructors only.  dvm_find_method()
    * returns the raw method (including a private one), so the access bit has
    * to be checked here rather than inferred from the lookup. */
-  if(!ctor||ctor->cls!=co->klass||(!declared&&!(ctor->access&DEX_ACC_PUBLIC))){
+  if(!ctor||ctor->cls!=dvm__obj(v,gc_ref_co_41)->klass||(!declared&&!(ctor->access&DEX_ACC_PUBLIC))){
    free(sig);
    return fail(v,"java/lang/NoSuchMethodException","constructor");
   }
   reflected *r=calloc(1,sizeof *r);if(!r){free(sig);return fail(v,"java/lang/OutOfMemoryError","Constructor");}
-  r->owner=co->klass;r->kind=3;r->ctor=ctor;r->sig=sig;
+  r->owner=dvm__obj(v,gc_ref_co_41)->klass;r->kind=3;r->ctor=ctor;r->sig=sig;
   out->l=dvm_new_object(v,dvm_find_class_or_external(v,"java/lang/reflect/Constructor"));
-  struct dvm_object *mo=dvm__obj(v,out->l);if(!mo){free(r->sig);free(r);return fail(v,"java/lang/OutOfMemoryError","Constructor");}
-  mo->data=r;mo->data_destroy=reflected_free;return true;
+  const dvm_ref gc_ref_mo_42=(out->l); if(!gc_operation_admit(v,gc_ref_mo_42))return true;if(!dvm__obj(v,gc_ref_mo_42)){free(r->sig);free(r);return fail(v,"java/lang/OutOfMemoryError","Constructor");}
+  dvm__obj(v,gc_ref_mo_42)->data=r;dvm__obj(v,gc_ref_mo_42)->data_destroy=reflected_free;return true;
  }
  /* Class.getConstructors() / getDeclaredConstructors(): every constructor
   * this class declares.  Unity's AndroidJavaObject inspects them before
@@ -1192,9 +1239,9 @@ bool reflection_runtime_call(struct dvm *v,const char *c,const char *m,const cha
  if(!strcmp(c,"java/lang/Class")&&(!strcmp(m,"getConstructors")||!strcmp(m,"getDeclaredConstructors"))&&
     !strcmp(s,"()[Ljava/lang/reflect/Constructor;")&&n==0) {
   bool declared=!strcmp(m,"getDeclaredConstructors");
-  struct dvm_object *co=dvm__obj(v,self);
-  if(!co||co->kind!=DVM_OBJ_CLASS||!co->klass)return fail(v,"java/lang/NullPointerException","Class.getConstructors");
-  struct dvm_class *klass=co->klass;
+  const dvm_ref gc_ref_co_43=(self); if(!gc_operation_admit(v,gc_ref_co_43))return true;
+  if(!dvm__obj(v,gc_ref_co_43)||dvm__obj(v,gc_ref_co_43)->kind!=DVM_OBJ_CLASS||!dvm__obj(v,gc_ref_co_43)->klass)return fail(v,"java/lang/NullPointerException","Class.getConstructors");
+  struct dvm_class *klass=dvm__obj(v,gc_ref_co_43)->klass;
   uint32_t count=0;
   if(!klass->is_array&&!klass->is_primitive&&klass->nmethods>0&&klass->methods)
    for(int i=0;i<klass->nmethods;i++){
@@ -1207,7 +1254,7 @@ bool reflection_runtime_call(struct dvm *v,const char *c,const char *m,const cha
   if(!cons_cls)return fail(v,"java/lang/InternalError","Constructor class");
   dvm_ref arr=dvm_new_array(v,'L',"Ljava/lang/reflect/Constructor;",count);
   if(!arr)return fail(v,"java/lang/OutOfMemoryError","Class.getConstructors array");
-  dvm_ref *items=dvm_array_data(v,arr);
+  dvm_ref *items=({const dvm_ref gc_payload_ref_13=(arr);if(!gc_operation_admit(v,gc_payload_ref_13))return true;dvm_array_data(v,gc_payload_ref_13);});
   uint32_t at=0;
   if(count&&klass->nmethods>0&&klass->methods)for(int i=0;i<klass->nmethods;i++){
    struct dvm_method *mm=&klass->methods[i];
@@ -1218,19 +1265,19 @@ bool reflection_runtime_call(struct dvm *v,const char *c,const char *m,const cha
    r->owner=mm->cls;r->kind=3;r->ctor=mm;
    r->sig=mm->sig?strdup(mm->sig):NULL;
    dvm_ref ref=dvm_new_object(v,cons_cls);
-   struct dvm_object *mo=dvm__obj(v,ref);
-   if(!mo){free(r->sig);free(r);return fail(v,"java/lang/OutOfMemoryError","Constructor");}
-   mo->data=r;mo->data_destroy=reflected_free;items[at++]=ref;
+   const dvm_ref gc_ref_mo_44=(ref); if(!gc_operation_admit(v,gc_ref_mo_44))return true;
+   if(!dvm__obj(v,gc_ref_mo_44)){free(r->sig);free(r);return fail(v,"java/lang/OutOfMemoryError","Constructor");}
+   dvm__obj(v,gc_ref_mo_44)->data=r;dvm__obj(v,gc_ref_mo_44)->data_destroy=reflected_free;items[at++]=ref;
   }
   out->l=arr;return true;
  }
  if(!strcmp(c,"java/lang/Class")&&!strcmp(m,"newInstance")&&!strcmp(s,"()Ljava/lang/Object;")&&n==0) {
-  struct dvm_object *co=dvm__obj(v,self);
-  if(!co||co->kind!=DVM_OBJ_CLASS||!co->klass)return fail(v,"java/lang/NullPointerException","Class.newInstance");
-  if(co->klass->access&(DEX_ACC_ABSTRACT|DEX_ACC_INTERFACE))return fail(v,"java/lang/InstantiationException","abstract class");
-  struct dvm_method *ctor=dvm_find_method(v,co->klass,"<init>","()V");
+  const dvm_ref gc_ref_co_45=(self); if(!gc_operation_admit(v,gc_ref_co_45))return true;
+  if(!dvm__obj(v,gc_ref_co_45)||dvm__obj(v,gc_ref_co_45)->kind!=DVM_OBJ_CLASS||!dvm__obj(v,gc_ref_co_45)->klass)return fail(v,"java/lang/NullPointerException","Class.newInstance");
+  if(dvm__obj(v,gc_ref_co_45)->klass->access&(DEX_ACC_ABSTRACT|DEX_ACC_INTERFACE))return fail(v,"java/lang/InstantiationException","abstract class");
+  struct dvm_method *ctor=dvm_find_method(v,dvm__obj(v,gc_ref_co_45)->klass,"<init>","()V");
   if(!ctor)return fail(v,"java/lang/InstantiationException","no zero-argument constructor");
-  dvm_ref object=dvm_new_object(v,co->klass);
+  dvm_ref object=dvm_new_object(v,dvm__obj(v,gc_ref_co_45)->klass);
   if(!object)return fail(v,"java/lang/OutOfMemoryError","Class.newInstance");
   union dvm_value result={0};
   /* Unlike Constructor.newInstance, Class.newInstance does not wrap the
@@ -1242,11 +1289,11 @@ bool reflection_runtime_call(struct dvm *v,const char *c,const char *m,const cha
  }
  /* Named lookup uses the same real metadata/payload as field enumeration. */
  if(!strcmp(c,"java/lang/Class")&&!strcmp(m,"getDeclaredField")&&!strcmp(s,"(Ljava/lang/String;)Ljava/lang/reflect/Field;")&&n==1){
-  struct dvm_object *co=dvm__obj(v,self),*name=dvm__obj(v,a[0].l);
-  if(!co||co->kind!=DVM_OBJ_CLASS||!co->klass)return fail(v,"java/lang/NullPointerException","Class.getDeclaredField receiver");
+  const dvm_ref gc_ref_co_46=(self); if(!gc_operation_admit(v,gc_ref_co_46))return true;const dvm_ref gc_ref_name_47=(a[0].l); if(!gc_operation_admit(v,gc_ref_name_47))return true;
+  if(!dvm__obj(v,gc_ref_co_46)||dvm__obj(v,gc_ref_co_46)->kind!=DVM_OBJ_CLASS||!dvm__obj(v,gc_ref_co_46)->klass)return fail(v,"java/lang/NullPointerException","Class.getDeclaredField receiver");
   if(!a[0].l)return fail(v,"java/lang/NullPointerException","field name");
-  if(!name||name->kind!=DVM_OBJ_STRING)return fail(v,"java/lang/IllegalArgumentException","field name");
-  struct dvm_class *k=co->klass;out->l=0;
+  if(!dvm__obj(v,gc_ref_name_47)||dvm__obj(v,gc_ref_name_47)->kind!=DVM_OBJ_STRING)return fail(v,"java/lang/IllegalArgumentException","field name");
+  struct dvm_class *k=dvm__obj(v,gc_ref_co_46)->klass;out->l=0;
   if(k->external&&!k->nifields&&!k->nsfields)return fail(v,"java/lang/UnsupportedOperationException","Class.getDeclaredField external class");
   if(!k->is_array&&!k->is_primitive)for(int pass=0;pass<2;pass++){
    struct dvm_field *fields=pass?k->sfields:k->ifields;int count=pass?k->nsfields:k->nifields;
@@ -1254,13 +1301,13 @@ bool reflection_runtime_call(struct dvm *v,const char *c,const char *m,const cha
    for(int i=0;i<count;i++){
     struct dvm_field *f=&fields[i];
     if(!f->name||!f->type||!f->cls)return fail(v,"java/lang/InternalError","field metadata");
-    if(strlen(f->name)!=name->utf8_len||memcmp(f->name,name->utf8,name->utf8_len))continue;
+    if(strlen(f->name)!=dvm__obj(v,gc_ref_name_47)->utf8_len||memcmp(f->name,dvm__obj(v,gc_ref_name_47)->utf8,dvm__obj(v,gc_ref_name_47)->utf8_len))continue;
     reflected *r=calloc(1,sizeof *r);if(!r)return fail(v,"java/lang/OutOfMemoryError","Field");
     r->owner=k;r->kind=4;r->field=f;r->statics=pass!=0;
     out->l=dvm_new_object(v,dvm_find_class_or_external(v,"java/lang/reflect/Field"));
-    struct dvm_object *fo=dvm__obj(v,out->l);
-    if(!fo){free(r);return fail(v,"java/lang/OutOfMemoryError","Field");}
-    fo->data=r;fo->data_destroy=reflected_free;return true;
+    const dvm_ref gc_ref_fo_48=(out->l); if(!gc_operation_admit(v,gc_ref_fo_48))return true;
+    if(!dvm__obj(v,gc_ref_fo_48)){free(r);return fail(v,"java/lang/OutOfMemoryError","Field");}
+    dvm__obj(v,gc_ref_fo_48)->data=r;dvm__obj(v,gc_ref_fo_48)->data_destroy=reflected_free;return true;
    }
   }
   return fail(v,"java/lang/NoSuchFieldException","field");
@@ -1274,9 +1321,9 @@ bool reflection_runtime_call(struct dvm *v,const char *c,const char *m,const cha
   * closed instead.  Each Field keeps the dvm_field pointer and owner for
   * later getName/getType/get/getModifiers calls. */
  if(!strcmp(c,"java/lang/Class")&&!strcmp(m,"getDeclaredFields")&&!strcmp(s,"()[Ljava/lang/reflect/Field;")&&n==0) {
-  struct dvm_object *co=dvm__obj(v,self);
-  if(!co||co->kind!=DVM_OBJ_CLASS||!co->klass)return fail(v,"java/lang/NullPointerException","Class.getDeclaredFields");
-  struct dvm_class *klass=co->klass;
+  const dvm_ref gc_ref_co_49=(self); if(!gc_operation_admit(v,gc_ref_co_49))return true;
+  if(!dvm__obj(v,gc_ref_co_49)||dvm__obj(v,gc_ref_co_49)->kind!=DVM_OBJ_CLASS||!dvm__obj(v,gc_ref_co_49)->klass)return fail(v,"java/lang/NullPointerException","Class.getDeclaredFields");
+  struct dvm_class *klass=dvm__obj(v,gc_ref_co_49)->klass;
   bool declared=!klass->is_array&&!klass->is_primitive;
   uint32_t count=0;
   if(declared) {
@@ -1302,7 +1349,7 @@ bool reflection_runtime_call(struct dvm *v,const char *c,const char *m,const cha
   if(!field_class)return fail(v,"java/lang/InternalError","Field class");
   dvm_ref fields=dvm_new_array(v,'L',"Ljava/lang/reflect/Field;",count);
   if(!fields)return fail(v,"java/lang/OutOfMemoryError","Class.getDeclaredFields array");
-  dvm_ref *items=dvm_array_data(v,fields);
+  dvm_ref *items=({const dvm_ref gc_payload_ref_14=(fields);if(!gc_operation_admit(v,gc_payload_ref_14))return true;dvm_array_data(v,gc_payload_ref_14);});
   uint32_t at=0;
   if(declared)for(int pass=0;pass<2;pass++){
    struct dvm_field *list=pass?klass->sfields:klass->ifields;
@@ -1315,9 +1362,9 @@ bool reflection_runtime_call(struct dvm *v,const char *c,const char *m,const cha
     if(!r)return fail(v,"java/lang/OutOfMemoryError","Field");
     r->owner=f->cls;r->kind=4;r->field=f;r->statics=pass!=0;
     dvm_ref ref=dvm_new_object(v,field_class);
-    struct dvm_object *fo=dvm__obj(v,ref);
-    if(!fo){free(r);return fail(v,"java/lang/OutOfMemoryError","Field");}
-    fo->data=r;fo->data_destroy=reflected_free;
+    const dvm_ref gc_ref_fo_50=(ref); if(!gc_operation_admit(v,gc_ref_fo_50))return true;
+    if(!dvm__obj(v,gc_ref_fo_50)){free(r);return fail(v,"java/lang/OutOfMemoryError","Field");}
+    dvm__obj(v,gc_ref_fo_50)->data=r;dvm__obj(v,gc_ref_fo_50)->data_destroy=reflected_free;
     items[at]=ref;
    }
   }
@@ -1330,9 +1377,9 @@ bool reflection_runtime_call(struct dvm *v,const char *c,const char *m,const cha
   * zero members here).  Each Method keeps the dvm_method pointer, which is
   * owned by the class table and lives until dvm_destroy(). */
  if(!strcmp(c,"java/lang/Class")&&!strcmp(m,"getDeclaredMethods")&&!strcmp(s,"()[Ljava/lang/reflect/Method;")&&n==0) {
-  struct dvm_object *co=dvm__obj(v,self);
-  if(!co||co->kind!=DVM_OBJ_CLASS||!co->klass)return fail(v,"java/lang/NullPointerException","Class.getDeclaredMethods");
-  struct dvm_class *klass=co->klass;
+  const dvm_ref gc_ref_co_51=(self); if(!gc_operation_admit(v,gc_ref_co_51))return true;
+  if(!dvm__obj(v,gc_ref_co_51)||dvm__obj(v,gc_ref_co_51)->kind!=DVM_OBJ_CLASS||!dvm__obj(v,gc_ref_co_51)->klass)return fail(v,"java/lang/NullPointerException","Class.getDeclaredMethods");
+  struct dvm_class *klass=dvm__obj(v,gc_ref_co_51)->klass;
   bool declared=!klass->is_array&&!klass->is_primitive;
   uint32_t count=0;
   if(declared) {
@@ -1360,7 +1407,7 @@ bool reflection_runtime_call(struct dvm *v,const char *c,const char *m,const cha
   if(!method_class)return fail(v,"java/lang/InternalError","Method class");
   dvm_ref methods=dvm_new_array(v,'L',"Ljava/lang/reflect/Method;",count);
   if(!methods)return fail(v,"java/lang/OutOfMemoryError","Class.getDeclaredMethods array");
-  dvm_ref *items=dvm_array_data(v,methods);
+  dvm_ref *items=({const dvm_ref gc_payload_ref_15=(methods);if(!gc_operation_admit(v,gc_payload_ref_15))return true;dvm_array_data(v,gc_payload_ref_15);});
   uint32_t at=0;
   if(declared&&klass->nmethods>0&&klass->methods)for(int i=0;i<klass->nmethods;i++){
    struct dvm_method *m=&klass->methods[i];
@@ -1369,9 +1416,9 @@ bool reflection_runtime_call(struct dvm *v,const char *c,const char *m,const cha
    if(!r)return fail(v,"java/lang/OutOfMemoryError","Method");
    r->owner=m->cls;r->kind=5;r->method=m;
    dvm_ref ref=dvm_new_object(v,method_class);
-   struct dvm_object *mo=dvm__obj(v,ref);
-   if(!mo){free(r);return fail(v,"java/lang/OutOfMemoryError","Method");}
-   mo->data=r;mo->data_destroy=reflected_free;items[at++]=ref;
+   const dvm_ref gc_ref_mo_52=(ref); if(!gc_operation_admit(v,gc_ref_mo_52))return true;
+   if(!dvm__obj(v,gc_ref_mo_52)){free(r);return fail(v,"java/lang/OutOfMemoryError","Method");}
+   dvm__obj(v,gc_ref_mo_52)->data=r;dvm__obj(v,gc_ref_mo_52)->data_destroy=reflected_free;items[at++]=ref;
   }
   out->l=methods;return true;
  }
@@ -1470,18 +1517,18 @@ bool reflection_runtime_call(struct dvm *v,const char *c,const char *m,const cha
  if(!strcmp(c,"java/lang/Class")&&!strcmp(m,"asSubclass")&&
     !strcmp(s,"(Ljava/lang/Class;)Ljava/lang/Class;")&&n==1) {
   if(!self)return fail(v,"java/lang/NullPointerException","Class.asSubclass receiver");
-  struct dvm_object *co=dvm__obj(v,self);
-  if(!co||co->kind!=DVM_OBJ_CLASS||!co->klass)return fail(v,"java/lang/IllegalArgumentException","Class.asSubclass receiver");
+  const dvm_ref gc_ref_co_53=(self); if(!gc_operation_admit(v,gc_ref_co_53))return true;
+  if(!dvm__obj(v,gc_ref_co_53)||dvm__obj(v,gc_ref_co_53)->kind!=DVM_OBJ_CLASS||!dvm__obj(v,gc_ref_co_53)->klass)return fail(v,"java/lang/IllegalArgumentException","Class.asSubclass receiver");
   if(!a[0].l)return fail(v,"java/lang/NullPointerException","Class.asSubclass argument");
-  struct dvm_object *ao=dvm__obj(v,a[0].l);
-  if(!ao||ao->kind!=DVM_OBJ_CLASS||!ao->klass)return fail(v,"java/lang/IllegalArgumentException","Class.asSubclass argument");
-  if(!dvm__class_assignable(v,co->klass,ao->klass))return fail(v,"java/lang/ClassCastException","Class.asSubclass");
+  const dvm_ref gc_ref_ao_54=(a[0].l); if(!gc_operation_admit(v,gc_ref_ao_54))return true;
+  if(!dvm__obj(v,gc_ref_ao_54)||dvm__obj(v,gc_ref_ao_54)->kind!=DVM_OBJ_CLASS||!dvm__obj(v,gc_ref_ao_54)->klass)return fail(v,"java/lang/IllegalArgumentException","Class.asSubclass argument");
+  if(!dvm__class_assignable(v,dvm__obj(v,gc_ref_co_53)->klass,dvm__obj(v,gc_ref_ao_54)->klass))return fail(v,"java/lang/ClassCastException","Class.asSubclass");
   out->l=self;return true;
  }
  if(!strcmp(c,"java/lang/Class")&&!strcmp(m,"getName")&&!strcmp(s,"()Ljava/lang/String;")&&n==0) {
-  struct dvm_object *co=dvm__obj(v,self);
-  if(!co||co->kind!=DVM_OBJ_CLASS||!co->klass)return fail(v,"java/lang/NullPointerException","Class.getName receiver");
-  struct dvm_class *k=co->klass;
+  const dvm_ref gc_ref_co_55=(self); if(!gc_operation_admit(v,gc_ref_co_55))return true;
+  if(!dvm__obj(v,gc_ref_co_55)||dvm__obj(v,gc_ref_co_55)->kind!=DVM_OBJ_CLASS||!dvm__obj(v,gc_ref_co_55)->klass)return fail(v,"java/lang/NullPointerException","Class.getName receiver");
+  struct dvm_class *k=dvm__obj(v,gc_ref_co_55)->klass;
   static const struct { const char *desc; const char *name; } primitive_names[]={
    {"Z","boolean"},{"B","byte"},{"C","char"},{"S","short"},
    {"I","int"},{"J","long"},{"F","float"},{"D","double"},{"V","void"}};
@@ -1497,17 +1544,17 @@ bool reflection_runtime_call(struct dvm *v,const char *c,const char *m,const cha
   out->l=metadata_name(v,text);free(text);return true;
  }
  if(!strcmp(c,"java/lang/Class")&&!strcmp(m,"getInterfaces")&&!strcmp(s,"()[Ljava/lang/Class;")&&n==0) {
-  struct dvm_object *co=dvm__obj(v,self);
-  if(!co||co->kind!=DVM_OBJ_CLASS||!co->klass)return fail(v,"java/lang/NullPointerException","Class.getInterfaces receiver");
-  struct dvm_class *k=co->klass;uint32_t count=k->is_primitive?0:k->is_array?2:(uint32_t)k->nifaces;
+  const dvm_ref gc_ref_co_56=(self); if(!gc_operation_admit(v,gc_ref_co_56))return true;
+  if(!dvm__obj(v,gc_ref_co_56)||dvm__obj(v,gc_ref_co_56)->kind!=DVM_OBJ_CLASS||!dvm__obj(v,gc_ref_co_56)->klass)return fail(v,"java/lang/NullPointerException","Class.getInterfaces receiver");
+  struct dvm_class *k=dvm__obj(v,gc_ref_co_56)->klass;uint32_t count=k->is_primitive?0:k->is_array?2:(uint32_t)k->nifaces;
   out->l=dvm_new_array(v,'L',"Ljava/lang/Class;",count);if(!out->l)return fail(v,"java/lang/OutOfMemoryError","Class interfaces");
-  for(uint32_t i=0;i<count;i++){struct dvm_class *iface=k->is_array?dvm_find_class_or_external(v,i?"java/io/Serializable":"java/lang/Cloneable"):k->ifaces[i];((dvm_ref*)dvm_array_data(v,out->l))[i]=dvm_class_object(v,iface);if(dvm_exception(v))return true;}
+  for(uint32_t i=0;i<count;i++){struct dvm_class *iface=k->is_array?dvm_find_class_or_external(v,i?"java/io/Serializable":"java/lang/Cloneable"):k->ifaces[i];((dvm_ref*)({const dvm_ref gc_payload_ref_16=(out->l);if(!gc_operation_admit(v,gc_payload_ref_16))return true;dvm_array_data(v,gc_payload_ref_16);}))[i]=dvm_class_object(v,iface);if(dvm_exception(v))return true;}
   return true;
  }
  if(!strcmp(c,"java/lang/Class")&&!strcmp(m,"getEnclosingClass")&&!strcmp(s,"()Ljava/lang/Class;")&&n==0) {
-  struct dvm_object *co=dvm__obj(v,self);
-  if(!co||co->kind!=DVM_OBJ_CLASS||!co->klass)return fail(v,"java/lang/NullPointerException","Class.getEnclosingClass receiver");
-  struct dvm_class *k=co->klass;out->l=0;
+  const dvm_ref gc_ref_co_57=(self); if(!gc_operation_admit(v,gc_ref_co_57))return true;
+  if(!dvm__obj(v,gc_ref_co_57)||dvm__obj(v,gc_ref_co_57)->kind!=DVM_OBJ_CLASS||!dvm__obj(v,gc_ref_co_57)->klass)return fail(v,"java/lang/NullPointerException","Class.getEnclosingClass receiver");
+  struct dvm_class *k=dvm__obj(v,gc_ref_co_57)->klass;out->l=0;
   /* Both member and local/anonymous classes carry real enclosing metadata.
    * A '$' in a binary name alone does not establish an enclosing class. */
   const char *desc=(!k->is_array&&!k->is_primitive&&k->dex)?dex_class_enclosing_type(k->dex,k->class_def_idx):NULL;
@@ -1515,79 +1562,79 @@ bool reflection_runtime_call(struct dvm *v,const char *c,const char *m,const cha
   return true;
  }
  if(!strcmp(c,"java/lang/Class")&&!strcmp(m,"getSuperclass")&&!strcmp(s,"()Ljava/lang/Class;")&&n==0) {
-  struct dvm_object *co=dvm__obj(v,self);
-  if(!co||co->kind!=DVM_OBJ_CLASS||!co->klass)return fail(v,"java/lang/NullPointerException","Class.getSuperclass receiver");
-  struct dvm_class *k=co->klass;
+  const dvm_ref gc_ref_co_58=(self); if(!gc_operation_admit(v,gc_ref_co_58))return true;
+  if(!dvm__obj(v,gc_ref_co_58)||dvm__obj(v,gc_ref_co_58)->kind!=DVM_OBJ_CLASS||!dvm__obj(v,gc_ref_co_58)->klass)return fail(v,"java/lang/NullPointerException","Class.getSuperclass receiver");
+  struct dvm_class *k=dvm__obj(v,gc_ref_co_58)->klass;
   if(k->is_primitive||k->is_interface){out->l=0;return true;}
   /* Java reports Object as the superclass of every array class. */
   struct dvm_class *parent=k->is_array?dvm__class_by_desc(v,"Ljava/lang/Object;"):k->super;
   out->l=parent?dvm_class_object(v,parent):0;return true;
  }
  if(!strcmp(c,"java/lang/Class")&&!strcmp(m,"isLocalClass")&&!strcmp(s,"()Z")&&n==0) {
-  struct dvm_object *co=dvm__obj(v,self);
-  if(!co||co->kind!=DVM_OBJ_CLASS||!co->klass)return fail(v,"java/lang/NullPointerException","Class.isLocalClass receiver");
-  struct dvm_class *k=co->klass;const char *inner_name=NULL;
+  const dvm_ref gc_ref_co_59=(self); if(!gc_operation_admit(v,gc_ref_co_59))return true;
+  if(!dvm__obj(v,gc_ref_co_59)||dvm__obj(v,gc_ref_co_59)->kind!=DVM_OBJ_CLASS||!dvm__obj(v,gc_ref_co_59)->klass)return fail(v,"java/lang/NullPointerException","Class.isLocalClass receiver");
+  struct dvm_class *k=dvm__obj(v,gc_ref_co_59)->klass;const char *inner_name=NULL;
   /* Local classes are named, non-member enclosed classes; this includes
    * classes in initializer blocks where EnclosingMethod.method is null. */
   out->i=!k->is_array&&!k->is_primitive&&k->dex&&dex_class_enclosing_type(k->dex,k->class_def_idx)&&!dex_class_is_member(k->dex,k->class_def_idx)&&dex_class_inner_name(k->dex,k->class_def_idx,&inner_name)&&inner_name!=NULL;return true;
  }
  if(!strcmp(c,"java/lang/Class")&&!strcmp(m,"isMemberClass")&&!strcmp(s,"()Z")&&!n){
-  struct dvm_object *co=dvm__obj(v,self);
-  if(!co||co->kind!=DVM_OBJ_CLASS||!co->klass)return fail(v,"java/lang/NullPointerException","Class.isMemberClass receiver");
-  struct dvm_class *k=co->klass;
+  const dvm_ref gc_ref_co_60=(self); if(!gc_operation_admit(v,gc_ref_co_60))return true;
+  if(!dvm__obj(v,gc_ref_co_60)||dvm__obj(v,gc_ref_co_60)->kind!=DVM_OBJ_CLASS||!dvm__obj(v,gc_ref_co_60)->klass)return fail(v,"java/lang/NullPointerException","Class.isMemberClass receiver");
+  struct dvm_class *k=dvm__obj(v,gc_ref_co_60)->klass;
   out->i=!k->is_array&&!k->is_primitive&&k->dex&&dex_class_is_member(k->dex,k->class_def_idx);return true;
  }
  if(!strcmp(c,"java/lang/Class")&&!strcmp(m,"isAnonymousClass")&&!strcmp(s,"()Z")&&n==0) {
-  struct dvm_object *co=dvm__obj(v,self);
-  if(!co||co->kind!=DVM_OBJ_CLASS||!co->klass)return fail(v,"java/lang/NullPointerException","Class.isAnonymousClass receiver");
-  struct dvm_class *k=co->klass;const char *inner_name=NULL;
+  const dvm_ref gc_ref_co_61=(self); if(!gc_operation_admit(v,gc_ref_co_61))return true;
+  if(!dvm__obj(v,gc_ref_co_61)||dvm__obj(v,gc_ref_co_61)->kind!=DVM_OBJ_CLASS||!dvm__obj(v,gc_ref_co_61)->klass)return fail(v,"java/lang/NullPointerException","Class.isAnonymousClass receiver");
+  struct dvm_class *k=dvm__obj(v,gc_ref_co_61)->klass;const char *inner_name=NULL;
   out->i=!k->is_array&&!k->is_primitive&&k->dex&&dex_class_inner_name(k->dex,k->class_def_idx,&inner_name)&&inner_name==NULL;return true;
  }
  if(!strcmp(c,"java/lang/Class")&&!strcmp(m,"isInterface")&&!strcmp(s,"()Z")&&n==0) {
-  struct dvm_object *co=dvm__obj(v,self);
-  if(!co||co->kind!=DVM_OBJ_CLASS||!co->klass)return fail(v,"java/lang/NullPointerException","Class.isInterface receiver");
-  out->i=(!co->klass->is_array&&co->klass->is_interface)?1:0;return true;
+  const dvm_ref gc_ref_co_62=(self); if(!gc_operation_admit(v,gc_ref_co_62))return true;
+  if(!dvm__obj(v,gc_ref_co_62)||dvm__obj(v,gc_ref_co_62)->kind!=DVM_OBJ_CLASS||!dvm__obj(v,gc_ref_co_62)->klass)return fail(v,"java/lang/NullPointerException","Class.isInterface receiver");
+  out->i=(!dvm__obj(v,gc_ref_co_62)->klass->is_array&&dvm__obj(v,gc_ref_co_62)->klass->is_interface)?1:0;return true;
  }
  if(!strcmp(c,"java/lang/Class")&&!strcmp(m,"isInstance")&&!strcmp(s,"(Ljava/lang/Object;)Z")&&n==1) {
-  struct dvm_object *co=dvm__obj(v,self);
-  if(!co||co->kind!=DVM_OBJ_CLASS||!co->klass)return fail(v,"java/lang/NullPointerException","Class.isInstance receiver");
+  const dvm_ref gc_ref_co_63=(self); if(!gc_operation_admit(v,gc_ref_co_63))return true;
+  if(!dvm__obj(v,gc_ref_co_63)||dvm__obj(v,gc_ref_co_63)->kind!=DVM_OBJ_CLASS||!dvm__obj(v,gc_ref_co_63)->klass)return fail(v,"java/lang/NullPointerException","Class.isInstance receiver");
   if(!a[0].l){out->i=0;return true;}
   struct dvm_class *from=dvm_object_class(v,a[0].l);
   if(!from)return fail(v,"java/lang/IllegalArgumentException","Class.isInstance argument");
-  out->i=dvm__class_assignable(v,from,co->klass);return true;
+  out->i=dvm__class_assignable(v,from,dvm__obj(v,gc_ref_co_63)->klass);return true;
  }
  if(!strcmp(c,"java/lang/Class")&&!strcmp(m,"getComponentType")&&!strcmp(s,"()Ljava/lang/Class;")&&n==0) {
-  struct dvm_object *co=dvm__obj(v,self);
-  if(!co||co->kind!=DVM_OBJ_CLASS||!co->klass)return fail(v,"java/lang/NullPointerException","Class.getComponentType receiver");
-  struct dvm_class *elem=co->klass->is_array?co->klass->elem:NULL;
+  const dvm_ref gc_ref_co_64=(self); if(!gc_operation_admit(v,gc_ref_co_64))return true;
+  if(!dvm__obj(v,gc_ref_co_64)||dvm__obj(v,gc_ref_co_64)->kind!=DVM_OBJ_CLASS||!dvm__obj(v,gc_ref_co_64)->klass)return fail(v,"java/lang/NullPointerException","Class.getComponentType receiver");
+  struct dvm_class *elem=dvm__obj(v,gc_ref_co_64)->klass->is_array?dvm__obj(v,gc_ref_co_64)->klass->elem:NULL;
   out->l=elem?dvm_class_object(v,elem):0;return true;
  }
  if(!strcmp(c,"java/lang/Class")&&!strcmp(m,"getModifiers")&&!strcmp(s,"()I")&&n==0) {
-  struct dvm_object *co=dvm__obj(v,self);
-  if(!co||co->kind!=DVM_OBJ_CLASS||!co->klass)return fail(v,"java/lang/NullPointerException","Class.getModifiers receiver");
-  struct dvm_class *k=co->klass;
+  const dvm_ref gc_ref_co_65=(self); if(!gc_operation_admit(v,gc_ref_co_65))return true;
+  if(!dvm__obj(v,gc_ref_co_65)||dvm__obj(v,gc_ref_co_65)->kind!=DVM_OBJ_CLASS||!dvm__obj(v,gc_ref_co_65)->klass)return fail(v,"java/lang/NullPointerException","Class.getModifiers receiver");
+  struct dvm_class *k=dvm__obj(v,gc_ref_co_65)->klass;
   if(k->is_array)out->i=0x11;            /* public final */
   else if(k->is_primitive)out->i=0x411;  /* public abstract final */
   else {uint32_t flags=k->access;if(k->dex) (void)dex_class_inner_flags(k->dex,k->class_def_idx,&flags);out->i=flags;}
   return true;
  }
  if(!strcmp(c,"java/lang/Class")&&!strcmp(m,"cast")&&!strcmp(s,"(Ljava/lang/Object;)Ljava/lang/Object;")&&n==1) {
-  struct dvm_object *co=dvm__obj(v,self);
-  if(!co||co->kind!=DVM_OBJ_CLASS||!co->klass)return fail(v,"java/lang/NullPointerException","Class.cast receiver");
+  const dvm_ref gc_ref_co_66=(self); if(!gc_operation_admit(v,gc_ref_co_66))return true;
+  if(!dvm__obj(v,gc_ref_co_66)||dvm__obj(v,gc_ref_co_66)->kind!=DVM_OBJ_CLASS||!dvm__obj(v,gc_ref_co_66)->klass)return fail(v,"java/lang/NullPointerException","Class.cast receiver");
   if(!a[0].l){out->l=0;return true;}
   struct dvm_class *from=dvm_object_class(v,a[0].l);
   if(!from)return fail(v,"java/lang/IllegalArgumentException","Class.cast argument");
-  if(!dvm__class_assignable(v,from,co->klass))return fail(v,"java/lang/ClassCastException","Class.cast");
+  if(!dvm__class_assignable(v,from,dvm__obj(v,gc_ref_co_66)->klass))return fail(v,"java/lang/ClassCastException","Class.cast");
   out->l=a[0].l;return true;
  }
  if(!strcmp(c,"java/lang/Class")&&!strcmp(m,"isAssignableFrom")&&!strcmp(s,"(Ljava/lang/Class;)Z")&&n==1) {
   if(!self)return fail(v,"java/lang/NullPointerException","Class.isAssignableFrom receiver");
-  struct dvm_object *co=dvm__obj(v,self);
-  if(!co||co->kind!=DVM_OBJ_CLASS||!co->klass)return fail(v,"java/lang/IllegalArgumentException","Class.isAssignableFrom receiver");
+  const dvm_ref gc_ref_co_67=(self); if(!gc_operation_admit(v,gc_ref_co_67))return true;
+  if(!dvm__obj(v,gc_ref_co_67)||dvm__obj(v,gc_ref_co_67)->kind!=DVM_OBJ_CLASS||!dvm__obj(v,gc_ref_co_67)->klass)return fail(v,"java/lang/IllegalArgumentException","Class.isAssignableFrom receiver");
   if(!a[0].l)return fail(v,"java/lang/NullPointerException","Class.isAssignableFrom argument");
-  struct dvm_object *ao=dvm__obj(v,a[0].l);
-  if(!ao||ao->kind!=DVM_OBJ_CLASS||!ao->klass)return fail(v,"java/lang/IllegalArgumentException","Class.isAssignableFrom argument");
-  out->i=dvm__class_assignable(v,ao->klass,co->klass);
+  const dvm_ref gc_ref_ao_68=(a[0].l); if(!gc_operation_admit(v,gc_ref_ao_68))return true;
+  if(!dvm__obj(v,gc_ref_ao_68)||dvm__obj(v,gc_ref_ao_68)->kind!=DVM_OBJ_CLASS||!dvm__obj(v,gc_ref_ao_68)->klass)return fail(v,"java/lang/IllegalArgumentException","Class.isAssignableFrom argument");
+  out->i=dvm__class_assignable(v,dvm__obj(v,gc_ref_ao_68)->klass,dvm__obj(v,gc_ref_co_67)->klass);
   return true;
  }
  /* Class metadata predicates backed by the DEX record itself: primitive
@@ -1597,9 +1644,9 @@ bool reflection_runtime_call(struct dvm *v,const char *c,const char *m,const cha
  if(!strcmp(c,"java/lang/Class")&&n==0&&!strcmp(s,"()Z")&&
     (!strcmp(m,"isPrimitive")||!strcmp(m,"isEnum")||!strcmp(m,"isAnnotation")||!strcmp(m,"isSynthetic"))) {
   if(!self)return fail(v,"java/lang/NullPointerException","Class predicate receiver");
-  struct dvm_object *co=dvm__obj(v,self);
-  if(!co||co->kind!=DVM_OBJ_CLASS||!co->klass)return fail(v,"java/lang/IllegalArgumentException","Class predicate receiver");
-  struct dvm_class *k=co->klass;
+  const dvm_ref gc_ref_co_69=(self); if(!gc_operation_admit(v,gc_ref_co_69))return true;
+  if(!dvm__obj(v,gc_ref_co_69)||dvm__obj(v,gc_ref_co_69)->kind!=DVM_OBJ_CLASS||!dvm__obj(v,gc_ref_co_69)->klass)return fail(v,"java/lang/IllegalArgumentException","Class predicate receiver");
+  struct dvm_class *k=dvm__obj(v,gc_ref_co_69)->klass;
   if(!strcmp(m,"isPrimitive"))out->i=k->is_primitive?1:0;
   else if(!strcmp(m,"isEnum"))out->i=(!k->is_array&&(k->access&DEX_ACC_ENUM))?1:0;
   else if(!strcmp(m,"isAnnotation"))out->i=(!k->is_array&&(k->access&DEX_ACC_ANNOTATION))?1:0;
@@ -1612,31 +1659,31 @@ bool reflection_runtime_call(struct dvm *v,const char *c,const char *m,const cha
   * metadata, not a boolean answer. */
  if(!strcmp(c,"java/lang/Class")&&!strcmp(m,"isArray")&&!strcmp(s,"()Z")&&n==0) {
   if(!self)return fail(v,"java/lang/NullPointerException","Class.isArray receiver");
-  struct dvm_object *co=dvm__obj(v,self);
-  if(!co||co->kind!=DVM_OBJ_CLASS||!co->klass)return fail(v,"java/lang/IllegalArgumentException","Class.isArray receiver");
-  if(!co->klass->desc)return fail(v,"java/lang/InternalError","Class.isArray descriptor");
-  out->i=co->klass->desc[0]=='[';
+  const dvm_ref gc_ref_co_70=(self); if(!gc_operation_admit(v,gc_ref_co_70))return true;
+  if(!dvm__obj(v,gc_ref_co_70)||dvm__obj(v,gc_ref_co_70)->kind!=DVM_OBJ_CLASS||!dvm__obj(v,gc_ref_co_70)->klass)return fail(v,"java/lang/IllegalArgumentException","Class.isArray receiver");
+  if(!dvm__obj(v,gc_ref_co_70)->klass->desc)return fail(v,"java/lang/InternalError","Class.isArray descriptor");
+  out->i=dvm__obj(v,gc_ref_co_70)->klass->desc[0]=='[';
   return true;
  }
  if(!strcmp(c,"java/lang/reflect/Constructor")&&!strcmp(m,"getModifiers")&&!strcmp(s,"()I")&&!n){
-  struct dvm_object *co=dvm__obj(v,self);reflected *r=co&&co->data_destroy==reflected_free?co->data:NULL;
+  const dvm_ref gc_ref_co_71=(self); if(!gc_operation_admit(v,gc_ref_co_71))return true;reflected *r=dvm__obj(v,gc_ref_co_71)&&dvm__obj(v,gc_ref_co_71)->data_destroy==reflected_free?dvm__obj(v,gc_ref_co_71)->data:NULL;
   if(!r||r->kind!=3||!r->ctor)return fail(v,"java/lang/IllegalArgumentException","Constructor.getModifiers receiver");
   /* DEX's 0x10000 constructor marker is not a Java modifier bit. */
   out->i=(int32_t)(r->ctor->access&0xffffu);return true;
  }
  if(!strcmp(c,"java/lang/reflect/Constructor")&&!strcmp(m,"isAccessible")&&!strcmp(s,"()Z")&&!n){
-  struct dvm_object *object=dvm__obj(v,self);reflected *r=object&&object->data_destroy==reflected_free?object->data:NULL;
+  const dvm_ref gc_ref_object_72=(self); if(!gc_operation_admit(v,gc_ref_object_72))return true;reflected *r=dvm__obj(v,gc_ref_object_72)&&dvm__obj(v,gc_ref_object_72)->data_destroy==reflected_free?dvm__obj(v,gc_ref_object_72)->data:NULL;
   if(!r||r->kind!=3||!r->ctor)return fail(v,"java/lang/IllegalArgumentException","Constructor.isAccessible receiver");out->i=r->accessible;return true;
  }
  if(!strcmp(c,"java/lang/reflect/Constructor")&&!strcmp(m,"setAccessible")&&!strcmp(s,"(Z)V")&&n==1) {
-  struct dvm_object *object=dvm__obj(v,self);
-  reflected *r=object&&object->data_destroy==reflected_free?object->data:NULL;
+  const dvm_ref gc_ref_object_73=(self); if(!gc_operation_admit(v,gc_ref_object_73))return true;
+  reflected *r=dvm__obj(v,gc_ref_object_73)&&dvm__obj(v,gc_ref_object_73)->data_destroy==reflected_free?dvm__obj(v,gc_ref_object_73)->data:NULL;
   if(!r||r->kind!=3||!r->ctor)return fail(v,"java/lang/IllegalArgumentException","Constructor.setAccessible receiver");
   r->accessible=a[0].i!=0;
   return true;
  }
  if(!strcmp(c,"java/lang/reflect/Constructor")&&!strcmp(m,"newInstance")&&!strcmp(s,"([Ljava/lang/Object;)Ljava/lang/Object;")&&n==1) {
-  struct dvm_object *mo=dvm__obj(v,self);reflected *r=mo&&mo->data_destroy==reflected_free?mo->data:NULL;
+  const dvm_ref gc_ref_mo_74=(self); if(!gc_operation_admit(v,gc_ref_mo_74))return true;reflected *r=dvm__obj(v,gc_ref_mo_74)&&dvm__obj(v,gc_ref_mo_74)->data_destroy==reflected_free?dvm__obj(v,gc_ref_mo_74)->data:NULL;
   if(!r||r->kind!=3||!r->ctor||!r->owner)return fail(v,"java/lang/IllegalArgumentException","Constructor.newInstance receiver");
   if(!(r->ctor->access&DEX_ACC_PUBLIC)&&!r->accessible)return fail(v,"java/lang/IllegalAccessException","constructor is not public");
   if(r->owner->access&(DEX_ACC_ABSTRACT|DEX_ACC_INTERFACE))return fail(v,"java/lang/InstantiationException","abstract class");
@@ -1656,15 +1703,15 @@ bool reflection_runtime_call(struct dvm *v,const char *c,const char *m,const cha
   out->l=object;return true;
  }
  if(!strcmp(c,"java/lang/Class")&&(!strcmp(m,"getMethod")||!strcmp(m,"getDeclaredMethod"))&&!strcmp(s,"(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;")&&n==2) {
-  struct dvm_object *co=dvm__obj(v,self);
-  if(!co||co->kind!=DVM_OBJ_CLASS||!co->klass||!a[0].l)return fail(v,"java/lang/NullPointerException","Class.getMethod");
+  const dvm_ref gc_ref_co_75=(self); if(!gc_operation_admit(v,gc_ref_co_75))return true;
+  if(!dvm__obj(v,gc_ref_co_75)||dvm__obj(v,gc_ref_co_75)->kind!=DVM_OBJ_CLASS||!dvm__obj(v,gc_ref_co_75)->klass||!a[0].l)return fail(v,"java/lang/NullPointerException","Class.getMethod");
   /* Java rejects a null parameter array before any lookup; an empty array is
    * the varargs form and is valid. */
   if(!a[1].l)return fail(v,"java/lang/NullPointerException","getMethod parameter types");
   if(!is_class_array(v,a[1].l))return fail(v,"java/lang/IllegalArgumentException","getMethod parameter types");
-  const char *name=dvm_string_utf8(v,a[0].l);if(!name||memchr(name,0,dvm_string_utf8_length(v,a[0].l)))return fail(v,"java/lang/IllegalArgumentException","method name");
+  const char *name=({const dvm_ref gc_payload_ref_17=(a[0].l);if(!gc_operation_admit(v,gc_payload_ref_17))return true;dvm_string_utf8(v,gc_payload_ref_17);});if(!name||memchr(name,0,dvm_string_utf8_length(v,a[0].l)))return fail(v,"java/lang/IllegalArgumentException","method name");
   bool declared=!strcmp(m,"getDeclaredMethod");uint32_t count=dvm_array_length(v,a[1].l);
-  struct dvm_class *owner=co->klass;
+  struct dvm_class *owner=dvm__obj(v,gc_ref_co_75)->klass;
   /* Argument validation is part of the Java contract and comes before the
    * special cases: a null element is NPE even when the receiver itself is a
    * host stub.  The same prefix is the exact match key below. */
@@ -1677,8 +1724,8 @@ bool reflection_runtime_call(struct dvm *v,const char *c,const char *m,const cha
   int kind=0;
   if(!declared&&!count&&!strcmp(owner->name,"android/content/SharedPreferences$Editor")&&!strcmp(name,"apply"))kind=1;
   if(declared&&count==1&&!strcmp(owner->name,"java/lang/Throwable")&&!strcmp(name,"addSuppressed")){
-   dvm_ref item=((dvm_ref*)dvm_array_data(v,a[1].l))[0];struct dvm_object *type=dvm__obj(v,item);
-   if(type&&type->kind==DVM_OBJ_CLASS&&type->klass==owner)kind=2;
+   dvm_ref item=((dvm_ref*)({const dvm_ref gc_payload_ref_18=(a[1].l);if(!gc_operation_admit(v,gc_payload_ref_18))return true;dvm_array_data(v,gc_payload_ref_18);}))[0];const dvm_ref gc_ref_type_76=(item); if(!gc_operation_admit(v,gc_ref_type_76))return true;
+   if(dvm__obj(v,gc_ref_type_76)&&dvm__obj(v,gc_ref_type_76)->kind==DVM_OBJ_CLASS&&dvm__obj(v,gc_ref_type_76)->klass==owner)kind=2;
   }
   if(!kind&&((!strcmp(owner->name,"javax/net/ssl/SSLParameters")&&!strcmp(name,"setApplicationProtocols"))||(!strcmp(owner->name,"javax/net/ssl/SSLSocket")&&!strcmp(name,"getApplicationProtocol")))){free(params);return fail(v,"java/lang/NoSuchMethodException",name);}
   if(kind){free(params);return new_method_object(v,owner,kind,NULL,out);}
@@ -1704,12 +1751,12 @@ bool reflection_runtime_call(struct dvm *v,const char *c,const char *m,const cha
   * security manager.  Method.invoke uses it to decide whether a non-public
   * dex method may be called; public methods need no flag. */
  if(!strcmp(c,"java/lang/reflect/Method")&&!strcmp(m,"setAccessible")&&!strcmp(s,"(Z)V")&&n==1) {
-  struct dvm_object *mo=dvm__obj(v,self);reflected *r=mo&&mo->data_destroy==reflected_free?mo->data:NULL;
+  const dvm_ref gc_ref_mo_77=(self); if(!gc_operation_admit(v,gc_ref_mo_77))return true;reflected *r=dvm__obj(v,gc_ref_mo_77)&&dvm__obj(v,gc_ref_mo_77)->data_destroy==reflected_free?dvm__obj(v,gc_ref_mo_77)->data:NULL;
   if(!r||(r->kind!=1&&r->kind!=2&&r->kind!=5))return fail(v,"java/lang/IllegalArgumentException","Method.setAccessible receiver");
   r->accessible=a[0].i!=0;return true;
  }
  if(!strcmp(c,"java/lang/reflect/Method")&&!strcmp(m,"getReturnType")&&!strcmp(s,"()Ljava/lang/Class;")&&n==0) {
-  struct dvm_object *mo=dvm__obj(v,self);reflected *r=mo&&mo->data_destroy==reflected_free?mo->data:NULL;
+  const dvm_ref gc_ref_mo_78=(self); if(!gc_operation_admit(v,gc_ref_mo_78))return true;reflected *r=dvm__obj(v,gc_ref_mo_78)&&dvm__obj(v,gc_ref_mo_78)->data_destroy==reflected_free?dvm__obj(v,gc_ref_mo_78)->data:NULL;
   if(!r||(r->kind!=1&&r->kind!=2&&r->kind!=5))return fail(v,"java/lang/IllegalArgumentException","Method.getReturnType receiver");
   const char *sig=r->kind==5?(r->method?r->method->sig:NULL):"()V";
   const char *ret=sig?strchr(sig,')'):NULL;
@@ -1736,8 +1783,8 @@ bool reflection_runtime_call(struct dvm *v,const char *c,const char *m,const cha
     !strcmp(m,"getParameterTypes")&&!strcmp(s,"()[Ljava/lang/Class;")&&n==0) {
   reflected *r=NULL;
   if(!strcmp(c,"java/lang/reflect/Constructor")){
-   struct dvm_object *object=dvm__obj(v,self);
-   r=object&&object->data_destroy==reflected_free?object->data:NULL;
+   const dvm_ref gc_ref_object_79=(self); if(!gc_operation_admit(v,gc_ref_object_79))return true;
+   r=dvm__obj(v,gc_ref_object_79)&&dvm__obj(v,gc_ref_object_79)->data_destroy==reflected_free?dvm__obj(v,gc_ref_object_79)->data:NULL;
    if(!r||r->kind!=3||!r->ctor)return fail(v,"java/lang/IllegalArgumentException","Constructor.getParameterTypes receiver");
   }else if(!any_method_reflected(v,self,&r))return fail(v,"java/lang/IllegalArgumentException","Method.getParameterTypes receiver");
   const char *sig=r->kind==3?r->sig:r->kind==1?"()V":r->kind==2?"(Ljava/lang/Throwable;)V":r->method?r->method->sig:NULL;
@@ -1751,7 +1798,7 @@ bool reflection_runtime_call(struct dvm *v,const char *c,const char *m,const cha
   if(*p!=')')return fail(v,"java/lang/InternalError","method signature");
   dvm_ref types=dvm_new_array(v,'L',"Ljava/lang/Class;",count);
   if(!types)return fail(v,"java/lang/OutOfMemoryError","Method.getParameterTypes array");
-  dvm_ref *items=dvm_array_data(v,types);
+  dvm_ref *items=({const dvm_ref gc_payload_ref_19=(types);if(!gc_operation_admit(v,gc_payload_ref_19))return true;dvm_array_data(v,gc_payload_ref_19);});
   p=sig+1;uint32_t at=0;
   while(*p&&*p!=')') {
    const char *end=field_desc_end(p);
@@ -1780,7 +1827,7 @@ bool reflection_runtime_call(struct dvm *v,const char *c,const char *m,const cha
   return new_annotation(v,type,r->method->dex,off,out);
  }
  if(!strcmp(c,"java/lang/reflect/Method")&&!strcmp(m,"invoke")&&!strcmp(s,"(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;")&&n==2) {
-  struct dvm_object *mo=dvm__obj(v,self);reflected *r=mo&&mo->data_destroy==reflected_free?mo->data:NULL;
+  const dvm_ref gc_ref_mo_80=(self); if(!gc_operation_admit(v,gc_ref_mo_80))return true;reflected *r=dvm__obj(v,gc_ref_mo_80)&&dvm__obj(v,gc_ref_mo_80)->data_destroy==reflected_free?dvm__obj(v,gc_ref_mo_80)->data:NULL;
   if(!r)return fail(v,"java/lang/IllegalArgumentException","Method.invoke receiver");
   if(!is_object_array(v,a[1].l))return fail(v,"java/lang/IllegalArgumentException","Method.invoke arguments");
   uint32_t count=a[1].l?dvm_array_length(v,a[1].l):0;
@@ -1789,10 +1836,10 @@ bool reflection_runtime_call(struct dvm *v,const char *c,const char *m,const cha
    * Throwable.addSuppressed(Throwable) takes exactly one. */
   if(r->kind==1||r->kind==2) {
    if(count!=(r->kind==2?1u:0u))return fail(v,"java/lang/IllegalArgumentException","Method.invoke arguments");
-   struct dvm_object *target=dvm__obj(v,a[0].l);
-   if(!target||!dvm__class_assignable(v,target->cls,r->owner))return fail(v,"java/lang/IllegalArgumentException","Method.invoke target");
+   const dvm_ref gc_ref_target_81=(a[0].l); if(!gc_operation_admit(v,gc_ref_target_81))return true;
+   if(!dvm__obj(v,gc_ref_target_81)||!dvm__class_assignable(v,dvm__obj(v,gc_ref_target_81)->cls,r->owner))return fail(v,"java/lang/IllegalArgumentException","Method.invoke target");
    if(r->kind==1) {union dvm_value ignored={0};if(!prefs_runtime_call(v,"android/content/SharedPreferences$Editor","apply","()V",a[0].l,NULL,0,&ignored))return fail(v,"java/lang/IllegalArgumentException","Method.invoke editor");out->l=0;return true;}
-   dvm_ref value=((dvm_ref*)dvm_array_data(v,a[1].l))[0];out->l=0;return add_suppressed(v,a[0].l,value);
+   dvm_ref value=((dvm_ref*)({const dvm_ref gc_payload_ref_20=(a[1].l);if(!gc_operation_admit(v,gc_payload_ref_20))return true;dvm_array_data(v,gc_payload_ref_20);}))[0];out->l=0;return add_suppressed(v,a[0].l,value);
   }
   reflected *mr;
   if(!method_reflected(v,self,&mr))return fail(v,"java/lang/IllegalArgumentException","Method.invoke receiver");
@@ -1803,8 +1850,8 @@ bool reflection_runtime_call(struct dvm *v,const char *c,const char *m,const cha
    * (interfaces included through dvm__class_assignable). */
   if(!is_static) {
    if(!a[0].l)return fail(v,"java/lang/NullPointerException","Method.invoke target");
-   struct dvm_object *target=dvm__obj(v,a[0].l);
-   if(!target||!target->cls||!dvm__class_assignable(v,target->cls,mr->owner))return fail(v,"java/lang/IllegalArgumentException","Method.invoke target");
+   const dvm_ref gc_ref_target_82=(a[0].l); if(!gc_operation_admit(v,gc_ref_target_82))return true;
+   if(!dvm__obj(v,gc_ref_target_82)||!dvm__obj(v,gc_ref_target_82)->cls||!dvm__class_assignable(v,dvm__obj(v,gc_ref_target_82)->cls,mr->owner))return fail(v,"java/lang/IllegalArgumentException","Method.invoke target");
   }
   if(!(mth->access&DEX_ACC_PUBLIC)&&!mr->accessible)return fail(v,"java/lang/IllegalAccessException","method is not public");
   union dvm_value *args=NULL;int argc=0;
@@ -1827,6 +1874,15 @@ bool reflection_runtime_call(struct dvm *v,const char *c,const char *m,const cha
  }
  return false;
 }
+bool reflection_runtime_call(struct dvm *v,const char *c,const char *m,const char *s,dvm_ref self,const union dvm_value *a,int n,union dvm_value *out){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return true;
+ bool result=reflection_runtime_call_operation(v,c,m,s,self,a,n,out);
+ const char *return_type=s?strchr(s,')'):NULL;
+ gc_operation_result(&operation,s,result&&!dvm_exception(v)&&out&&return_type&&(return_type[1]=='L'||return_type[1]=='[')?out->l:0);
+ return result;
+}
+
 static int fixture_argument_count;
 static union dvm_value fixture_argument[2];
 static bool fixture_ctor(struct dvm *v,dvm_ref self,const union dvm_value *a,int n,union dvm_value *out){
@@ -1867,7 +1923,7 @@ static void install_fixture_method(struct dvm_class *c,int index,const char *nam
 static dvm_ref fixture_types(struct dvm *v,const char *const *descs,int count){
  dvm_ref types=dvm_new_array(v,'L',"Ljava/lang/Class;",(uint32_t)count);
  if(!types)return 0;
- dvm_ref *items=dvm_array_data(v,types);
+ dvm_ref *items=({const dvm_ref gc_payload_ref_21=(types);if(!gc_operation_admit(v,gc_payload_ref_21))return 0;dvm_array_data(v,gc_payload_ref_21);});
  for(int i=0;i<count;i++){
   struct dvm_class *c=descs[i][0]=='L'||descs[i][0]=='['?dvm__class_by_desc(v,descs[i]):dvm__define_primitive(v,descs[i]);
   if(!c)return 0;
@@ -1888,7 +1944,7 @@ static dvm_ref fixture_constructor(struct dvm *v,dvm_ref klass,const char *const
 static dvm_ref object_arguments(struct dvm *v,dvm_ref first,int count){
  dvm_ref values=dvm_new_array(v,'L',"Ljava/lang/Object;",(uint32_t)count);
  if(!values)return 0;
- dvm_ref *items=dvm_array_data(v,values);
+ dvm_ref *items=({const dvm_ref gc_payload_ref_22=(values);if(!gc_operation_admit(v,gc_payload_ref_22))return 0;dvm_array_data(v,gc_payload_ref_22);});
  for(int i=0;i<count;i++)items[i]=i?0:first;
  return values;
 }
@@ -1896,12 +1952,12 @@ static bool construct(struct dvm *v,dvm_ref ctor,dvm_ref values,dvm_ref *result)
  if(result)*result=0;
  union dvm_value arg={.l=values},out={0};
  if(!reflection_runtime_call(v,"java/lang/reflect/Constructor","newInstance","([Ljava/lang/Object;)Ljava/lang/Object;",ctor,&arg,1,&out))return false;
- if(result&&out.l&&!dvm_exception(v))*result=out.l;
+ if(result&&!dvm_exception(v)&&out.l&&!dvm_exception(v))*result=out.l;
  return true;
 }
 static bool class_named(struct dvm *v,dvm_ref ref,const char *name){
- struct dvm_object *o=dvm__obj(v,ref);
- return o&&o->cls&&o->cls->name&&!strcmp(o->cls->name,name);
+ const dvm_ref gc_ref_o_83=(ref); if(!gc_operation_admit(v,gc_ref_o_83))return false;
+ return dvm__obj(v,gc_ref_o_83)&&dvm__obj(v,gc_ref_o_83)->cls&&dvm__obj(v,gc_ref_o_83)->cls->name&&!strcmp(dvm__obj(v,gc_ref_o_83)->cls->name,name);
 }
 static bool exception_named(struct dvm *v,const char *name){return class_named(v,dvm_exception(v),name);}
 static dvm_ref box_value(struct dvm *v,const char *cls,const char *sig,union dvm_value arg){
@@ -1917,13 +1973,13 @@ static void fixture_field(struct dvm_field *f,struct dvm_class *owner,const char
  f->kind=dvm__kind_of(type);f->width=1;f->slot=slot;
 }
 static dvm_ref declared_field_named(struct dvm *v,dvm_ref fields,const char *name){
- uint32_t count=dvm_array_length(v,fields);dvm_ref *items=dvm_array_data(v,fields);
+ uint32_t count=dvm_array_length(v,fields);dvm_ref *items=({const dvm_ref gc_payload_ref_23=(fields);if(!gc_operation_admit(v,gc_payload_ref_23))return 0;dvm_array_data(v,gc_payload_ref_23);});
  if(!items)return 0;
  for(uint32_t i=0;i<count;i++){
   union dvm_value out={0};
   if(!reflection_runtime_call(v,"java/lang/reflect/Field","getName","()Ljava/lang/String;",items[i],NULL,0,&out))return 0;
   if(dvm_exception(v))return 0;
-  const char *text=out.l?dvm_string_utf8(v,out.l):NULL;
+  const char *text=out.l?({const dvm_ref gc_payload_ref_24=(out.l);if(!gc_operation_admit(v,gc_payload_ref_24))return 0;dvm_string_utf8(v,gc_payload_ref_24);}):NULL;
   if(text&&!strcmp(text,name))return items[i];
  }
  return 0;
@@ -1932,8 +1988,8 @@ static bool field_type_is(struct dvm *v,dvm_ref field,struct dvm_class *want){
  union dvm_value out={0};
  if(!reflection_runtime_call(v,"java/lang/reflect/Field","getType","()Ljava/lang/Class;",field,NULL,0,&out))return false;
  if(dvm_exception(v)||!out.l)return false;
- struct dvm_object *o=dvm__obj(v,out.l);
- return o&&o->kind==DVM_OBJ_CLASS&&o->klass==want;
+ const dvm_ref gc_ref_o_84=(out.l); if(!gc_operation_admit(v,gc_ref_o_84))return false;
+ return dvm__obj(v,gc_ref_o_84)&&dvm__obj(v,gc_ref_o_84)->kind==DVM_OBJ_CLASS&&dvm__obj(v,gc_ref_o_84)->klass==want;
 }
 static bool field_modifiers_are(struct dvm *v,dvm_ref field,uint32_t want){
  union dvm_value out={0};
@@ -2039,10 +2095,10 @@ static void task3_report_exception(struct dvm *v,const char *step){
   struct dvm_class *type=dvm_object_class(v,error);union dvm_value text={0},stack={0},cause={0};
   throwable_reference_call(v,"java/lang/Throwable","toString","()Ljava/lang/String;",error,NULL,0,&text);
   throwable_reference_call(v,"java/lang/Throwable","getStackTrace","()[Ljava/lang/StackTraceElement;",error,NULL,0,&stack);
-  dvm_ref frame=stack.l&&dvm_array_length(v,stack.l)?((dvm_ref*)dvm_array_data(v,stack.l))[0]:0;
+  dvm_ref frame=stack.l&&dvm_array_length(v,stack.l)?((dvm_ref*)({const dvm_ref gc_payload_ref_25=(stack.l);if(!gc_operation_admit(v,gc_payload_ref_25))return ;dvm_array_data(v,gc_payload_ref_25);}))[0]:0;
   union dvm_value owner={0},method={0};
   if(frame){dvm_get_field(v,frame,"declaringClass","Ljava/lang/String;",&owner);dvm_get_field(v,frame,"methodName","Ljava/lang/String;",&method);}
-  sdk_trace_fprintf(stderr,"TASK3_EXCEPTION step=%s depth=%d type=%s text=%s toString=%s stack0=%s.%s\n",step,depth,type?type->name:"not_found",description,text.l?dvm_string_utf8(v,text.l):"not_found",owner.l?dvm_string_utf8(v,owner.l):"not_found",method.l?dvm_string_utf8(v,method.l):"-");
+  sdk_trace_fprintf(stderr,"TASK3_EXCEPTION step=%s depth=%d type=%s text=%s toString=%s stack0=%s.%s\n",step,depth,type?type->name:"not_found",description,text.l?({const dvm_ref gc_payload_ref_26=(text.l);if(!gc_operation_admit(v,gc_payload_ref_26))return ;dvm_string_utf8(v,gc_payload_ref_26);}):"not_found",owner.l?({const dvm_ref gc_payload_ref_27=(owner.l);if(!gc_operation_admit(v,gc_payload_ref_27))return ;dvm_string_utf8(v,gc_payload_ref_27);}):"not_found",method.l?({const dvm_ref gc_payload_ref_28=(method.l);if(!gc_operation_admit(v,gc_payload_ref_28))return ;dvm_string_utf8(v,gc_payload_ref_28);}):"-");
   throwable_reference_call(v,"java/lang/Throwable","getCause","()Ljava/lang/Throwable;",error,NULL,0,&cause);
   dvm_clear_exception(v);if(cause.l==error)break;error=cause.l;
  }
@@ -2051,7 +2107,7 @@ static void task3_report_exception(struct dvm *v,const char *step){
 /* Exercise actual shipped constructors and Gson's own allocator on the
  * application VM after all three original DEX files have been loaded. No
  * credentials, request data, callbacks or SDK constructor choices are changed. */
-bool reflection_task3_constructor_probe(struct dvm *v){
+static bool reflection_task3_constructor_probe_operation(struct dvm *v){
  struct dvm_class *data=dvm_find_class(v,"com/base/featureflag/FeatureResponse$Data");
  struct dvm_class *outer=dvm_find_class(v,"com/base/featureflag/FeatureResponse");
  if(!data||!outer)return false;
@@ -2066,7 +2122,7 @@ bool reflection_task3_constructor_probe(struct dvm *v){
  dvm_ref constructors=out.l;uint32_t count=dvm_array_length(v,constructors);
  sdk_trace_fprintf(stderr,"TASK3_CONSTRUCTORS count=%u class=%s enclosing=%s\n",count,data->name,dex_class_enclosing_type(data->dex,data->class_def_idx));
  for(uint32_t i=0;i<count;i++){
-  dvm_ref ref=((dvm_ref*)dvm_array_data(v,constructors))[i];struct dvm_object *object=dvm__obj(v,ref);reflected *r=object?object->data:NULL;
+  dvm_ref ref=((dvm_ref*)({const dvm_ref gc_payload_ref_29=(constructors);if(!gc_operation_admit(v,gc_payload_ref_29))return 0;dvm_array_data(v,gc_payload_ref_29);}))[i];const dvm_ref gc_ref_object_85=(ref); if(!gc_operation_admit(v,gc_ref_object_85))return false;reflected *r=dvm__obj(v,gc_ref_object_85)?dvm__obj(v,gc_ref_object_85)->data:NULL;
   if(!r||r->kind!=3||!r->ctor)return false;
   sdk_trace_fprintf(stderr,"TASK3_CONSTRUCTOR index=%u ref=%u signature=%s modifiers=0x%x synthetic=%d accessible=%d\n",i,ref,r->sig,r->ctor->access&0xffff,(r->ctor->access&DEX_ACC_SYNTHETIC)!=0,r->accessible);
  }
@@ -2074,7 +2130,7 @@ bool reflection_task3_constructor_probe(struct dvm *v){
  bool found=reflection_runtime_call(v,"java/lang/Class","getDeclaredConstructor","([Ljava/lang/Class;)Ljava/lang/reflect/Constructor;",klass,&arg,1,&out);
  sdk_trace_fprintf(stderr,"TASK3_LOOKUP parameters=() handled=%d result=%u exception=%u\n",found,out.l,dvm_exception(v));
  task3_report_exception(v,"getDeclaredConstructor_empty");
- arg.l=dvm_new_array(v,'L',"Ljava/lang/Class;",1);((dvm_ref*)dvm_array_data(v,arg.l))[0]=dvm_class_object(v,outer);out.l=0;
+ arg.l=dvm_new_array(v,'L',"Ljava/lang/Class;",1);((dvm_ref*)({const dvm_ref gc_payload_ref_30=(arg.l);if(!gc_operation_admit(v,gc_payload_ref_30))return 0;dvm_array_data(v,gc_payload_ref_30);}))[0]=dvm_class_object(v,outer);out.l=0;
  if(!reflection_runtime_call(v,"java/lang/Class","getDeclaredConstructor","([Ljava/lang/Class;)Ljava/lang/reflect/Constructor;",klass,&arg,1,&out)||dvm_exception(v)||!out.l)return false;
  dvm_ref constructor=out.l;union dvm_value values={.l=dvm_new_array(v,'L',"Ljava/lang/Object;",0)};out.l=0;
  reflection_runtime_call(v,"java/lang/reflect/Constructor","newInstance","([Ljava/lang/Object;)Ljava/lang/Object;",constructor,&values,1,&out);
@@ -2085,7 +2141,7 @@ bool reflection_task3_constructor_probe(struct dvm *v){
  out.l=0;reflection_runtime_call(v,"java/lang/reflect/Constructor","newInstance","([Ljava/lang/Object;)Ljava/lang/Object;",constructor,&values,1,&out);task3_report_exception(v,"newInstance_accessible_empty");
  dvm_ref parent=dvm_new_object(v,outer);struct dvm_method *init=dvm_find_method(v,outer,"<init>","()V");
  if(!init||!dvm_call(v,init,parent,NULL,0,&out))return false;
- values.l=dvm_new_array(v,'L',"Ljava/lang/Object;",1);((dvm_ref*)dvm_array_data(v,values.l))[0]=parent;out.l=0;
+ values.l=dvm_new_array(v,'L',"Ljava/lang/Object;",1);((dvm_ref*)({const dvm_ref gc_payload_ref_31=(values.l);if(!gc_operation_admit(v,gc_payload_ref_31))return 0;dvm_array_data(v,gc_payload_ref_31);}))[0]=parent;out.l=0;
  if(!reflection_runtime_call(v,"java/lang/reflect/Constructor","newInstance","([Ljava/lang/Object;)Ljava/lang/Object;",constructor,&values,1,&out))return false;
  union dvm_value outer_value={0};if(out.l)dvm_get_field(v,out.l,"this$0","Lcom/base/featureflag/FeatureResponse;",&outer_value);
  sdk_trace_fprintf(stderr,"TASK3_NEWINSTANCE args=outer result=%u exception=%u outer_matches=%d\n",out.l,dvm_exception(v),outer_value.l==parent);
@@ -2102,6 +2158,13 @@ bool reflection_task3_constructor_probe(struct dvm *v){
  sdk_trace_fprintf(stderr,"TASK3_PROBE_DONE original_body_executed=1 business_response_substituted=0\n");
  return true;
 }
+bool reflection_task3_constructor_probe(struct dvm *v){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return false;
+ bool result=reflection_task3_constructor_probe_operation(v);
+ return result;
+}
+
 static int unsafe_fixture_initializations;
 static bool unsafe_fixture_clinit(struct dvm *v,dvm_ref self,const union dvm_value *a,int n,union dvm_value *out){
  (void)v;(void)self;(void)a;(void)n;(void)out;unsafe_fixture_initializations++;return true;
@@ -2136,11 +2199,11 @@ static bool unsafe_allocation_selftest(struct dvm *v){
  if(!reflection_runtime_call(v,"java/lang/Class","getMethod","(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;",klass,lookup,2,&out)||!out.l||dvm_exception(v))return false;
  dvm_ref method=out.l;
  union dvm_value invocation[2]={{.l=singleton},{.l=dvm_new_array(v,'L',"Ljava/lang/Object;",1)}};
- ((dvm_ref*)dvm_array_data(v,invocation[1].l))[0]=dvm_class_object(v,k);
+ ((dvm_ref*)({const dvm_ref gc_payload_ref_32=(invocation[1].l);if(!gc_operation_admit(v,gc_payload_ref_32))return 0;dvm_array_data(v,gc_payload_ref_32);}))[0]=dvm_class_object(v,k);
  for(int i=0;i<2;i++){
   if(!reflection_runtime_call(v,"java/lang/reflect/Method","invoke","(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;",method,invocation,2,&out)||!out.l||dvm_exception(v))return false;
-  struct dvm_object *o=dvm__obj(v,out.l);
-  if(!o||o->cls!=k||!o->slots||o->slots[0].j||o->slots[1].j||o->slots[2].j||unsafe_fixture_initializations!=1||k->init_state!=2)return false;
+  const dvm_ref gc_ref_o_86=(out.l); if(!gc_operation_admit(v,gc_ref_o_86))return false;
+  if(!dvm__obj(v,gc_ref_o_86)||dvm__obj(v,gc_ref_o_86)->cls!=k||!dvm__obj(v,gc_ref_o_86)->slots||dvm__obj(v,gc_ref_o_86)->slots[0].j||dvm__obj(v,gc_ref_o_86)->slots[1].j||dvm__obj(v,gc_ref_o_86)->slots[2].j||unsafe_fixture_initializations!=1||k->init_state!=2)return false;
  }
  struct dvm_method *allocate=&unsafe->methods[0];union dvm_value argument={0};
  if(dvm_call(v,allocate,singleton,&argument,1,&out)||!exception_named(v,"java/lang/NullPointerException"))return false;
@@ -2157,7 +2220,7 @@ static bool unsafe_allocation_selftest(struct dvm *v){
  sdk_trace_fprintf(stderr,"TASK3_UNSAFE_SELFTEST PASS reflection_discovery=1 singleton_field=1 method_invoke=1 constructor_skipped=1 zero_slots=3 class_init_once=1 null_rejected=1 primitive_array_interface_abstract_rejected=4\n");
  return true;
 }
-bool mem_reflection_cache_selftest(struct dvm *v){
+static bool mem_reflection_cache_selftest_operation(struct dvm *v){
  {union dvm_value a={.j=7},x={0},y={0};
   bool pass=box_kind(v,'J',a,&x)&&java_basics_call(v,"java/lang/Long","valueOf","(J)Ljava/lang/Long;",0,&a,1,&y)&&x.l&&x.l==y.l&&!dvm_exception(v);
   FILE *f=fopen("/data/storage/el2/base/haps/entry/files/sdkdex/mem-reflection-selftest.txt","w");if(f){fprintf(f,"REFLECTION_LONG_CACHE %s pid=%d value=7 same_identity=%d\n",pass?"PASS":"FAIL",getpid(),pass);fclose(f);}if(!pass)return false;
@@ -2193,15 +2256,22 @@ bool mem_reflection_cache_selftest(struct dvm *v){
    struct dvm_class *k=dvm__class_by_desc(v,descs[i]);union dvm_value x={0},y={0};
    if(!k)return false;
    dvm_ref c=dvm_class_object(v,k);
-   if(!reflection_runtime_call(v,"java/lang/Class","getName","()Ljava/lang/String;",c,NULL,0,&x)||!reflection_runtime_call(v,"java/lang/Class","getName","()Ljava/lang/String;",c,NULL,0,&y)||!x.l||x.l!=y.l||dvm_exception(v)||strcmp(dvm_string_utf8(v,x.l),names[i]))return false;
+   if(!reflection_runtime_call(v,"java/lang/Class","getName","()Ljava/lang/String;",c,NULL,0,&x)||!reflection_runtime_call(v,"java/lang/Class","getName","()Ljava/lang/String;",c,NULL,0,&y)||!x.l||x.l!=y.l||dvm_exception(v)||strcmp(({const dvm_ref gc_payload_ref_33=(x.l);if(!gc_operation_admit(v,gc_payload_ref_33))return 0;dvm_string_utf8(v,gc_payload_ref_33);}),names[i]))return false;
    dvm_ref fresh=dvm_new_string(v,names[i]);
-   if(!fresh||fresh==x.l||strcmp(dvm_string_utf8(v,fresh),names[i]))return false;
+   if(!fresh||fresh==x.l||strcmp(({const dvm_ref gc_payload_ref_34=(fresh);if(!gc_operation_admit(v,gc_payload_ref_34))return 0;dvm_string_utf8(v,gc_payload_ref_34);}),names[i]))return false;
   }
  }
  sdk_trace_fprintf(stderr,"LEAK_FIX_SELFTEST PASS small_boxing=%d metadata_names=%d independent_constructors=1\n",perf_leak_small_boxing(),perf_leak_metadata_names());
  return true;
 }
-bool reflection_runtime_selftest(struct dvm *v) {
+bool mem_reflection_cache_selftest(struct dvm *v){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return false;
+ bool result=mem_reflection_cache_selftest_operation(v);
+ return result;
+}
+
+static bool reflection_runtime_selftest_operation(struct dvm *v) {
  if(v!=active)return false;
 
  if(!unsafe_allocation_selftest(v))return false;
@@ -2209,7 +2279,7 @@ bool reflection_runtime_selftest(struct dvm *v) {
  const char *class_texts[]={"class java.lang.String","interface java.lang.CharSequence","int","class [Ljava.lang.String;","class [[I"};
  for(int i=0;i<5;i++){
   struct dvm_class *type=dvm__class_by_desc(v,class_descs[i]);union dvm_value text={0};
-  if(!type||!reflection_runtime_call(v,"java/lang/Class","toString","()Ljava/lang/String;",dvm_class_object(v,type),NULL,0,&text)||dvm_exception(v)||!text.l||strcmp(dvm_string_utf8(v,text.l),class_texts[i]))return false;
+  if(!type||!reflection_runtime_call(v,"java/lang/Class","toString","()Ljava/lang/String;",dvm_class_object(v,type),NULL,0,&text)||dvm_exception(v)||!text.l||strcmp(({const dvm_ref gc_payload_ref_35=(text.l);if(!gc_operation_admit(v,gc_payload_ref_35))return 0;dvm_string_utf8(v,gc_payload_ref_35);}),class_texts[i]))return false;
  }
  sdk_trace_fprintf(stderr,"TASK2_CLASS_TOSTRING_SELFTEST PASS class=1 interface=1 primitive=1 object_array=1 primitive_array=1\n");
  struct dvm_class *generic_fixture=dvm_find_class_or_external(v,"sdktrace/tests/GenericSuperclass");
@@ -2220,37 +2290,37 @@ bool reflection_runtime_selftest(struct dvm *v) {
  if(!dvm__class_assignable(v,dvm_object_class(v,parameterized),dvm_find_class_or_external(v,"java/lang/reflect/ParameterizedType")))return false;
  if(!reflection_runtime_call(v,"java/lang/reflect/ParameterizedType","getRawType","()Ljava/lang/reflect/Type;",parameterized,NULL,0,&generic_result)||generic_result.l!=dvm_class_object(v,dvm_find_class_or_external(v,"java/util/ArrayList")))return false;
  if(!reflection_runtime_call(v,"java/lang/reflect/ParameterizedType","getActualTypeArguments","()[Ljava/lang/reflect/Type;",parameterized,NULL,0,&generic_result)||dvm_array_length(v,generic_result.l)!=1)return false;
- dvm_ref first_array=generic_result.l,nested=((dvm_ref*)dvm_array_data(v,first_array))[0];((dvm_ref*)dvm_array_data(v,first_array))[0]=0;
- if(!reflection_runtime_call(v,"java/lang/reflect/ParameterizedType","getActualTypeArguments","()[Ljava/lang/reflect/Type;",parameterized,NULL,0,&generic_result)||((dvm_ref*)dvm_array_data(v,generic_result.l))[0]!=nested)return false;
- if(!reflection_runtime_call(v,"java/lang/reflect/ParameterizedType","getActualTypeArguments","()[Ljava/lang/reflect/Type;",nested,NULL,0,&generic_arg)||((dvm_ref*)dvm_array_data(v,generic_arg.l))[0]!=dvm_class_object(v,dvm_find_class_or_external(v,"java/lang/String")))return false;
+ dvm_ref first_array=generic_result.l,nested=((dvm_ref*)({const dvm_ref gc_payload_ref_36=(first_array);if(!gc_operation_admit(v,gc_payload_ref_36))return 0;dvm_array_data(v,gc_payload_ref_36);}))[0];((dvm_ref*)({const dvm_ref gc_payload_ref_37=(first_array);if(!gc_operation_admit(v,gc_payload_ref_37))return 0;dvm_array_data(v,gc_payload_ref_37);}))[0]=0;
+ if(!reflection_runtime_call(v,"java/lang/reflect/ParameterizedType","getActualTypeArguments","()[Ljava/lang/reflect/Type;",parameterized,NULL,0,&generic_result)||((dvm_ref*)({const dvm_ref gc_payload_ref_38=(generic_result.l);if(!gc_operation_admit(v,gc_payload_ref_38))return 0;dvm_array_data(v,gc_payload_ref_38);}))[0]!=nested)return false;
+ if(!reflection_runtime_call(v,"java/lang/reflect/ParameterizedType","getActualTypeArguments","()[Ljava/lang/reflect/Type;",nested,NULL,0,&generic_arg)||((dvm_ref*)({const dvm_ref gc_payload_ref_39=(generic_arg.l);if(!gc_operation_admit(v,gc_payload_ref_39))return 0;dvm_array_data(v,gc_payload_ref_39);}))[0]!=dvm_class_object(v,dvm_find_class_or_external(v,"java/lang/String")))return false;
  generic_fixture->runtime_signature="Ljava/lang/Object;Ljava/util/List<Ljava/lang/String;>;Ljava/io/Serializable;";
  if(!generic_superclass(v,dvm_class_object(v,generic_fixture),true,&generic_result)||dvm_array_length(v,generic_result.l)!=2||dvm_exception(v))return false;
- dvm_ref *generic_interfaces=dvm_array_data(v,generic_result.l);if(generic_interfaces[1]!=dvm_class_object(v,dvm_find_class_or_external(v,"java/io/Serializable")))return false;
+ dvm_ref *generic_interfaces=({const dvm_ref gc_payload_ref_40=(generic_result.l);if(!gc_operation_admit(v,gc_payload_ref_40))return 0;dvm_array_data(v,gc_payload_ref_40);});if(generic_interfaces[1]!=dvm_class_object(v,dvm_find_class_or_external(v,"java/io/Serializable")))return false;
  if(!reflection_runtime_call(v,"java/lang/reflect/ParameterizedType","getRawType","()Ljava/lang/reflect/Type;",generic_interfaces[0],NULL,0,&generic_arg)||generic_arg.l!=dvm_class_object(v,dvm_find_class_or_external(v,"java/util/List")))return false;
  generic_fixture->runtime_signature=NULL;
  /* A boot List<E> exposes Collection<E>; its E belongs to List and must
   * compare equal to the variable returned by List.getTypeParameters(). */
  dvm_ref list_class=dvm_class_object(v,dvm_find_class_or_external(v,"java/util/List"));
  if(!generic_superclass(v,list_class,true,&generic_result)||dvm_array_length(v,generic_result.l)!=1||dvm_exception(v))return false;
- dvm_ref test_collection_parameterized=((dvm_ref*)dvm_array_data(v,generic_result.l))[0];
+ dvm_ref test_collection_parameterized=((dvm_ref*)({const dvm_ref gc_payload_ref_41=(generic_result.l);if(!gc_operation_admit(v,gc_payload_ref_41))return 0;dvm_array_data(v,gc_payload_ref_41);}))[0];
  if(!reflection_runtime_call(v,"java/lang/reflect/ParameterizedType","getActualTypeArguments","()[Ljava/lang/reflect/Type;",test_collection_parameterized,NULL,0,&generic_result))return false;
- dvm_ref variable=((dvm_ref*)dvm_array_data(v,generic_result.l))[0];
+ dvm_ref variable=((dvm_ref*)({const dvm_ref gc_payload_ref_42=(generic_result.l);if(!gc_operation_admit(v,gc_payload_ref_42))return 0;dvm_array_data(v,gc_payload_ref_42);}))[0];
  if(!dvm__class_assignable(v,dvm_object_class(v,variable),dvm_find_class_or_external(v,"java/lang/reflect/TypeVariable")))return false;
  if(!reflection_runtime_call(v,"java/lang/reflect/TypeVariable","getGenericDeclaration","()Ljava/lang/reflect/GenericDeclaration;",variable,NULL,0,&generic_result)||generic_result.l!=list_class)return false;
  if(!reflection_runtime_call(v,"java/lang/Class","getTypeParameters","()[Ljava/lang/reflect/TypeVariable;",list_class,NULL,0,&generic_result)||dvm_array_length(v,generic_result.l)!=1)return false;
- generic_arg.l=((dvm_ref*)dvm_array_data(v,generic_result.l))[0];
+ generic_arg.l=((dvm_ref*)({const dvm_ref gc_payload_ref_43=(generic_result.l);if(!gc_operation_admit(v,gc_payload_ref_43))return 0;dvm_array_data(v,gc_payload_ref_43);}))[0];
  if(!reflection_runtime_call(v,"java/lang/reflect/TypeVariable","equals","(Ljava/lang/Object;)Z",variable,&generic_arg,1,&generic_result)||!generic_result.i)return false;
  struct dvm_method *variable_equals=dvm_find_method(v,dvm_object_class(v,variable),"equals","(Ljava/lang/Object;)Z");
  if(!variable_equals||!dvm_call(v,variable_equals,variable,&generic_arg,1,&generic_result)||!generic_result.i||dvm_exception(v))return false;
  dvm_ref foreign=new_variable(v,dvm_find_class_or_external(v,"java/util/Collection"),"E");generic_arg.l=foreign;
  if(!reflection_runtime_call(v,"java/lang/reflect/TypeVariable","equals","(Ljava/lang/Object;)Z",variable,&generic_arg,1,&generic_result)||generic_result.i)return false;
- if(!reflection_runtime_call(v,"java/lang/reflect/TypeVariable","getName","()Ljava/lang/String;",variable,NULL,0,&generic_result)||strcmp(dvm_string_utf8(v,generic_result.l),"E"))return false;
+ if(!reflection_runtime_call(v,"java/lang/reflect/TypeVariable","getName","()Ljava/lang/String;",variable,NULL,0,&generic_result)||strcmp(({const dvm_ref gc_payload_ref_44=(generic_result.l);if(!gc_operation_admit(v,gc_payload_ref_44))return 0;dvm_string_utf8(v,gc_payload_ref_44);}),"E"))return false;
  dvm_ref interfaces_array=dvm_new_array(v,'I',"I",0),interfaces_class=dvm_class_object(v,dvm_object_class(v,interfaces_array));
  if(!reflection_runtime_call(v,"java/lang/Class","getInterfaces","()[Ljava/lang/Class;",interfaces_class,NULL,0,&generic_result)||dvm_array_length(v,generic_result.l)!=2)return false;
- dvm_ref *interface_values=dvm_array_data(v,generic_result.l);
+ dvm_ref *interface_values=({const dvm_ref gc_payload_ref_45=(generic_result.l);if(!gc_operation_admit(v,gc_payload_ref_45))return 0;dvm_array_data(v,gc_payload_ref_45);});
  if(interface_values[0]!=dvm_class_object(v,dvm_find_class_or_external(v,"java/lang/Cloneable"))||interface_values[1]!=dvm_class_object(v,dvm_find_class_or_external(v,"java/io/Serializable")))return false;
  interface_values[0]=0;
- if(!reflection_runtime_call(v,"java/lang/Class","getInterfaces","()[Ljava/lang/Class;",interfaces_class,NULL,0,&generic_result)||!((dvm_ref*)dvm_array_data(v,generic_result.l))[0])return false;
+ if(!reflection_runtime_call(v,"java/lang/Class","getInterfaces","()[Ljava/lang/Class;",interfaces_class,NULL,0,&generic_result)||!((dvm_ref*)({const dvm_ref gc_payload_ref_46=(generic_result.l);if(!gc_operation_admit(v,gc_payload_ref_46))return 0;dvm_array_data(v,gc_payload_ref_46);}))[0])return false;
  static const char *const t_object[]={"Ljava/lang/Object;"};
  static const char *const t_string[]={"Ljava/lang/String;"};
  static const char *const t_int[]={"I"};
@@ -2276,7 +2346,7 @@ bool reflection_runtime_selftest(struct dvm *v) {
  dvm_ref ctor_object=fout.l;
  union dvm_value empty={.l=dvm_new_array(v,'L',"Ljava/lang/Object;",0)};
  if(!reflection_runtime_call(v,"java/lang/reflect/Constructor","newInstance","([Ljava/lang/Object;)Ljava/lang/Object;",ctor_object,&empty,1,&fout)||!fout.l)return false;
- struct dvm_object *created=dvm__obj(v,fout.l);if(!created||created->cls!=fixture)return false;
+ const dvm_ref gc_ref_created_87=(fout.l); if(!gc_operation_admit(v,gc_ref_created_87))return false;if(!dvm__obj(v,gc_ref_created_87)||dvm__obj(v,gc_ref_created_87)->cls!=fixture)return false;
  if(!reflection_runtime_call(v,"java/lang/Class","newInstance","()Ljava/lang/Object;",fixture_class,0,0,&fout)||!fout.l||dvm__obj(v,fout.l)->cls!=fixture)return false;
  struct dvm_class *editor=dvm_find_class_or_external(v,"android/content/SharedPreferences$Editor");
  dvm_ref klass=dvm_class_object(v,editor),name=dvm_new_string(v,"apply");
@@ -2294,7 +2364,7 @@ bool reflection_runtime_selftest(struct dvm *v) {
  union dvm_value invoke[2]={{.l=edit},{.l=dvm_new_array(v,'L',"Ljava/lang/Object;",0)}};
  if(!reflection_runtime_call(v,"java/lang/reflect/Method","invoke","(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;",method,invoke,2,&out)||out.l||v->exception)return false;
  pa[1].l=0;
- if(!prefs_runtime_call(v,"android/content/SharedPreferences","getString","(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",pref,pa,2,&out)||!out.l||strcmp(dvm_string_utf8(v,out.l),"value"))return false;
+ if(!prefs_runtime_call(v,"android/content/SharedPreferences","getString","(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",pref,pa,2,&out)||!out.l||strcmp(({const dvm_ref gc_payload_ref_47=(out.l);if(!gc_operation_admit(v,gc_payload_ref_47))return 0;dvm_string_utf8(v,gc_payload_ref_47);}),"value"))return false;
  args[0].l=dvm_new_string(v,"doesNotExist");out.l=0;
  if(!reflection_runtime_call(v,"java/lang/Class","getMethod","(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;",klass,args,2,&out)||out.l||!v->exception)return false;
  dvm_clear_exception(v);
@@ -2307,13 +2377,13 @@ bool reflection_runtime_selftest(struct dvm *v) {
  added.l=second;
  if(!reflection_runtime_call(v,"java/lang/Throwable","addSuppressed","(Ljava/lang/Throwable;)V",owner,&added,1,&out))return false;
  if(!reflection_runtime_call(v,"java/lang/Throwable","getSuppressed","()[Ljava/lang/Throwable;",owner,NULL,0,&out)||dvm_array_length(v,out.l)!=2)return false;
- dvm_ref *list=dvm_array_data(v,out.l);if(!list||list[0]!=first||list[1]!=second)return false;
+ dvm_ref *list=({const dvm_ref gc_payload_ref_48=(out.l);if(!gc_operation_admit(v,gc_payload_ref_48))return 0;dvm_array_data(v,gc_payload_ref_48);});if(!list||list[0]!=first||list[1]!=second)return false;
  added.l=owner;if(!reflection_runtime_call(v,"java/lang/Throwable","addSuppressed","(Ljava/lang/Throwable;)V",owner,&added,1,&out)||!v->exception)return false;dvm_clear_exception(v);
  added.l=0;if(!reflection_runtime_call(v,"java/lang/Throwable","addSuppressed","(Ljava/lang/Throwable;)V",owner,&added,1,&out)||!v->exception)return false;dvm_clear_exception(v);
- dvm_ref params=dvm_new_array(v,'L',"Ljava/lang/Class;",1);((dvm_ref*)dvm_array_data(v,params))[0]=dvm_class_object(v,base);
+ dvm_ref params=dvm_new_array(v,'L',"Ljava/lang/Class;",1);((dvm_ref*)({const dvm_ref gc_payload_ref_49=(params);if(!gc_operation_admit(v,gc_payload_ref_49))return 0;dvm_array_data(v,gc_payload_ref_49);}))[0]=dvm_class_object(v,base);
  args[0].l=dvm_new_string(v,"addSuppressed");args[1].l=params;
  if(!reflection_runtime_call(v,"java/lang/Class","getDeclaredMethod","(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;",dvm_class_object(v,base),args,2,&out)||!out.l)return false;
- dvm_ref add_method=out.l,values=dvm_new_array(v,'L',"Ljava/lang/Object;",1);((dvm_ref*)dvm_array_data(v,values))[0]=first;
+ dvm_ref add_method=out.l,values=dvm_new_array(v,'L',"Ljava/lang/Object;",1);((dvm_ref*)({const dvm_ref gc_payload_ref_50=(values);if(!gc_operation_admit(v,gc_payload_ref_50))return 0;dvm_array_data(v,gc_payload_ref_50);}))[0]=first;
  invoke[0].l=owner;invoke[1].l=values;
  if(!reflection_runtime_call(v,"java/lang/reflect/Method","invoke","(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;",add_method,invoke,2,&out)||out.l||v->exception)return false;
  if(!reflection_runtime_call(v,"java/lang/Throwable","getSuppressed","()[Ljava/lang/Throwable;",owner,NULL,0,&out)||dvm_array_length(v,out.l)!=3)return false;
@@ -2455,7 +2525,7 @@ bool reflection_runtime_selftest(struct dvm *v) {
  union dvm_value cause={0};
  if(!throwable_reference_call(v,"java/lang/reflect/InvocationTargetException","getCause","()Ljava/lang/Throwable;",wrapper,NULL,0,&cause)||!cause.l||!class_named(v,cause.l,"java/lang/IllegalStateException"))return false;
  if(!throwable_reference_call(v,"java/lang/reflect/InvocationTargetException","getMessage","()Ljava/lang/String;",wrapper,NULL,0,&cause)||!cause.l)return false;
- const char *cause_text=dvm_string_utf8(v,cause.l);
+ const char *cause_text=({const dvm_ref gc_payload_ref_51=(cause.l);if(!gc_operation_admit(v,gc_payload_ref_51))return 0;dvm_string_utf8(v,gc_payload_ref_51);});
  if(!cause_text||!strstr(cause_text,"IllegalStateException")||!strstr(cause_text,"fixture constructor boom"))return false;
  dvm_clear_exception(v);
  union dvm_value direct={0};
@@ -2493,11 +2563,11 @@ bool reflection_runtime_selftest(struct dvm *v) {
  struct dvm_method *private_method=dvm_find_method(v,private_fixture,"<init>","()V");
  reflected *private_reflected=calloc(1,sizeof *private_reflected);
  dvm_ref private_object=private_method?dvm_new_object(v,dvm_find_class_or_external(v,"java/lang/reflect/Constructor")):0;
- struct dvm_object *private_slot=private_object?dvm__obj(v,private_object):NULL;
- if(!private_reflected||!private_slot){free(private_reflected);return false;}
+ const dvm_ref gc_ref_private_slot_88=((private_object)?(private_object):0); if(!gc_operation_admit(v,gc_ref_private_slot_88))return false;
+ if(!private_reflected||!dvm__obj(v,gc_ref_private_slot_88)){free(private_reflected);return false;}
  private_reflected->owner=private_fixture;private_reflected->kind=3;private_reflected->ctor=private_method;private_reflected->sig=strdup("()V");
  if(!private_reflected->sig){free(private_reflected);return false;}
- private_slot->data=private_reflected;private_slot->data_destroy=reflected_free;
+ dvm__obj(v,gc_ref_private_slot_88)->data=private_reflected;dvm__obj(v,gc_ref_private_slot_88)->data_destroy=reflected_free;
  ctor_values=object_arguments(v,0,0);ctor_result=0;
  if(!construct(v,private_object,ctor_values,&ctor_result)||ctor_result||!exception_named(v,"java/lang/IllegalAccessException"))return false;
  dvm_clear_exception(v);
@@ -2610,12 +2680,12 @@ bool reflection_runtime_selftest(struct dvm *v) {
  /* Field.get reads the assigned slot; primitive values are boxed through
   * the wrapper's real value method, never fabricated. */
  dvm_ref fields_target=dvm_new_object(v,fields_fixture);
- struct dvm_object *fields_object=fields_target?dvm__obj(v,fields_target):NULL;
+ const dvm_ref gc_ref_fields_object_89=((fields_target)?(fields_target):0); if(!gc_operation_admit(v,gc_ref_fields_object_89))return false;
  dvm_ref field_text=dvm_new_string(v,"field value");
- if(!fields_object||!fields_object->slots||!field_text)return false;
- fields_object->slots[0].l=field_text;
- fields_object->slots[1].i=42;
- fields_object->slots[2].i=1;
+ if(!dvm__obj(v,gc_ref_fields_object_89)||!dvm__obj(v,gc_ref_fields_object_89)->slots||!field_text)return false;
+ dvm__obj(v,gc_ref_fields_object_89)->slots[0].l=field_text;
+ dvm__obj(v,gc_ref_fields_object_89)->slots[1].i=42;
+ dvm__obj(v,gc_ref_fields_object_89)->slots[2].i=1;
  union dvm_value field_got={0};
  union dvm_value field_arg={.l=fields_target};
  if(!reflection_runtime_call(v,"java/lang/reflect/Field","get","(Ljava/lang/Object;)Ljava/lang/Object;",text_field,&field_arg,1,&field_got)||dvm_exception(v)||field_got.l!=field_text)return false;
@@ -2633,10 +2703,10 @@ bool reflection_runtime_selftest(struct dvm *v) {
  union dvm_value accessible={.i=1},ignored={0};
  if(!reflection_runtime_call(v,"java/lang/reflect/Field","setAccessible","(Z)V",text_field,&accessible,1,&ignored)||dvm_exception(v))return false;
  union dvm_value write_args[2]={{.l=fields_target},{.l=dvm_new_string(v,"replacement")}};
- if(!reflection_runtime_call(v,"java/lang/reflect/Field","set","(Ljava/lang/Object;Ljava/lang/Object;)V",text_field,write_args,2,&ignored)||dvm_exception(v)||fields_object->slots[0].l!=write_args[1].l)return false;
+ if(!reflection_runtime_call(v,"java/lang/reflect/Field","set","(Ljava/lang/Object;Ljava/lang/Object;)V",text_field,write_args,2,&ignored)||dvm_exception(v)||dvm__obj(v,gc_ref_fields_object_89)->slots[0].l!=write_args[1].l)return false;
  write_args[1].l=0;
- if(!reflection_runtime_call(v,"java/lang/reflect/Field","set","(Ljava/lang/Object;Ljava/lang/Object;)V",text_field,write_args,2,&ignored)||dvm_exception(v)||fields_object->slots[0].l)return false;
- fields_object->slots[0].l=field_text;
+ if(!reflection_runtime_call(v,"java/lang/reflect/Field","set","(Ljava/lang/Object;Ljava/lang/Object;)V",text_field,write_args,2,&ignored)||dvm_exception(v)||dvm__obj(v,gc_ref_fields_object_89)->slots[0].l)return false;
+ dvm__obj(v,gc_ref_fields_object_89)->slots[0].l=field_text;
  accessible.i=0;
  if(!reflection_runtime_call(v,"java/lang/reflect/Field","setAccessible","(Z)V",text_field,&accessible,1,&ignored)||dvm_exception(v))return false;
  /* Errors are explicit: null receiver is NPE, a non-owner receiver is
@@ -2694,7 +2764,7 @@ bool reflection_runtime_selftest(struct dvm *v) {
  /* getDeclaredMethods() returns exactly the two declared methods, in dex
   * order, with no inherited Object methods and no <init>/<clinit>. */
  if(!reflection_runtime_call(v,"java/lang/Class","getDeclaredMethods","()[Ljava/lang/reflect/Method;",annot_owner_class,NULL,0,&annot_out)||dvm_exception(v)||!annot_out.l||dvm_array_length(v,annot_out.l)!=2)return false;
- dvm_ref *annot_methods=(dvm_ref*)dvm_array_data(v,annot_out.l);
+ dvm_ref *annot_methods=(dvm_ref*)({const dvm_ref gc_payload_ref_52=(annot_out.l);if(!gc_operation_admit(v,gc_payload_ref_52))return 0;dvm_array_data(v,gc_payload_ref_52);});
  if(!annot_methods)return false;
  dvm_ref annot_method=0,annot_plain=0;
  for(uint32_t i=0;i<2;i++) {
@@ -2721,7 +2791,7 @@ bool reflection_runtime_selftest(struct dvm *v) {
  struct dvm_object *annot_object=dvm__obj(v,annot_out.l);
  if(!annot_object||annot_object->kind!=DVM_OBJ_PLAIN||annot_object->cls!=annot_type)return false;
  union dvm_value annot_element_value={0};
- if(!dvm_call(v,annot_element,annot_out.l,NULL,0,&annot_element_value)||dvm_exception(v)||!annot_element_value.l||strcmp(dvm_string_utf8(v,annot_element_value.l),"method_value"))return false;
+ if(!dvm_call(v,annot_element,annot_out.l,NULL,0,&annot_element_value)||dvm_exception(v)||!annot_element_value.l||strcmp(({const dvm_ref gc_payload_ref_53=(annot_element_value.l);if(!gc_operation_admit(v,gc_payload_ref_53))return 0;dvm_string_utf8(v,gc_payload_ref_53);}),"method_value"))return false;
  annot_out.l=0;
  if(!reflection_runtime_call(v,"java/lang/reflect/Method","getAnnotation","(Ljava/lang/Class;)Ljava/lang/annotation/Annotation;",annot_plain,&annot_arg,1,&annot_out)||dvm_exception(v)||annot_out.l)return false;
  if(!reflection_runtime_call(v,"java/lang/reflect/Method","getAnnotation","(Ljava/lang/Class;)Ljava/lang/annotation/Annotation;",annot_method,&annot_wrong_arg,1,&annot_out)||dvm_exception(v)||annot_out.l)return false;
@@ -2743,7 +2813,7 @@ bool reflection_runtime_selftest(struct dvm *v) {
  annot_object=dvm__obj(v,annot_out.l);
  if(!annot_object||annot_object->cls!=annot_type)return false;
  annot_element_value.l=0;
- if(!dvm_call(v,annot_element,annot_out.l,NULL,0,&annot_element_value)||dvm_exception(v)||!annot_element_value.l||strcmp(dvm_string_utf8(v,annot_element_value.l),"tag_value"))return false;
+ if(!dvm_call(v,annot_element,annot_out.l,NULL,0,&annot_element_value)||dvm_exception(v)||!annot_element_value.l||strcmp(({const dvm_ref gc_payload_ref_54=(annot_element_value.l);if(!gc_operation_admit(v,gc_payload_ref_54))return 0;dvm_string_utf8(v,gc_payload_ref_54);}),"tag_value"))return false;
  annot_out.l=0;
  if(!reflection_runtime_call(v,"java/lang/reflect/Field","getAnnotation","(Ljava/lang/Class;)Ljava/lang/annotation/Annotation;",annot_plain_field,&annot_arg,1,&annot_out)||dvm_exception(v)||annot_out.l)return false;
  if(!reflection_runtime_call(v,"java/lang/reflect/Field","getAnnotation","(Ljava/lang/Class;)Ljava/lang/annotation/Annotation;",annot_tagged,&annot_wrong_arg,1,&annot_out)||dvm_exception(v)||annot_out.l)return false;
@@ -2770,9 +2840,9 @@ bool reflection_runtime_selftest(struct dvm *v) {
  if(!annot_empty||!annot_receiver)return false;
  union dvm_value annot_invoke[2]={{.l=0},{.l=annot_empty}};
  annot_out.l=0;
- if(!reflection_runtime_call(v,"java/lang/reflect/Method","invoke","(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;",annot_method,annot_invoke,2,&annot_out)||dvm_exception(v)||!annot_out.l||strcmp(dvm_string_utf8(v,annot_out.l),"static-ok"))return false;
+ if(!reflection_runtime_call(v,"java/lang/reflect/Method","invoke","(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;",annot_method,annot_invoke,2,&annot_out)||dvm_exception(v)||!annot_out.l||strcmp(({const dvm_ref gc_payload_ref_55=(annot_out.l);if(!gc_operation_admit(v,gc_payload_ref_55))return 0;dvm_string_utf8(v,gc_payload_ref_55);}),"static-ok"))return false;
  annot_invoke[0].l=annot_receiver;annot_out.l=0;
- if(!reflection_runtime_call(v,"java/lang/reflect/Method","invoke","(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;",annot_plain,annot_invoke,2,&annot_out)||dvm_exception(v)||!annot_out.l||strcmp(dvm_string_utf8(v,annot_out.l),"plain-ok"))return false;
+ if(!reflection_runtime_call(v,"java/lang/reflect/Method","invoke","(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;",annot_plain,annot_invoke,2,&annot_out)||dvm_exception(v)||!annot_out.l||strcmp(({const dvm_ref gc_payload_ref_56=(annot_out.l);if(!gc_operation_admit(v,gc_payload_ref_56))return 0;dvm_string_utf8(v,gc_payload_ref_56);}),"plain-ok"))return false;
  annot_invoke[0].l=0;annot_out.l=0;
  if(!reflection_runtime_call(v,"java/lang/reflect/Method","invoke","(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;",annot_plain,annot_invoke,2,&annot_out)||!exception_named(v,"java/lang/NullPointerException"))return false;
  dvm_clear_exception(v);
@@ -2797,15 +2867,15 @@ bool reflection_runtime_selftest(struct dvm *v) {
  dvm_ref m7_plain=m7_out.l;
  union dvm_value m7_invoke[2]={{.l=annot_receiver},{.l=annot_empty}};
  m7_out.l=0;
- if(!reflection_runtime_call(v,"java/lang/reflect/Method","invoke","(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;",m7_plain,m7_invoke,2,&m7_out)||dvm_exception(v)||!m7_out.l||strcmp(dvm_string_utf8(v,m7_out.l),"plain-ok"))return false;
+ if(!reflection_runtime_call(v,"java/lang/reflect/Method","invoke","(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;",m7_plain,m7_invoke,2,&m7_out)||dvm_exception(v)||!m7_out.l||strcmp(({const dvm_ref gc_payload_ref_57=(m7_out.l);if(!gc_operation_admit(v,gc_payload_ref_57))return 0;dvm_string_utf8(v,gc_payload_ref_57);}),"plain-ok"))return false;
  m7_args[0].l=dvm_new_string(v,"value");m7_out.l=0;
  if(!reflection_runtime_call(v,"java/lang/Class","getMethod","(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;",annot_owner_class,m7_args,2,&m7_out)||dvm_exception(v)||!m7_out.l)return false;
  dvm_ref m7_static=m7_out.l;
  m7_invoke[0].l=0;m7_out.l=0;
- if(!reflection_runtime_call(v,"java/lang/reflect/Method","invoke","(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;",m7_static,m7_invoke,2,&m7_out)||dvm_exception(v)||!m7_out.l||strcmp(dvm_string_utf8(v,m7_out.l),"static-ok"))return false;
+ if(!reflection_runtime_call(v,"java/lang/reflect/Method","invoke","(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;",m7_static,m7_invoke,2,&m7_out)||dvm_exception(v)||!m7_out.l||strcmp(({const dvm_ref gc_payload_ref_58=(m7_out.l);if(!gc_operation_admit(v,gc_payload_ref_58))return 0;dvm_string_utf8(v,gc_payload_ref_58);}),"static-ok"))return false;
  /* Method.getName/getParameterTypes read the same signature. */
  union dvm_value m7_text={0};
- if(!reflection_runtime_call(v,"java/lang/reflect/Method","getName","()Ljava/lang/String;",m7_plain,NULL,0,&m7_text)||dvm_exception(v)||!m7_text.l||strcmp(dvm_string_utf8(v,m7_text.l),"plainValue"))return false;
+ if(!reflection_runtime_call(v,"java/lang/reflect/Method","getName","()Ljava/lang/String;",m7_plain,NULL,0,&m7_text)||dvm_exception(v)||!m7_text.l||strcmp(({const dvm_ref gc_payload_ref_59=(m7_text.l);if(!gc_operation_admit(v,gc_payload_ref_59))return 0;dvm_string_utf8(v,gc_payload_ref_59);}),"plainValue"))return false;
  if(!reflection_runtime_call(v,"java/lang/reflect/Method","getParameterTypes","()[Ljava/lang/Class;",m7_plain,NULL,0,&m7_text)||dvm_exception(v)||!m7_text.l||dvm_array_length(v,m7_text.l)!=0)return false;
  /* An absent name and a parameter mismatch are NoSuchMethodException. */
  m7_args[0].l=dvm_new_string(v,"plainMissing");m7_out.l=0;
@@ -2813,7 +2883,7 @@ bool reflection_runtime_selftest(struct dvm *v) {
  dvm_clear_exception(v);
  dvm_ref m7_string_params=dvm_new_array(v,'L',"Ljava/lang/Class;",1);
  if(!m7_string_params)return false;
- ((dvm_ref*)dvm_array_data(v,m7_string_params))[0]=string_type_class;
+ ((dvm_ref*)({const dvm_ref gc_payload_ref_60=(m7_string_params);if(!gc_operation_admit(v,gc_payload_ref_60))return 0;dvm_array_data(v,gc_payload_ref_60);}))[0]=string_type_class;
  m7_args[0].l=dvm_new_string(v,"plainValue");m7_args[1].l=m7_string_params;m7_out.l=0;
  if(!reflection_runtime_call(v,"java/lang/Class","getMethod","(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;",annot_owner_class,m7_args,2,&m7_out)||m7_out.l||!exception_named(v,"java/lang/NoSuchMethodException"))return false;
  dvm_clear_exception(v);
@@ -2856,13 +2926,13 @@ bool reflection_runtime_selftest(struct dvm *v) {
  if(!reflection_runtime_call(v,"java/lang/Class","getMethod","(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;",m7_child_class,m7_args,2,&m7_out)||dvm_exception(v)||!m7_out.l)return false;
  dvm_ref m7_getter=m7_out.l;
  m7_invoke[0].l=m7_target;m7_invoke[1].l=annot_empty;m7_out.l=0;
- if(!reflection_runtime_call(v,"java/lang/reflect/Method","invoke","(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;",m7_getter,m7_invoke,2,&m7_out)||dvm_exception(v)||!m7_out.l||strcmp(dvm_string_utf8(v,m7_out.l),"child-value"))return false;
+ if(!reflection_runtime_call(v,"java/lang/reflect/Method","invoke","(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;",m7_getter,m7_invoke,2,&m7_out)||dvm_exception(v)||!m7_out.l||strcmp(({const dvm_ref gc_payload_ref_61=(m7_out.l);if(!gc_operation_admit(v,gc_payload_ref_61))return 0;dvm_string_utf8(v,gc_payload_ref_61);}),"child-value"))return false;
  /* Inherited public method and the declaring class's method object. */
  m7_args[0].l=dvm_new_string(v,"getInherited");m7_out.l=0;
  if(!reflection_runtime_call(v,"java/lang/Class","getMethod","(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;",m7_child_class,m7_args,2,&m7_out)||dvm_exception(v)||!m7_out.l)return false;
  dvm_ref m7_inherited=m7_out.l;
  m7_invoke[0].l=m7_target;m7_out.l=0;
- if(!reflection_runtime_call(v,"java/lang/reflect/Method","invoke","(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;",m7_inherited,m7_invoke,2,&m7_out)||dvm_exception(v)||!m7_out.l||strcmp(dvm_string_utf8(v,m7_out.l),"parent-value"))return false;
+ if(!reflection_runtime_call(v,"java/lang/reflect/Method","invoke","(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;",m7_inherited,m7_invoke,2,&m7_out)||dvm_exception(v)||!m7_out.l||strcmp(({const dvm_ref gc_payload_ref_62=(m7_out.l);if(!gc_operation_admit(v,gc_payload_ref_62))return 0;dvm_string_utf8(v,gc_payload_ref_62);}),"parent-value"))return false;
  /* An inherited public static method is visible too. */
  m7_args[0].l=dvm_new_string(v,"staticInherited");m7_out.l=0;
  if(!reflection_runtime_call(v,"java/lang/Class","getMethod","(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;",m7_child_class,m7_args,2,&m7_out)||dvm_exception(v)||!m7_out.l)return false;
@@ -2881,7 +2951,7 @@ bool reflection_runtime_selftest(struct dvm *v) {
  if(!reflection_runtime_call(v,"java/lang/Class","getDeclaredMethod","(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;",m7_child_class,m7_args,2,&m7_out)||dvm_exception(v)||!m7_out.l)return false;
  dvm_ref m7_declared=m7_out.l;
  m7_invoke[0].l=m7_target;m7_out.l=0;
- if(!reflection_runtime_call(v,"java/lang/reflect/Method","invoke","(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;",m7_declared,m7_invoke,2,&m7_out)||dvm_exception(v)||!m7_out.l||strcmp(dvm_string_utf8(v,m7_out.l),"child-value"))return false;
+ if(!reflection_runtime_call(v,"java/lang/reflect/Method","invoke","(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;",m7_declared,m7_invoke,2,&m7_out)||dvm_exception(v)||!m7_out.l||strcmp(({const dvm_ref gc_payload_ref_63=(m7_out.l);if(!gc_operation_admit(v,gc_payload_ref_63))return 0;dvm_string_utf8(v,gc_payload_ref_63);}),"child-value"))return false;
  /* Exact parameter descriptors: the String setter is found with Class[] =
   * {String.class} and its parameter types report that same Class. */
  dvm_ref m7_value=dvm_new_string(v,"argument");
@@ -2890,15 +2960,15 @@ bool reflection_runtime_selftest(struct dvm *v) {
  if(!reflection_runtime_call(v,"java/lang/Class","getMethod","(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;",m7_child_class,m7_args,2,&m7_out)||dvm_exception(v)||!m7_out.l)return false;
  dvm_ref m7_setter=m7_out.l;
  m7_text.l=0;
- if(!reflection_runtime_call(v,"java/lang/reflect/Method","getName","()Ljava/lang/String;",m7_setter,NULL,0,&m7_text)||dvm_exception(v)||!m7_text.l||strcmp(dvm_string_utf8(v,m7_text.l),"setValue"))return false;
+ if(!reflection_runtime_call(v,"java/lang/reflect/Method","getName","()Ljava/lang/String;",m7_setter,NULL,0,&m7_text)||dvm_exception(v)||!m7_text.l||strcmp(({const dvm_ref gc_payload_ref_64=(m7_text.l);if(!gc_operation_admit(v,gc_payload_ref_64))return 0;dvm_string_utf8(v,gc_payload_ref_64);}),"setValue"))return false;
  m7_text.l=0;
  if(!reflection_runtime_call(v,"java/lang/reflect/Method","getParameterTypes","()[Ljava/lang/Class;",m7_setter,NULL,0,&m7_text)||dvm_exception(v)||!m7_text.l||dvm_array_length(v,m7_text.l)!=1)return false;
- dvm_ref *m7_setter_types=(dvm_ref*)dvm_array_data(v,m7_text.l);
- struct dvm_object *m7_setter_type=m7_setter_types?dvm__obj(v,m7_setter_types[0]):NULL;
- if(!m7_setter_type||m7_setter_type->kind!=DVM_OBJ_CLASS||m7_setter_type->klass!=string_type)return false;
+ dvm_ref *m7_setter_types=(dvm_ref*)({const dvm_ref gc_payload_ref_65=(m7_text.l);if(!gc_operation_admit(v,gc_payload_ref_65))return 0;dvm_array_data(v,gc_payload_ref_65);});
+ const dvm_ref gc_ref_m7_setter_type_90=((m7_setter_types)?(m7_setter_types[0]):0); if(!gc_operation_admit(v,gc_ref_m7_setter_type_90))return false;
+ if(!dvm__obj(v,gc_ref_m7_setter_type_90)||dvm__obj(v,gc_ref_m7_setter_type_90)->kind!=DVM_OBJ_CLASS||dvm__obj(v,gc_ref_m7_setter_type_90)->klass!=string_type)return false;
  dvm_ref m7_set_value_arg=dvm_new_array(v,'L',"Ljava/lang/Object;",1);
  if(!m7_set_value_arg)return false;
- ((dvm_ref*)dvm_array_data(v,m7_set_value_arg))[0]=m7_value;
+ ((dvm_ref*)({const dvm_ref gc_payload_ref_66=(m7_set_value_arg);if(!gc_operation_admit(v,gc_payload_ref_66))return 0;dvm_array_data(v,gc_payload_ref_66);}))[0]=m7_value;
  fixture_method_argument=0;
  m7_invoke[0].l=m7_target;m7_invoke[1].l=m7_set_value_arg;m7_out.l=0;
  bool fixture_argument_ok=reflection_runtime_call(v,"java/lang/reflect/Method","invoke","(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;",m7_setter,m7_invoke,2,&m7_out)&&!dvm_exception(v)&&!m7_out.l&&fixture_method_argument==m7_value;
@@ -2917,8 +2987,8 @@ bool reflection_runtime_selftest(struct dvm *v) {
  dvm_ref m7_null_element=dvm_new_array(v,'L',"Ljava/lang/Class;",1);
  dvm_ref m7_bad_element=dvm_new_array(v,'L',"Ljava/lang/Class;",1);
  if(!m7_null_element||!m7_bad_element)return false;
- ((dvm_ref*)dvm_array_data(v,m7_null_element))[0]=0;
- ((dvm_ref*)dvm_array_data(v,m7_bad_element))[0]=dvm_new_string(v,"not a Class");
+ ((dvm_ref*)({const dvm_ref gc_payload_ref_67=(m7_null_element);if(!gc_operation_admit(v,gc_payload_ref_67))return 0;dvm_array_data(v,gc_payload_ref_67);}))[0]=0;
+ ((dvm_ref*)({const dvm_ref gc_payload_ref_68=(m7_bad_element);if(!gc_operation_admit(v,gc_payload_ref_68))return 0;dvm_array_data(v,gc_payload_ref_68);}))[0]=dvm_new_string(v,"not a Class");
  m7_args[0].l=dvm_new_string(v,"setValue");m7_args[1].l=m7_null_element;m7_out.l=0;
  if(!reflection_runtime_call(v,"java/lang/Class","getMethod","(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;",m7_child_class,m7_args,2,&m7_out)||!exception_named(v,"java/lang/NullPointerException"))return false;
  dvm_clear_exception(v);
@@ -2937,11 +3007,11 @@ bool reflection_runtime_selftest(struct dvm *v) {
  annot_arg.l=annot_type_class;m7_out.l=0;
  if(!reflection_runtime_call(v,"java/lang/reflect/Method","getAnnotation","(Ljava/lang/Class;)Ljava/lang/annotation/Annotation;",annot_method,&annot_arg,1,&m7_out)||dvm_exception(v)||!m7_out.l)return false;
  m7_invoke[0].l=m7_out.l;m7_invoke[1].l=annot_empty;m7_out.l=0;
- if(!reflection_runtime_call(v,"java/lang/reflect/Method","invoke","(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;",m7_annotation_method,m7_invoke,2,&m7_out)||dvm_exception(v)||!m7_out.l||strcmp(dvm_string_utf8(v,m7_out.l),"method_value"))return false;
+ if(!reflection_runtime_call(v,"java/lang/reflect/Method","invoke","(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;",m7_annotation_method,m7_invoke,2,&m7_out)||dvm_exception(v)||!m7_out.l||strcmp(({const dvm_ref gc_payload_ref_69=(m7_out.l);if(!gc_operation_admit(v,gc_payload_ref_69))return 0;dvm_string_utf8(v,gc_payload_ref_69);}),"method_value"))return false;
  /* The special Editor.apply Method still answers getName/getParameterTypes;
   * existing invoke semantics are asserted above. */
  m7_text.l=0;
- if(!reflection_runtime_call(v,"java/lang/reflect/Method","getName","()Ljava/lang/String;",method,NULL,0,&m7_text)||dvm_exception(v)||!m7_text.l||strcmp(dvm_string_utf8(v,m7_text.l),"apply"))return false;
+ if(!reflection_runtime_call(v,"java/lang/reflect/Method","getName","()Ljava/lang/String;",method,NULL,0,&m7_text)||dvm_exception(v)||!m7_text.l||strcmp(({const dvm_ref gc_payload_ref_70=(m7_text.l);if(!gc_operation_admit(v,gc_payload_ref_70))return 0;dvm_string_utf8(v,gc_payload_ref_70);}),"apply"))return false;
  m7_text.l=0;
  if(!reflection_runtime_call(v,"java/lang/reflect/Method","getParameterTypes","()[Ljava/lang/Class;",method,NULL,0,&m7_text)||dvm_exception(v)||!m7_text.l||dvm_array_length(v,m7_text.l)!=0)return false;
  /* External classes have no member metadata: fail closed, do not return null
@@ -3008,10 +3078,10 @@ bool reflection_runtime_selftest(struct dvm *v) {
  if((expected)==NULL){if(pkg_out.l)return false;} \
  else { \
   if(!pkg_out.l)return false; \
-  struct dvm_object *pkg_object=dvm__obj(v,pkg_out.l); \
-  if(!pkg_object||pkg_object->data_destroy!=package_box_destroy)return false; \
+  const dvm_ref gc_ref_pkg_object_91=(pkg_out.l); if(!gc_operation_admit(v,gc_ref_pkg_object_91))return false; \
+  if(!dvm__obj(v,gc_ref_pkg_object_91)||dvm__obj(v,gc_ref_pkg_object_91)->data_destroy!=package_box_destroy)return false; \
   pkg_name.l=0; \
-  if(!reflection_runtime_call(v,"java/lang/Package","getName","()Ljava/lang/String;",pkg_out.l,NULL,0,&pkg_name)||dvm_exception(v)||!pkg_name.l||strcmp(dvm_string_utf8(v,pkg_name.l),(expected)))return false; \
+  if(!reflection_runtime_call(v,"java/lang/Package","getName","()Ljava/lang/String;",pkg_out.l,NULL,0,&pkg_name)||dvm_exception(v)||!pkg_name.l||strcmp(({const dvm_ref gc_payload_ref_71=(pkg_name.l);if(!gc_operation_admit(v,gc_payload_ref_71))return 0;dvm_string_utf8(v,gc_payload_ref_71);}),(expected)))return false; \
  } \
 } while(0)
  PKG_CALL(dvm_class_object(v,pkg_probe),"com.example");
@@ -3026,7 +3096,7 @@ bool reflection_runtime_selftest(struct dvm *v) {
  pkg_out.l=0;
  if(!reflection_runtime_call(v,"java/lang/Class","getPackage","()Ljava/lang/Package;",dvm_class_object(v,pkg_probe),NULL,0,&pkg_out)||!pkg_out.l)return false;
  pkg_name.l=0;
- if(!dvm_call(v,pkg_method,pkg_out.l,NULL,0,&pkg_name)||dvm_exception(v)||!pkg_name.l||strcmp(dvm_string_utf8(v,pkg_name.l),"com.example"))return false;
+ if(!dvm_call(v,pkg_method,pkg_out.l,NULL,0,&pkg_name)||dvm_exception(v)||!pkg_name.l||strcmp(({const dvm_ref gc_payload_ref_72=(pkg_name.l);if(!gc_operation_admit(v,gc_payload_ref_72))return 0;dvm_string_utf8(v,gc_payload_ref_72);}),"com.example"))return false;
  if(!reflection_runtime_call(v,"java/lang/Class","getPackage","()Ljava/lang/Package;",0,NULL,0,&pkg_out)||!exception_named(v,"java/lang/NullPointerException"))return false;
  dvm_clear_exception(v);
  dvm_ref foreign_pkg=dvm_new_string(v,"not-a-package");
@@ -3035,9 +3105,20 @@ bool reflection_runtime_selftest(struct dvm *v) {
  sdk_trace_fprintf(stderr,"REFLECTION_SELFTEST PASS apply_lookup=1 invoke_persistent_write=1 missing_method=1 suppressed=1 declared_invoke=1 constructor=1 ctor_null_ref=1 ctor_type=1 ctor_primitive=1 ctor_widening=1 ctor_narrowing=1 ctor_wrap=1 ctor_abstract=1 ctor_private=1 assignable_from=1 declared_fields=1 field_metadata=1 field_get=1 field_static=1 field_accessible=1 field_errors=1 field_external=1 field_array=1 field_signature=1 declared_methods=1 method_metadata=1 field_annotation=1 method_annotation=1 annotation_element=1 annotation_errors=1 method_accessible=1 method_return_type=1 method_invoke=1 method_errors=1 get_method=1 declared_method_lookup=1 class_is_array=1 method_inheritance=1 method_interface=1 method_params=1 method_nulls=1 method_external=1 method_name_types=1 method_malformed=1 method_malformed_failure_cleanup=1 class_package=1 package_errors=1\n");
  return method!=0;
 }
+bool reflection_runtime_selftest(struct dvm *v){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return false;
+ bool result=reflection_runtime_selftest_operation(v);
+ return result;
+}
+
 
 /* Concrete destructor discriminators distinguish metadata from guest edges. */
 int reflection_gc_payload(struct dvm *v,struct dvm_object *o,dvm_gc_visit_fn visit,void *user){
+ struct gc_operation_pin gc_pin_o __attribute__((cleanup(gc_operation_pin_end)));
+ if(!gc_operation_pin_begin(v,&gc_pin_o,o))return DVM_GC_PAYLOAD_INVALID;
+ o=dvm__obj(v,gc_pin_o.ref);
+
  (void)v;
  if(o->data_destroy==reflected_free||o->data_destroy==variable_free||o->data_destroy==package_box_destroy)return DVM_GC_PAYLOAD_ATOMIC;
  if(o->data_destroy==generic_free){generic_type *p=o->data;if(visit){visit(&p->raw,user);visit(&p->owner,user);visit(&p->args,user);}return DVM_GC_PAYLOAD_REFS;}
@@ -3045,7 +3126,7 @@ int reflection_gc_payload(struct dvm *v,struct dvm_object *o,dvm_gc_visit_fn vis
 }
 
 /* CLICK-UP HAP-only test: original Unity ReflectionHelper sees real Class metadata. */
-bool click_up_class_selftest(struct dvm *v){
+static bool click_up_class_selftest_operation(struct dvm *v){
  struct dvm_class *k=dvm_find_class_or_external(v,"java/lang/Class");
  struct dvm_class *h=dvm_find_class(v,"com/unity3d/player/ReflectionHelper");
  struct dvm_method *lookup=h?dvm_find_method(v,h,"getMethodID","(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/String;Z)Ljava/lang/reflect/Method;"):NULL;
@@ -3054,14 +3135,21 @@ bool click_up_class_selftest(struct dvm *v){
  union dvm_value a[4]={{.l=cls},{.l=dvm_new_string(v,"getName")},{.l=dvm_new_string(v,"()Ljava/lang/String;")},{.i=0}};
  bool found=enumerated&&lookup&&dvm_call(v,lookup,0,a,4,&result)&&!dvm_exception(v)&&result.l;
  struct dvm_method *actual=NULL;bool exact=found&&reflection_runtime_method_handle(v,result.l,&actual)&&actual&&actual->cls==k&&!strcmp(actual->name,"getName")&&!strcmp(actual->sig,"()Ljava/lang/String;");
- union dvm_value name={0};bool invoked=exact&&dvm_call(v,actual,cls,NULL,0,&name)&&!dvm_exception(v)&&name.l&&!strcmp(dvm_string_utf8(v,name.l),"java.lang.Class");
+ union dvm_value name={0};bool invoked=exact&&dvm_call(v,actual,cls,NULL,0,&name)&&!dvm_exception(v)&&name.l&&!strcmp(({const dvm_ref gc_payload_ref_73=(name.l);if(!gc_operation_admit(v,gc_payload_ref_73))return 0;dvm_string_utf8(v,gc_payload_ref_73);}),"java.lang.Class");
  FILE *f=fopen("/data/storage/el2/base/haps/entry/files/sdkdex/click-up-selftest.txt","a");
  if(f){dprintf(fileno(f),"pid=%d Class_declarations=%d Unity_ReflectionHelper=%d exact_method=%d real_invoke=%d result=%s\n",getpid(),enumerated,found,exact,invoked,enumerated&&found&&exact&&invoked?"PASS":"FAIL");fclose(f);}
  return enumerated&&found&&exact&&invoked;
 }
+bool click_up_class_selftest(struct dvm *v){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return false;
+ bool result=click_up_class_selftest_operation(v);
+ return result;
+}
+
 
 /* HAP-only: actual DEX ReflectionHelper lookup and actual VM dispatch. */
-bool jni_gaps_selftest(struct dvm *v){
+static bool jni_gaps_selftest_operation(struct dvm *v){
  bool ok=false;unsigned checks=0;const char *stage="setup";
  FILE *f=fopen("/data/storage/el2/base/haps/entry/files/sdkdex/jni-gaps-selftest.txt","a");if(!f)return false;
 #define JG_CHECK(label,expr) do{stage=label;if(!(expr)||dvm_exception(v))goto done;checks++;fprintf(f,"pid=%d PASS %s\n",getpid(),label);}while(0)
@@ -3084,7 +3172,7 @@ bool jni_gaps_selftest(struct dvm *v){
  JG_CHECK("default_Object_hash_agrees",hash&&dvm_call(v,hash,refs[0],NULL,0,&out)&&out.i==hashes[0]);
  union dvm_value methods={0};dvm_ref hc=dvm_class_object(v,helper);
  JG_CHECK("DEX_declared_methods",helper&&!helper->external&&reflection_runtime_call(v,"java/lang/Class","getDeclaredMethods","()[Ljava/lang/reflect/Method;",hc,NULL,0,&methods)&&methods.l&&dvm_array_length(v,methods.l)>0);
- bool named=false;dvm_ref *items=dvm_array_data(v,methods.l);
+ bool named=false;dvm_ref *items=({const dvm_ref gc_payload_ref_74=(methods.l);if(!gc_operation_admit(v,gc_payload_ref_74))return 0;dvm_array_data(v,gc_payload_ref_74);});
  for(uint32_t i=0;i<dvm_array_length(v,methods.l);i++){struct dvm_method *m=NULL;if(reflection_runtime_method_handle(v,items[i],&m)&&m&&!strcmp(m->name,"getMethodID")&&m->cls==helper)named=true;}
  JG_CHECK("DEX_method_name_and_owner",named);
  dvm_ref sc=dvm_class_object(v,sys);
@@ -3146,11 +3234,11 @@ bool jni_gaps_selftest(struct dvm *v){
  args[1].i=23;JG_CHECK("Notification_builder_mutation",dvm_call(v,put,extras,args,2,&out));
  JG_CHECK("Notification_snapshot_isolation",dvm_call(v,get,nex,args,1,&out)&&out.i==17);
  struct dvm_class *nk=dvm_find_class_or_external(v,"android/app/Notification");struct dvm_method *channel=dvm_find_method(v,nk,"getChannelId","()Ljava/lang/String;");
- JG_CHECK("Notification_channel_retained",channel&&dvm_call(v,channel,nv,NULL,0,&out)&&out.l&&dvm_string_utf8(v,out.l)&&!strcmp(dvm_string_utf8(v,out.l),"selftest-channel"));
+ JG_CHECK("Notification_channel_retained",channel&&dvm_call(v,channel,nv,NULL,0,&out)&&out.l&&({const dvm_ref gc_payload_ref_75=(out.l);if(!gc_operation_admit(v,gc_payload_ref_75))return 0;dvm_string_utf8(v,gc_payload_ref_75);})&&!strcmp(({const dvm_ref gc_payload_ref_76=(out.l);if(!gc_operation_admit(v,gc_payload_ref_76))return 0;dvm_string_utf8(v,gc_payload_ref_76);}),"selftest-channel"));
  args[0].l=dvm_class_object(v,nk);args[1].l=dvm_new_string(v,"EXTRA_TITLE");args[2].l=dvm_new_string(v,"Ljava/lang/Object;");args[3].i=1;
  JG_CHECK("Notification_original_ReflectionHelper_constant",dvm_call(v,field_lookup,0,args,4,&result)&&result.l);
  JG_CHECK("Notification_constant_String_covariance",reflection_runtime_field_handle(v,result.l,&actual_field,&actual_owner,&static_field)&&static_field&&actual_owner==nk&&actual_field&&!strcmp(actual_field->type,"Ljava/lang/String;"));
- JG_CHECK("Notification_constant_value",dvm_get_static(v,nk,"EXTRA_TITLE","Ljava/lang/String;",&out)&&out.l&&!strcmp(dvm_string_utf8(v,out.l),"android.title"));
+ JG_CHECK("Notification_constant_value",dvm_get_static(v,nk,"EXTRA_TITLE","Ljava/lang/String;",&out)&&out.l&&!strcmp(({const dvm_ref gc_payload_ref_77=(out.l);if(!gc_operation_admit(v,gc_payload_ref_77))return 0;dvm_string_utf8(v,gc_payload_ref_77);}),"android.title"));
  JG_CHECK("Notification_FLAG_AUTO_CANCEL",dvm_get_static(v,nk,"FLAG_AUTO_CANCEL","I",&out)&&out.i==16);
  JG_CHECK("Notification_DEFAULT_ALL",dvm_get_static(v,nk,"DEFAULT_ALL","I",&out)&&out.i==-1);
  args[0].l=dvm_class_object(v,nk);args[1].l=dvm_new_string(v,"flags");args[2].l=dvm_new_string(v,"I");args[3].i=0;
@@ -3195,23 +3283,23 @@ bool jni_gaps_selftest(struct dvm *v){
  struct dvm_class *jik=dvm__obj(v,ji)->cls;
  struct dvm_method *jhas=dvm_find_method(v,jik,"hasNext","()Z"),*jnext=dvm_find_method(v,jik,"next","()Ljava/lang/Object;");
  JG_CHECK("JSONObject_keys_first_available",jhas&&jnext&&dvm_call(v,jhas,ji,NULL,0,&out)&&out.i);
- JG_CHECK("JSONObject_keys_first",dvm_call(v,jnext,ji,NULL,0,&out)&&out.l&&!strcmp(dvm_string_utf8(v,out.l),"first"));
- JG_CHECK("JSONObject_keys_second",dvm_call(v,jnext,ji,NULL,0,&out)&&out.l&&!strcmp(dvm_string_utf8(v,out.l),"second"));
+ JG_CHECK("JSONObject_keys_first",dvm_call(v,jnext,ji,NULL,0,&out)&&out.l&&!strcmp(({const dvm_ref gc_payload_ref_78=(out.l);if(!gc_operation_admit(v,gc_payload_ref_78))return 0;dvm_string_utf8(v,gc_payload_ref_78);}),"first"));
+ JG_CHECK("JSONObject_keys_second",dvm_call(v,jnext,ji,NULL,0,&out)&&out.l&&!strcmp(({const dvm_ref gc_payload_ref_79=(out.l);if(!gc_operation_admit(v,gc_payload_ref_79))return 0;dvm_string_utf8(v,gc_payload_ref_79);}),"second"));
  JG_CHECK("JSONObject_keys_distinct_complete",dvm_call(v,jhas,ji,NULL,0,&out)&&!out.i);
  struct dvm_method *jact=dvm_find_method(v,ja,"<init>","()V"),*jalen=dvm_find_method(v,ja,"length","()I"),*jastr=dvm_find_method(v,ja,"toString","()Ljava/lang/String;"),*japut=dvm_find_method(v,ja,"put","(Ljava/lang/Object;)Lorg/json/JSONArray;");
  JG_CHECK("JSONArray_empty_ctor_JNI",jar&&jact&&jalen&&jastr&&japut&&dvm_call(v,jact,jar,NULL,0,&out));
  JG_CHECK("JSONArray_length_zero",dvm_call(v,jalen,jar,NULL,0,&out)&&out.i==0);
- JG_CHECK("JSONArray_empty_serialization",dvm_call(v,jastr,jar,NULL,0,&out)&&out.l&&!strcmp(dvm_string_utf8(v,out.l),"[]"));
+ JG_CHECK("JSONArray_empty_serialization",dvm_call(v,jastr,jar,NULL,0,&out)&&out.l&&!strcmp(({const dvm_ref gc_payload_ref_80=(out.l);if(!gc_operation_admit(v,gc_payload_ref_80))return 0;dvm_string_utf8(v,gc_payload_ref_80);}),"[]"));
  args[0].l=dvm_new_string(v,"value");JG_CHECK("JSONArray_append",dvm_call(v,japut,jar,args,1,&out)&&out.l==jar);
  args[0].l=0;JG_CHECK("JSONArray_append_null",dvm_call(v,japut,jar,args,1,&out)&&out.l==jar);
  JG_CHECK("JSONArray_length_two",dvm_call(v,jalen,jar,NULL,0,&out)&&out.i==2);
- JG_CHECK("JSONArray_serialized_values",dvm_call(v,jastr,jar,NULL,0,&out)&&out.l&&!strcmp(dvm_string_utf8(v,out.l),"[\"value\",null]"));
+ JG_CHECK("JSONArray_serialized_values",dvm_call(v,jastr,jar,NULL,0,&out)&&out.l&&!strcmp(({const dvm_ref gc_payload_ref_81=(out.l);if(!gc_operation_admit(v,gc_payload_ref_81))return 0;dvm_string_utf8(v,gc_payload_ref_81);}),"[\"value\",null]"));
  JG_CHECK("JSONObject_actual_declared_keys",reflection_runtime_call(v,"java/lang/Class","getDeclaredMethods","()[Ljava/lang/reflect/Method;",dvm_class_object(v,jo),NULL,0,&methods)&&dvm_array_length(v,methods.l)>0);
  bool found_keys=false,found_bool=false;
- for(int i=0;i<dvm_array_length(v,methods.l);i++){dvm_ref ref=((dvm_ref*)dvm_array_data(v,methods.l))[i];struct dvm_method *mm=NULL;if(reflection_runtime_method_handle(v,ref,&mm)&&mm&&!strcmp(mm->name,"keys"))found_keys=true;}
+ for(int i=0;i<dvm_array_length(v,methods.l);i++){dvm_ref ref=((dvm_ref*)({const dvm_ref gc_payload_ref_82=(methods.l);if(!gc_operation_admit(v,gc_payload_ref_82))return 0;dvm_array_data(v,gc_payload_ref_82);}))[i];struct dvm_method *mm=NULL;if(reflection_runtime_method_handle(v,ref,&mm)&&mm&&!strcmp(mm->name,"keys"))found_keys=true;}
  JG_CHECK("JSONObject_reflected_keys_name",found_keys);
  JG_CHECK("Bundle_reflect_actual_methods",reflection_runtime_call(v,"java/lang/Class","getDeclaredMethods","()[Ljava/lang/reflect/Method;",dvm_class_object(v,bundle),NULL,0,&methods)&&methods.l);
- for(int i=0;i<dvm_array_length(v,methods.l);i++){dvm_ref ref=((dvm_ref*)dvm_array_data(v,methods.l))[i];struct dvm_method *mm=NULL;if(reflection_runtime_method_handle(v,ref,&mm)&&mm==bool_get)found_bool=true;}
+ for(int i=0;i<dvm_array_length(v,methods.l);i++){dvm_ref ref=((dvm_ref*)({const dvm_ref gc_payload_ref_83=(methods.l);if(!gc_operation_admit(v,gc_payload_ref_83))return 0;dvm_array_data(v,gc_payload_ref_83);}))[i];struct dvm_method *mm=NULL;if(reflection_runtime_method_handle(v,ref,&mm)&&mm==bool_get)found_bool=true;}
  JG_CHECK("Bundle_reflected_getBoolean_name_signature",found_bool);
  struct dvm_class *setclass=dvm_find_class_or_external(v,"java/util/Set"),*hashset=dvm_find_class_or_external(v,"java/util/HashSet");
  JG_CHECK("Set_FindClass_inventory",dvm_class_exists(v,"java/util/Set"));
@@ -3244,8 +3332,8 @@ bool jni_gaps_selftest(struct dvm *v){
  args[0].l=dvm_new_string(v,"nil");args[1].l=0;JG_CHECK("JSON_map_null",dvm_call(v,mapput,mapr,args,2,&out));
  struct dvm_method *mapjson=dvm_find_method(v,jo,"<init>","(Ljava/util/Map;)V"),*jget=dvm_find_method(v,jo,"getString","(Ljava/lang/String;)Ljava/lang/String;");
  dvm_ref mapjo=dvm_new_object(v,jo);args[0].l=mapr;JG_CHECK("JSONObject_Map_ctor",mapjo&&mapjson&&dvm_call(v,mapjson,mapjo,args,1,&out));
- args[0].l=dvm_new_string(v,"mapkey");JG_CHECK("JSONObject_Map_copied_value",jget&&dvm_call(v,jget,mapjo,args,1,&out)&&out.l&&!strcmp(dvm_string_utf8(v,out.l),"mapvalue"));
- args[0].l=dvm_new_string(v,"nil");JG_CHECK("JSONObject_Map_null_is_json_null",dvm_call(v,jget,mapjo,args,1,&out)&&out.l&&!strcmp(dvm_string_utf8(v,out.l),"null"));
+ args[0].l=dvm_new_string(v,"mapkey");JG_CHECK("JSONObject_Map_copied_value",jget&&dvm_call(v,jget,mapjo,args,1,&out)&&out.l&&!strcmp(({const dvm_ref gc_payload_ref_84=(out.l);if(!gc_operation_admit(v,gc_payload_ref_84))return 0;dvm_string_utf8(v,gc_payload_ref_84);}),"mapvalue"));
+ args[0].l=dvm_new_string(v,"nil");JG_CHECK("JSONObject_Map_null_is_json_null",dvm_call(v,jget,mapjo,args,1,&out)&&out.l&&!strcmp(({const dvm_ref gc_payload_ref_85=(out.l);if(!gc_operation_admit(v,gc_payload_ref_85))return 0;dvm_string_utf8(v,gc_payload_ref_85);}),"null"));
  struct dvm_method *setiter=dvm_find_method(v,setclass,"iterator","()Ljava/util/Iterator;");
  JG_CHECK("Set_iterator_JNI_declaration",setiter!=NULL);
  struct dvm_class *ctxklass=dvm_find_class_or_external(v,"android/content/Context");dvm_ref ctxr=dvm_new_object(v,ctxklass);
@@ -3263,3 +3351,10 @@ done:
 #undef JG_CHECK
  return ok;
 }
+bool jni_gaps_selftest(struct dvm *v){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return false;
+ bool result=jni_gaps_selftest_operation(v);
+ return result;
+}
+

@@ -1,6 +1,7 @@
 #include "network_runtime.h"
 #include "gc_runtime.h"
 #include "dvm/dvm_internal.h"
+#include "gc_operation.h"
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -468,32 +469,44 @@ static dvm_ref network_caps_new(struct dvm *v,const network_host_snapshot *snap)
   network_caps_destroy,"NetworkCapabilities object");
 }
 
-static network_info_payload *network_info_of(struct dvm *v,dvm_ref self){
+static bool network_info_copy(struct dvm *v,dvm_ref self,network_info_payload *out){
+ struct gc_operation op __attribute__((cleanup(gc_operation_end)))={0};
+ if(!gc_operation_begin(v,&op)||!gc_operation_admit(v,self))return false;
  struct dvm_object *obj=dvm__obj(v,self);
- if(!obj||obj->data_destroy!=network_info_destroy)return NULL;
- network_info_payload *payload=obj->data;
- return payload&&payload->magic==NETWORK_INFO_MAGIC?payload:NULL;
+ if(!obj||obj->data_destroy!=network_info_destroy)return false;
+ const network_info_payload *payload=obj->data;
+ if(!payload||payload->magic!=NETWORK_INFO_MAGIC)return false;
+ *out=*payload;return true;
 }
 
-static network_obj_payload *network_obj_of(struct dvm *v,dvm_ref self){
+static bool network_obj_copy(struct dvm *v,dvm_ref self,network_obj_payload *out){
+ struct gc_operation op __attribute__((cleanup(gc_operation_end)))={0};
+ if(!gc_operation_begin(v,&op)||!gc_operation_admit(v,self))return false;
  struct dvm_object *obj=dvm__obj(v,self);
- if(!obj||obj->data_destroy!=network_obj_destroy)return NULL;
- network_obj_payload *payload=obj->data;
- return payload&&payload->magic==NETWORK_OBJ_MAGIC?payload:NULL;
+ if(!obj||obj->data_destroy!=network_obj_destroy)return false;
+ const network_obj_payload *payload=obj->data;
+ if(!payload||payload->magic!=NETWORK_OBJ_MAGIC)return false;
+ *out=*payload;return true;
 }
 
-static network_caps_payload *network_caps_of(struct dvm *v,dvm_ref self){
+static bool network_caps_copy(struct dvm *v,dvm_ref self,network_caps_payload *out){
+ struct gc_operation op __attribute__((cleanup(gc_operation_end)))={0};
+ if(!gc_operation_begin(v,&op)||!gc_operation_admit(v,self))return false;
  struct dvm_object *obj=dvm__obj(v,self);
- if(!obj||obj->data_destroy!=network_caps_destroy)return NULL;
- network_caps_payload *payload=obj->data;
- return payload&&payload->magic==NETWORK_CAPS_MAGIC?payload:NULL;
+ if(!obj||obj->data_destroy!=network_caps_destroy)return false;
+ const network_caps_payload *payload=obj->data;
+ if(!payload||payload->magic!=NETWORK_CAPS_MAGIC)return false;
+ *out=*payload;return true;
 }
 
-static network_enum_payload *network_enum_of(struct dvm *v,dvm_ref self){
+static bool network_enum_copy(struct dvm *v,dvm_ref self,network_enum_payload *out){
+ struct gc_operation op __attribute__((cleanup(gc_operation_end)))={0};
+ if(!gc_operation_begin(v,&op)||!gc_operation_admit(v,self))return false;
  struct dvm_object *obj=dvm__obj(v,self);
- if(!obj||obj->data_destroy!=network_enum_destroy)return NULL;
- network_enum_payload *payload=obj->data;
- return payload&&payload->magic==NETWORK_ENUM_MAGIC?payload:NULL;
+ if(!obj||obj->data_destroy!=network_enum_destroy)return false;
+ const network_enum_payload *payload=obj->data;
+ if(!payload||payload->magic!=NETWORK_ENUM_MAGIC)return false;
+ *out=*payload;return true;
 }
 
 static dvm_ref enum_value(struct dvm *v,const char *desc,const char *name,
@@ -603,8 +616,9 @@ static bool telephony_string(struct dvm *v,const char *api,int32_t valid,
 
 static bool enum_call(struct dvm *v,const char *m,const char *sig,dvm_ref self,
  int n,union dvm_value *out){
- network_enum_payload *payload=network_enum_of(v,self);
- if(!payload)return false;
+ network_enum_payload value;
+ if(!network_enum_copy(v,self,&value))return false;
+ const network_enum_payload *payload=&value;
  if((IS("name","()Ljava/lang/String;")||IS("toString","()Ljava/lang/String;"))
   &&n==0){
   out->l=dvm_new_string(v,payload->name);
@@ -964,8 +978,9 @@ static bool connectivity_call(struct dvm *v,const char *c,const char *m,
    "ConnectivityManager.getNetworkCapabilities"))return true;
   out->l=0;
   if(!snap.has_default_network)return true;
-  network_obj_payload *network=network_obj_of(v,a[0].l);
-  if(!network||network->handle!=snap.network_handle)return true;
+  network_obj_payload network;
+  /* The host snapshot callback may release/reacquire the GIL. Resolve AFTER it. */
+  if(!network_obj_copy(v,a[0].l,&network)||network.handle!=snap.network_handle)return true;
   out->l=network_caps_new(v,&snap);
   return true;
  }
@@ -975,8 +990,9 @@ static bool connectivity_call(struct dvm *v,const char *c,const char *m,
 static bool network_info_call(struct dvm *v,const char *c,const char *m,
  const char *sig,dvm_ref self,int n,union dvm_value *out){
  if(strcmp(c,"android/net/NetworkInfo"))return false;
- network_info_payload *payload=network_info_of(v,self);
- if(!payload)return false;
+ network_info_payload value;
+ if(!network_info_copy(v,self,&value))return false;
+ const network_info_payload *payload=&value;
 
  if(IS("isConnected","()Z")&&n==0){
   out->i=payload->connected?1:0;
@@ -1025,8 +1041,9 @@ static bool network_info_call(struct dvm *v,const char *c,const char *m,
 static bool network_call(struct dvm *v,const char *c,const char *m,
  const char *sig,dvm_ref self,int n,union dvm_value *out){
  if(strcmp(c,"android/net/Network"))return false;
- network_obj_payload *payload=network_obj_of(v,self);
- if(!payload)return false;
+ network_obj_payload value;
+ if(!network_obj_copy(v,self,&value))return false;
+ const network_obj_payload *payload=&value;
  if(IS("getNetworkHandle","()J")&&n==0){
   out->j=(int64_t)payload->handle;
   return true;
@@ -1038,8 +1055,9 @@ static bool network_caps_call(struct dvm *v,const char *c,const char *m,
  const char *sig,dvm_ref self,int n,const union dvm_value *a,
  union dvm_value *out){
  if(strcmp(c,"android/net/NetworkCapabilities"))return false;
- network_caps_payload *payload=network_caps_of(v,self);
- if(!payload)return false;
+ network_caps_payload value;
+ if(!network_caps_copy(v,self,&value))return false;
+ const network_caps_payload *payload=&value;
  if(IS("hasTransport","(I)Z")&&n==1){
   out->i=transport_bit(payload->transports,a[0].i)?1:0;
   return true;

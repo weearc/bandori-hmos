@@ -356,9 +356,5 @@ done:
 }
 
 uint32_t dvm_gc_ref_of(struct dvm *v,struct dvm_object *o){
- if(!v||!o)return 0;uintptr_t p=(uintptr_t)o;
- for(uint32_t b=0;b<(v->heap_size+DVM_HEAP_BLOCK-1)/DVM_HEAP_BLOCK;b++){
-  uintptr_t base=(uintptr_t)v->heap_blocks[b],span=DVM_HEAP_BLOCK*sizeof *o;
-  if(p>=base&&p-base<span&&(p-base)%sizeof *o==0){uint32_t r=b*DVM_HEAP_BLOCK+(p-base)/sizeof *o+1;return r<=v->heap_size&&o->live?r:0;}
- }return 0;
+ return gc_rev_ref_of(v,o);
 }

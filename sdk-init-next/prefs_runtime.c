@@ -1,4 +1,5 @@
 #include "prefs_runtime.h"
+#include "gc_operation.h"
 #include "sqlite3.h"
 #include <stdlib.h>
 #include <string.h>
@@ -80,7 +81,7 @@ bool prefs_runtime_configure(const char *sdk){fprintf(stderr,"PREFPERSIST config
 void prefs_runtime_vm_start(struct dvm *v){active=v;persistence_probe(v);struct stat st={0};int rc=stat(dbpath,&st);fprintf(stderr,"PREFPERSIST start pid=%d dbpath=%s stat=%d bytes=%lld mtime=%lld writable=%d",getpid(),dbpath,rc,(long long)st.st_size,(long long)st.st_mtime,access(dbpath,W_OK)==0);}
 static pref *getpref(struct dvm *v,dvm_ref r){struct dvm_object *o=dvm__obj(v,r);return o&&o->data_destroy==pref_free?o->data:NULL;}
 static edit *getedit(struct dvm *v,dvm_ref r){struct dvm_object *o=dvm__obj(v,r);return o&&o->data_destroy==edit_free?o->data:NULL;}
-bool prefs_runtime_call(struct dvm *v,const char *c,const char *m,const char *s,dvm_ref self,const union dvm_value *a,int n,union dvm_value *out){if(v!=active||!dbpath[0])return false;
+static bool prefs_runtime_call_gc9_operation(struct dvm *v,const char *c,const char *m,const char *s,dvm_ref self,const union dvm_value *a,int n,union dvm_value *out){if(v!=active||!dbpath[0])return false;
  if(n==2&&context(v,c,self)&&is(m,s,"getSharedPreferences","(Ljava/lang/String;I)Landroid/content/SharedPreferences;")){const char *name;int len;if(!a[0].l)return error(v,"java/lang/NullPointerException");if(!raw(v,a[0].l,&name,&len)||a[1].i!=0)return error(v,"java/lang/IllegalArgumentException");fprintf(stderr,"PREFS_HOST_CALL getSharedPreferences name=%s mode=%d\n",name,a[1].i);pref *p=calloc(1,sizeof *p);if(!p)return error(v,"java/lang/OutOfMemoryError");p->name=strdup(name);if(!p->name||!open_db(&p->db)){pref_free(p);return error(v,"java/lang/IllegalStateException");}out->l=dvm_new_object(v,dvm_find_class_or_external(v,"android/content/SharedPreferences"));struct dvm_object *o=dvm__obj(v,out->l);if(!o){pref_free(p);return error(v,"java/lang/OutOfMemoryError");}o->data=p;o->data_destroy=pref_free;return true;}
  pref *p=getpref(v,self);edit *e=getedit(v,self);
  if(p&&is(m,s,"edit","()Landroid/content/SharedPreferences$Editor;")){e=calloc(1,sizeof *e);if(!e)return error(v,"java/lang/OutOfMemoryError");e->name=strdup(p->name);if(!e->name||!open_db(&e->db)){edit_free(e);return error(v,"java/lang/IllegalStateException");}out->l=dvm_new_object(v,dvm_find_class_or_external(v,"android/content/SharedPreferences$Editor"));struct dvm_object *o=dvm__obj(v,out->l);if(!o){edit_free(e);return error(v,"java/lang/OutOfMemoryError");}o->data=e;o->data_destroy=edit_free;return true;}
@@ -203,4 +204,13 @@ static bool typed_selftest(struct dvm *v,dvm_ref prefs,sqlite3 *d,const char *na
 
 int prefs_gc_payload(struct dvm *v,struct dvm_object *o,dvm_gc_visit_fn visit,void *user){
  (void)v;(void)visit;(void)user;return o->data_destroy==pref_free||o->data_destroy==edit_free?DVM_GC_PAYLOAD_ATOMIC:DVM_GC_PAYLOAD_UNKNOWN;
+}
+
+bool prefs_runtime_call(struct dvm *v,const char *c,const char *m,const char *s,dvm_ref self,const union dvm_value *a,int n,union dvm_value *out){
+ if(v!=active||!dbpath[0])return false;
+ struct gc_operation op __attribute__((cleanup(gc_operation_end)))={0};
+ if(!gc_operation_begin(v,&op)||!gc_operation_admit(v,self))return true;
+ bool handled=prefs_runtime_call_gc9_operation(v,c,m,s,self,a,n,out);
+ if(handled&&!dvm_exception(v))gc_operation_result(&op,s,out->l);
+ return handled;
 }

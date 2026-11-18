@@ -1,6 +1,7 @@
 /* VM-local Android value/identity contracts. This does not provide an Android
  * UI thread, queue, scheduler, process identity, or SDK business service. */
 #include "android_basics.h"
+#include "gc_operation.h"
 #include "portable.h"
 #include <stdlib.h>
 #include <stdio.h>
@@ -67,6 +68,10 @@ static uint16_t *units(struct dvm *v,dvm_ref ref,int *length){
  *length=(int)n;return u;
 }
 static bool length(struct dvm *v,dvm_ref ref,int *out){
+ /* GC-STEP7: operation-local admission; cleanup precedes caller return. */
+ struct gc_operation gc7 __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&gc7)||!gc_operation_admit(v,ref))return false;
+
  struct dvm_object *o=dvm__obj(v,ref);if(!o){dvm__throw(v,"java/lang/NullPointerException","CharSequence");return false;}
  if(o->kind==DVM_OBJ_STRING){uint16_t *u=units(v,ref,out);if(!u)return false;free(u);return true;}
  struct dvm_method *method=dvm_find_method(v,o->cls,"length","()I");
@@ -126,7 +131,7 @@ static bool sqlite_cursor_call(struct dvm *v,const char *m,const char *sig,dvm_r
  if(IS("getBlob","(I)[B")){if(!sqlite_cursor_value(v,cur,a[0].i))return true;out->l=0;return true;}
  return false;
 }
-bool android_basics_call(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int nargs,union dvm_value *out){
+static bool android_basics_call_gc7_body(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int nargs,union dvm_value *out){
  (void)nargs;memset(out,0,sizeof *out);
  bool thread_receiver=false;struct dvm_object *thread_obj=self?dvm__obj(v,self):NULL;for(struct dvm_class *k=thread_obj?thread_obj->cls:NULL;k;k=k->super)if(!strcmp(k->name,"android/os/HandlerThread"))thread_receiver=true;
  if(thread_receiver&&(!strcmp(c,"android/os/HandlerThread")||!strcmp(c,"java/lang/Thread"))){
@@ -242,4 +247,13 @@ bool android_basics_call(struct dvm *v,const char *c,const char *m,const char *s
  }
  if(!strcmp(c,"android/database/Cursor"))return sqlite_cursor_call(v,m,sig,self,a,out);
  return false;
+}
+bool android_basics_call(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int nargs,union dvm_value *out){
+ 
+ struct gc_operation gc7 __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&gc7)||!gc_operation_admit(v,self))return true;
+ bool handled=android_basics_call_gc7_body(v,c,m,sig,self,a,nargs,out);
+ const char *ret=strchr(sig,')');
+ if(handled&&out&&ret&&(ret[1]=='L'||ret[1]=='['))gc_operation_result(&gc7,sig,out->l);
+ return handled;
 }

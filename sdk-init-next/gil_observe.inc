@@ -43,7 +43,7 @@ void dvm_gil_play_status(char *out,size_t size){
  unsigned seq=atomic_load(&play_method_seq);long tid=atomic_load(&play_method_tid);
  const char *c=atomic_load(&play_method_class),*m=atomic_load(&play_method_name),*sig=atomic_load(&play_method_sig);
  int valid=!(seq&1)&&seq==atomic_load(&play_method_seq)&&tid==gil_holder;
- snprintf(out,size,"holder_tid=%ld held_ms=%.3f waiters=%u method=%s.%s%s method_valid=%d",gil_holder,gil_holder&&now>=since?(now-since)/1e6:0,atomic_load(&g_gil.waiters),valid&&c?c:"unknown",valid&&m?m:"unknown",valid&&sig?sig:"",valid);
+ snprintf(out,size,"holder_tid=%ld held_ms=%.3f waiters=%u method=%s.%s%s method_valid=%d handoff_tid=%ld handoff_ms=%.3f epoch=%llu",gil_holder,gil_holder&&now>=since?(now-since)/1e6:0,atomic_load(&g_gil.waiters),valid&&c?c:"unknown",valid&&m?m:"unknown",valid&&sig?sig:"",valid,gil_handoff,gil_handoff&&now>=gil_handoff_since?(now-gil_handoff_since)/1e6:0,(unsigned long long)gil_epoch);
  pthread_mutex_unlock(&g_gil.m);
 }
 static int gil_control(const char *name){char path[256];snprintf(path,sizeof path,GIL_DIR "%s",name);FILE *f=fopen(path,"r");int n=0;if(f){(void)fscanf(f,"%d",&n);fclose(f);}return n;}

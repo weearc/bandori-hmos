@@ -2,6 +2,7 @@
  * Java SE contract references are recorded in README.md. All calls occur under
  * the interpreter GIL. AtomicBoolean additionally uses C11 seq_cst atomics. */
 #include "java_basics.h"
+#include "gc_operation.h"
 #include <stdlib.h>
 #include <stdatomic.h>
 #include <pthread.h>
@@ -38,7 +39,7 @@ static struct payload *payload(struct dvm *v,dvm_ref ref,int kind,bool create){
  if(p->kind!=kind){dvm__throw(v,"java/lang/IllegalStateException","base class payload kind mismatch");return NULL;}
  return p;
 }
-bool java_basics_equal(struct dvm *v,dvm_ref a,dvm_ref b){
+static bool java_basics_equal_step8_operation(struct dvm *v,dvm_ref a,dvm_ref b){
  if(a==b)return true;if(!a||!b)return false;
  struct dvm_object *x=dvm__obj(v,a),*y=dvm__obj(v,b);
  if(x&&y&&x->kind==DVM_OBJ_STRING&&y->kind==DVM_OBJ_STRING)return x->utf8_len==y->utf8_len&&!memcmp(x->utf8,y->utf8,x->utf8_len);
@@ -46,11 +47,17 @@ bool java_basics_equal(struct dvm *v,dvm_ref a,dvm_ref b){
  if(ix||iy)return ix&&iy&&ix->value==iy->value;
  struct dvm_method *m=x?dvm_find_method(v,x->cls,"equals","(Ljava/lang/Object;)Z"):NULL;
  if(m){union dvm_value arg={.l=b},r={0};return dvm_call(v,m,a,&arg,1,&r)&&r.i;}
+ x=dvm__obj(v,a); /* Lookup may cross a safepoint: resolve the admitted ref again. */
  if(x&&x->cls&&x->cls->external&&strcmp(x->cls->name,"java/lang/Object")){
   dvm__throw(v,"java/lang/UnsupportedOperationException","equals contract not implemented for external class %s",x->cls->name);
  }
  /* java.lang.Object.equals defaults to reference identity, already tested. */
  return false;
+}
+bool java_basics_equal(struct dvm *v,dvm_ref a,dvm_ref b){
+ struct gc_operation op __attribute__((cleanup(gc_operation_end)))={0};
+ if(!gc_operation_begin(v,&op)||!gc_operation_admit(v,a)||!gc_operation_admit(v,b))return false;
+ return java_basics_equal_step8_operation(v,a,b);
 }
 bool java_basics_static(struct dvm *v,const char *c,const char *f,const char *t,union dvm_value *out){
  if(!strcmp(c,"java/util/concurrent/TimeUnit")&&!strcmp(t,"Ljava/util/concurrent/TimeUnit;")){
@@ -77,7 +84,7 @@ bool java_basics_timeunit_nanos(struct dvm *v,dvm_ref unit,uint64_t *nanos){
  *nanos=p->unit_nanos;return *nanos!=0;
 }
 #define IS(name,signature) (!strcmp(m,name)&&!strcmp(sig,signature))
-bool java_basics_call(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int nargs,union dvm_value *out){
+static bool java_basics_call_step8_operation(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int nargs,union dvm_value *out){
  (void)nargs;memset(out,0,sizeof *out);
  if(!strcmp(c,"java/util/concurrent/TimeUnit")&&nargs==1&&!strcmp(sig,"(J)J")){
   static const char *methods[]={"toNanos","toMicros","toMillis","toSeconds","toMinutes","toHours","toDays"};
@@ -244,3 +251,11 @@ bounds:dvm__throw(v,"java/lang/IndexOutOfBoundsException","list index");return t
 oom:dvm__throw(v,"java/lang/OutOfMemoryError","base class payload");return true;
 }
 #include "runtime_extra.inc"
+
+bool java_basics_call(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int nargs,union dvm_value *out){
+ struct gc_operation op __attribute__((cleanup(gc_operation_end)))={0};
+ if(!gc_operation_begin(v,&op)||!gc_operation_admit(v,self))return true;
+ bool handled=java_basics_call_step8_operation(v,c,m,sig,self,a,nargs,out);
+ if(handled&&!dvm_exception(v))gc_operation_result(&op,sig,out->l);
+ return handled;
+}

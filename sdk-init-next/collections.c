@@ -4,6 +4,7 @@
  * bulk snapshots and fail-fast iterator adaptation are local additions. */
 #include "collections.h"
 #include "java_basics.h"
+#include "gc_operation.h"
 #include "portable.h"
 #include <stdlib.h>
 #include <string.h>
@@ -17,7 +18,11 @@
 #define fprintf sdk_trace_fprintf
 static void list_gc_destroy(void *p){free(p);}
 static void iterator_gc_destroy(void *p){free(p);}
+/* Included storage helpers must reject a failed live body/payload admission,
+ * too. Their payload returns borrow the dispatch/builtin operation interval. */
+#define dvm__obj gc_operation_object
 #include "upstream_collections.inc"
+#undef dvm__obj
 extern bool string_runtime_call(struct dvm*,const char*,const char*,const char*,dvm_ref,const union dvm_value*,int,union dvm_value*);
 
 bool collections_synchronized_map_selftest(struct dvm *v);
@@ -26,7 +31,7 @@ bool collections_singleton_list_selftest(struct dvm *v);
 static bool collections_remove_all_and_empty_selftest(struct dvm *v);
 bool collections_weak_map_selftest(struct dvm *v);
 /* Check the ordering contract used by the LinkedHashMap dispatcher. */
-bool collections_ordered_map_selftest(struct dvm *v){
+static bool collections_ordered_map_selftest_operation(struct dvm *v){
  {
   dvm_ref vector=dvm_new_object(v,dvm_find_class_or_external(v,"java/util/Vector"));union dvm_value out={0},a={.l=dvm_new_string(v,"event")};
   if(!vector||!collections_call(v,"java/util/Vector","<init>","()V",vector,NULL,0,&out)||dvm_exception(v))return false;
@@ -46,7 +51,7 @@ bool collections_ordered_map_selftest(struct dvm *v){
   for(int i=0;i<3;i++){index.i=i;if(!collections_call(v,"java/util/Vector","get","(I)Ljava/lang/Object;",vector,&index,1,&out)||out.l!=expected[i])return false;}
   for(int i=0;i<2;i++){
    index.i=i?3:-1;if(!collections_call(v,"java/util/Vector","get","(I)Ljava/lang/Object;",vector,&index,1,&out)||!dvm_exception(v))return false;
-   struct dvm_object *error=dvm__obj(v,dvm_exception(v));if(!error||strcmp(error->cls->name,"java/lang/IndexOutOfBoundsException"))return false;dvm_clear_exception(v);
+   const dvm_ref gc_ref_error_11=(dvm_exception(v)); if(!gc_operation_admit(v,gc_ref_error_11))return 0;if(!dvm__obj(v,gc_ref_error_11)||strcmp(dvm__obj(v,gc_ref_error_11)->cls->name,"java/lang/IndexOutOfBoundsException"))return false;dvm_clear_exception(v);
   }
   sdk_trace_fprintf(stderr,"TASK5_VECTOR_ARRAY_SELFTEST PASS size=3 ordered=1 null_element=1 isEmpty=1 negative_bound=1 upper_bound=1\n");
   dvm_ref stack=dvm_new_object(v,dvm_find_class_or_external(v,"java/util/Stack"));
@@ -57,7 +62,7 @@ bool collections_ordered_map_selftest(struct dvm *v){
   if(!collections_call(v,"java/util/Stack","peek","()Ljava/lang/Object;",stack,NULL,0,&out)||out.l!=a.l)return false;
   if(!collections_call(v,"java/util/Stack","pop","()Ljava/lang/Object;",stack,NULL,0,&out)||out.l!=a.l)return false;
   if(!collections_call(v,"java/util/Stack","pop","()Ljava/lang/Object;",stack,NULL,0,&out)||!dvm_exception(v))return false;
-  struct dvm_object *empty=dvm__obj(v,dvm_exception(v));if(!empty||strcmp(empty->cls->name,"java/util/EmptyStackException"))return false;dvm_clear_exception(v);
+  const dvm_ref gc_ref_empty_12=(dvm_exception(v)); if(!gc_operation_admit(v,gc_ref_empty_12))return 0;if(!dvm__obj(v,gc_ref_empty_12)||strcmp(dvm__obj(v,gc_ref_empty_12)->cls->name,"java/util/EmptyStackException"))return false;dvm_clear_exception(v);
   sdk_trace_fprintf(stderr,"TASK5_STACK_SELFTEST PASS push=1 peek=1 pop=1 lastElement=1 empty_exception=1\n");
   sdk_trace_fprintf(stderr,"TASK5_VECTOR_SELFTEST PASS constructor=1 add_get=1 interface_dispatch=1 clear=1 recursive_lock=1\n");
   union dvm_value pair[2]={{0},{.l=a.l}};
@@ -67,7 +72,7 @@ bool collections_ordered_map_selftest(struct dvm *v){
   if(!collections_call(v,"java/util/Map","size","()I",map,NULL,0,&out)||out.i!=1)return false;
   if(!collections_call(v,"java/util/Map","get","(Ljava/lang/Object;)Ljava/lang/Object;",map,pair,1,&out)||out.l!=a.l)return false;
   if(!collections_call(v,"java/util/Map","put","(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",map,pair,2,&out)||!dvm_exception(v))return false;
-  struct dvm_object *error=dvm__obj(v,dvm_exception(v));if(!error||strcmp(error->cls->name,"java/lang/UnsupportedOperationException"))return false;dvm_clear_exception(v);
+  const dvm_ref gc_ref_error_13=(dvm_exception(v)); if(!gc_operation_admit(v,gc_ref_error_13))return 0;if(!dvm__obj(v,gc_ref_error_13)||strcmp(dvm__obj(v,gc_ref_error_13)->cls->name,"java/lang/UnsupportedOperationException"))return false;dvm_clear_exception(v);
   sdk_trace_fprintf(stderr,"TASK5_SINGLETON_MAP_SELFTEST PASS size=1 null_key=1 value=1 immutable=1\n");
  }
  if(!collections_remove_all_and_empty_selftest(v))return false;
@@ -92,6 +97,13 @@ bool collections_ordered_map_selftest(struct dvm *v){
  if(!collections_singleton_list_selftest(v))return false;
  sdk_trace_fprintf(stderr,"ORDERED_MAP_SELFTEST PASS update_keeps_order=1 reinsert_appends=1 null_mapping=1\n");return !dvm_exception(v);
 }
+bool collections_ordered_map_selftest(struct dvm *v){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return false;
+ bool result=collections_ordered_map_selftest_operation(v);
+ return result;
+}
+
 
 static bool is_type(struct dvm_class *c,const char *name){for(;c;c=c->super)if(!strcmp(c->name,name))return true;return false;}
 /* Map.entrySet() view classes are registered by entry_views_vm_start().  They
@@ -115,7 +127,7 @@ static struct dvm_class *metadata(struct dvm *v,const char *desc,const char *par
  if(n&&!c->ifaces){c->nifaces=0;dvm__throw(v,"java/lang/OutOfMemoryError","collection type metadata");return c;}
  for(int i=0;i<n;++i)c->ifaces[i]=dvm__class_by_desc(v,ifaces[i]);return c;
 }
-void collections_vm_start(struct dvm *v){
+static void collections_vm_start_operation(struct dvm *v){
  const char *iterable[]={"Ljava/lang/Iterable;"},*collection[]={"Ljava/util/Collection;"},*list[]={"Ljava/util/List;"},*map[]={"Ljava/util/Map;"};
  const char *array_interfaces[]={"Ljava/util/List;","Ljava/util/RandomAccess;","Ljava/lang/Cloneable;","Ljava/io/Serializable;"};
  const char *map_interfaces[]={"Ljava/util/Map;","Ljava/lang/Cloneable;","Ljava/io/Serializable;"};
@@ -154,6 +166,12 @@ void collections_vm_start(struct dvm *v){
  singleton_list_vm_start(v);
  ordinary_map_methods_vm_start(v);
 }
+void collections_vm_start(struct dvm *v){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return;
+ collections_vm_start_operation(v);
+}
+
 typedef bool (*method_fn)(struct dvm *,dvm_ref,const union dvm_value *,int,union dvm_value *);
 static bool entry_set_call(struct dvm *,const char *,const char *,dvm_ref,const union dvm_value *,int,union dvm_value *);
 static bool key_set_call(struct dvm *,const char *,const char *,dvm_ref,const union dvm_value *,int,union dvm_value *);
@@ -163,18 +181,18 @@ static bool invoke(method_fn fn,struct dvm *v,dvm_ref r,const union dvm_value *a
 }
 static dvm_ref snapshot(struct dvm *v,dvm_ref source){
  if(!source){dvm__throw(v,"java/lang/NullPointerException","source Collection");return 0;}
- struct dvm_object *o=dvm__obj(v,source);union dvm_value result={0};
- if(o&&(is_type(o->cls,"java/util/ArrayList")||is_type(o->cls,"java/util/LinkedList"))){if(!list_toArray(v,source,NULL,0,&result))return 0;}
- else if(o&&is_type(o->cls,"java/util/concurrent/CopyOnWriteArrayList")){if(!java_basics_call(v,"java/util/concurrent/CopyOnWriteArrayList","toArray","()[Ljava/lang/Object;",source,NULL,0,&result))return 0;}
- else if(o&&o->cls&&!strcmp(o->cls->name,"sdktrace/collections/KeySet")){if(!key_set_call(v,"toArray","()[Ljava/lang/Object;",source,NULL,0,&result))return 0;}
- else if(o&&o->cls&&!strcmp(o->cls->name,"sdktrace/collections/Values")){if(!values_call(v,"toArray","()[Ljava/lang/Object;",source,NULL,0,&result))return 0;}
- else if(o&&o->cls&&!strcmp(o->cls->name,"sdktrace/collections/EntrySet")){if(!entry_set_call(v,"toArray","()[Ljava/lang/Object;",source,NULL,0,&result))return 0;}
- else {struct dvm_method *m=o?dvm_find_method(v,o->cls,"toArray","()[Ljava/lang/Object;"):NULL;
-  if(!m){sdk_trace_missing_api(o&&o->cls?o->cls->name:"?","toArray","()[Ljava/lang/Object;");dvm__throw(v,"java/lang/NoSuchMethodError","Collection.toArray");return 0;}
+ const dvm_ref gc_ref_o_14=(source); if(!gc_operation_admit(v,gc_ref_o_14))return 0;union dvm_value result={0};
+ if(dvm__obj(v,gc_ref_o_14)&&(is_type(dvm__obj(v,gc_ref_o_14)->cls,"java/util/ArrayList")||is_type(dvm__obj(v,gc_ref_o_14)->cls,"java/util/LinkedList"))){if(!list_toArray(v,source,NULL,0,&result))return 0;}
+ else if(dvm__obj(v,gc_ref_o_14)&&is_type(dvm__obj(v,gc_ref_o_14)->cls,"java/util/concurrent/CopyOnWriteArrayList")){if(!java_basics_call(v,"java/util/concurrent/CopyOnWriteArrayList","toArray","()[Ljava/lang/Object;",source,NULL,0,&result))return 0;}
+ else if(dvm__obj(v,gc_ref_o_14)&&dvm__obj(v,gc_ref_o_14)->cls&&!strcmp(dvm__obj(v,gc_ref_o_14)->cls->name,"sdktrace/collections/KeySet")){if(!key_set_call(v,"toArray","()[Ljava/lang/Object;",source,NULL,0,&result))return 0;}
+ else if(dvm__obj(v,gc_ref_o_14)&&dvm__obj(v,gc_ref_o_14)->cls&&!strcmp(dvm__obj(v,gc_ref_o_14)->cls->name,"sdktrace/collections/Values")){if(!values_call(v,"toArray","()[Ljava/lang/Object;",source,NULL,0,&result))return 0;}
+ else if(dvm__obj(v,gc_ref_o_14)&&dvm__obj(v,gc_ref_o_14)->cls&&!strcmp(dvm__obj(v,gc_ref_o_14)->cls->name,"sdktrace/collections/EntrySet")){if(!entry_set_call(v,"toArray","()[Ljava/lang/Object;",source,NULL,0,&result))return 0;}
+ else {struct dvm_method *m=dvm__obj(v,gc_ref_o_14)?dvm_find_method(v,dvm__obj(v,gc_ref_o_14)->cls,"toArray","()[Ljava/lang/Object;"):NULL;
+  if(!m){sdk_trace_missing_api(dvm__obj(v,gc_ref_o_14)&&dvm__obj(v,gc_ref_o_14)->cls?dvm__obj(v,gc_ref_o_14)->cls->name:"?","toArray","()[Ljava/lang/Object;");dvm__throw(v,"java/lang/NoSuchMethodError","Collection.toArray");return 0;}
   if(!dvm_call(v,m,source,NULL,0,&result))return 0;
  }
- struct dvm_object *array=dvm__obj(v,result.l);
- if(!array||array->kind!=DVM_OBJ_ARRAY||array->elem_kind!='L'){dvm__throw(v,"java/lang/IllegalStateException","Collection.toArray returned no object array");return 0;}
+ const dvm_ref gc_ref_array_15=(result.l); if(!gc_operation_admit(v,gc_ref_array_15))return 0;
+ if(!dvm__obj(v,gc_ref_array_15)||dvm__obj(v,gc_ref_array_15)->kind!=DVM_OBJ_ARRAY||dvm__obj(v,gc_ref_array_15)->elem_kind!='L'){dvm__throw(v,"java/lang/IllegalStateException","Collection.toArray returned no object array");return 0;}
  return result.l;
 }
 static bool bulk_add(struct dvm *v,dvm_ref self,dvm_ref source,int at,union dvm_value *out){
@@ -215,7 +233,7 @@ struct iterator{dvm_ref target;uint32_t cursor,expected;int64_t last;};
 static bool iterator_call(struct dvm *v,const char *m,const char *sig,dvm_ref self,union dvm_value *out){
  if(strcmp(sig,"()Z")&&strcmp(sig,"()Ljava/lang/Object;")&&strcmp(sig,"()V"))return false;
  bool has=!strcmp(m,"hasNext")&&!strcmp(sig,"()Z"),next=!strcmp(m,"next")&&!strcmp(sig,"()Ljava/lang/Object;"),remove=!strcmp(m,"remove")&&!strcmp(sig,"()V");if(!has&&!next&&!remove)return false;
- struct dvm_object *o=dvm__obj(v,self);struct iterator *it=o?o->data:NULL;struct rt_list *l=it?list_of(v,it->target):NULL;
+ const dvm_ref gc_ref_o_16=(self); if(!gc_operation_admit(v,gc_ref_o_16))return 0;struct iterator *it=dvm__obj(v,gc_ref_o_16)?dvm__obj(v,gc_ref_o_16)->data:NULL;struct rt_list *l=it?list_of(v,it->target):NULL;
  if(!it||!l){dvm__throw(v,"java/lang/IllegalStateException","ArrayList iterator uninitialized");return true;}
  if(has){out->i=it->cursor!=l->size;return true;}
  if(it->expected!=l->mod_count){dvm__throw(v,"java/util/ConcurrentModificationException","ArrayList structurally modified");return true;}
@@ -239,7 +257,7 @@ typedef struct {struct dvm *vm;dvm_ref owner;uint32_t expected,index;int64_t las
 static void entry_view_destroy(void *p){entry_view *e=p;if(e){if(e->map)dvm_unpin(e->vm,e->map);if(e->key)dvm_unpin(e->vm,e->key);if(e->value)dvm_unpin(e->vm,e->value);free(e);}}
 static void entry_set_destroy(void *p){entry_set_view *s=p;if(s){if(s->map)dvm_unpin(s->vm,s->map);free(s);}}
 static void entry_iter_destroy(void *p){entry_iter_view *i=p;if(i){if(i->owner)dvm_unpin(i->vm,i->owner);free(i);}}
-static struct rt_map *entry_map_data(struct dvm *v,dvm_ref map){map_expunge_stale(v,map);struct dvm_object *o=dvm__obj(v,map);return o?o->data:NULL;}
+static struct rt_map *entry_map_data(struct dvm *v,dvm_ref map){map_expunge_stale(v,map);const dvm_ref gc_ref_o_17=(map); if(!gc_operation_admit(v,gc_ref_o_17))return 0;return dvm__obj(v,gc_ref_o_17)?dvm__obj(v,gc_ref_o_17)->data:NULL;}
 static bool entry_live_value(struct dvm *v,entry_view *e,dvm_ref *value){
  int64_t at=map_find_key(v,e->map,e->key);
  if(dvm_exception(v))return false;
@@ -262,11 +280,11 @@ static dvm_ref entry_new(struct dvm *v,dvm_ref map,dvm_ref key,dvm_ref value){
  struct dvm_class *cls=dvm_find_class_or_external(v,"sdktrace/collections/MapEntry");
  entry_view *e=calloc(1,sizeof *e);
  if(!cls||!e){free(e);dvm__throw(v,"java/lang/OutOfMemoryError","Map.Entry view");return 0;}
- dvm_ref ref=dvm_new_object(v,cls);struct dvm_object *o=dvm__obj(v,ref);
- if(!o){free(e);dvm__throw(v,"java/lang/OutOfMemoryError","Map.Entry object");return 0;}
+ dvm_ref ref=dvm_new_object(v,cls);const dvm_ref gc_ref_o_18=(ref); if(!gc_operation_admit(v,gc_ref_o_18))return 0;
+ if(!dvm__obj(v,gc_ref_o_18)){free(e);dvm__throw(v,"java/lang/OutOfMemoryError","Map.Entry object");return 0;}
  e->vm=v;e->map=map;e->key=key;e->value=value;
  if(map)dvm_pin(v,map);if(key)dvm_pin(v,key);if(value)dvm_pin(v,value);
- o->data=e;o->data_destroy=entry_view_destroy;
+ dvm__obj(v,gc_ref_o_18)->data=e;dvm__obj(v,gc_ref_o_18)->data_destroy=entry_view_destroy;
  return ref;
 }
 /* Reads (key,value) from these entries and from foreign Map.Entry
@@ -276,16 +294,16 @@ static dvm_ref entry_new(struct dvm *v,dvm_ref map,dvm_ref key,dvm_ref value){
 static bool entry_read_pair(struct dvm *v,dvm_ref ref,dvm_ref *key,dvm_ref *value){
  *key=0;*value=0;
  if(!ref)return false;
- struct dvm_object *o=dvm__obj(v,ref);
- if(!o)return false;
- if(o->data_destroy==entry_view_destroy){
-  entry_view *e=o->data;
+ const dvm_ref gc_ref_o_19=(ref); if(!gc_operation_admit(v,gc_ref_o_19))return 0;
+ if(!dvm__obj(v,gc_ref_o_19))return false;
+ if(dvm__obj(v,gc_ref_o_19)->data_destroy==entry_view_destroy){
+  entry_view *e=dvm__obj(v,gc_ref_o_19)->data;
   *key=e->key;*value=entry_current_value(v,e);return !dvm_exception(v);
  }
  struct dvm_class *iface=dvm_find_class_or_external(v,"java/util/Map$Entry");
- if(!iface||!o->cls||!dvm__class_assignable(v,o->cls,iface))return false;
- struct dvm_method *get_key=dvm_find_method(v,o->cls,"getKey","()Ljava/lang/Object;");
- struct dvm_method *get_value=dvm_find_method(v,o->cls,"getValue","()Ljava/lang/Object;");
+ if(!iface||!dvm__obj(v,gc_ref_o_19)->cls||!dvm__class_assignable(v,dvm__obj(v,gc_ref_o_19)->cls,iface))return false;
+ struct dvm_method *get_key=dvm_find_method(v,dvm__obj(v,gc_ref_o_19)->cls,"getKey","()Ljava/lang/Object;");
+ struct dvm_method *get_value=dvm_find_method(v,dvm__obj(v,gc_ref_o_19)->cls,"getValue","()Ljava/lang/Object;");
  if(get_key&&get_value&&(get_key->has_code||get_key->builtin)&&(get_value->has_code||get_value->builtin)){
   union dvm_value k={0},val={0};
   if(!dvm_call(v,get_key,ref,NULL,0,&k)||!dvm_call(v,get_value,ref,NULL,0,&val))return false;
@@ -298,16 +316,16 @@ static bool entry_read_pair(struct dvm *v,dvm_ref ref,dvm_ref *key,dvm_ref *valu
 extern bool string_runtime_call(struct dvm*,const char*,const char*,const char*,dvm_ref,const union dvm_value*,int,union dvm_value*);
 static uint32_t entry_hash_part(struct dvm *v,dvm_ref ref){
  if(!ref)return 0;
- struct dvm_object *o=dvm__obj(v,ref);
+ const dvm_ref gc_ref_o_20=(ref); if(!gc_operation_admit(v,gc_ref_o_20))return 0;
  union dvm_value hash={0};
- if(o&&o->kind==DVM_OBJ_STRING){
+ if(dvm__obj(v,gc_ref_o_20)&&dvm__obj(v,gc_ref_o_20)->kind==DVM_OBJ_STRING){
   if(string_runtime_call(v,"java/lang/String","hashCode","()I",ref,NULL,0,&hash)&&!dvm_exception(v))return (uint32_t)hash.i;
   return 0;
  }
- if(o&&o->cls){
-  struct dvm_method *m=dvm_find_method(v,o->cls,"hashCode","()I");
+ if(dvm__obj(v,gc_ref_o_20)&&dvm__obj(v,gc_ref_o_20)->cls){
+  struct dvm_method *m=dvm_find_method(v,dvm__obj(v,gc_ref_o_20)->cls,"hashCode","()I");
   if(m&&(m->has_code||m->builtin)){if(dvm_call(v,m,ref,NULL,0,&hash)&&!dvm_exception(v))return (uint32_t)hash.i;return 0;}
-  if(java_basics_call(v,o->cls->name,"hashCode","()I",ref,NULL,0,&hash)){if(!dvm_exception(v))return (uint32_t)hash.i;return 0;}
+  if(java_basics_call(v,dvm__obj(v,gc_ref_o_20)->cls->name,"hashCode","()I",ref,NULL,0,&hash)){if(!dvm_exception(v))return (uint32_t)hash.i;return 0;}
  }
  /* Object.hashCode identity fallback for classes without an implementation. */
  return (uint32_t)(uintptr_t)ref;
@@ -317,7 +335,7 @@ extern bool list_views_call(struct dvm*,const char*,const char*,const char*,dvm_
 #define IS(name,signature) (!strcmp(m,name)&&!strcmp(sig,signature))
 static bool entry_tostring_builtin(struct dvm*,dvm_ref,const union dvm_value*,int,union dvm_value*);
 static bool entry_call(struct dvm *v,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int nargs,union dvm_value *out){
- (void)nargs;struct dvm_object *o=dvm__obj(v,self);entry_view *e=o?o->data:NULL;if(!e)return false;
+ (void)nargs;const dvm_ref gc_ref_o_21=(self); if(!gc_operation_admit(v,gc_ref_o_21))return 0;entry_view *e=dvm__obj(v,gc_ref_o_21)?dvm__obj(v,gc_ref_o_21)->data:NULL;if(!e)return false;
  if(IS("getKey","()Ljava/lang/Object;")){out->l=e->key;return true;}
  if(IS("getValue","()Ljava/lang/Object;")){dvm_ref value=entry_current_value(v,e);if(dvm_exception(v))return true;out->l=value;return true;}
  if(IS("setValue","(Ljava/lang/Object;)Ljava/lang/Object;")){
@@ -360,18 +378,18 @@ static bool entry_equals_builtin(struct dvm *v,dvm_ref self,const union dvm_valu
 static bool entry_hash_builtin(struct dvm *v,dvm_ref self,const union dvm_value *a,int n,union dvm_value *out){return entry_call(v,"hashCode","()I",self,a,n,out);}
 static dvm_ref entry_render(struct dvm *v,dvm_ref ref){
  if(!ref)return dvm_new_string(v,"null");
- struct dvm_object *o=dvm__obj(v,ref);
- if(o&&o->kind==DVM_OBJ_STRING)return ref;
+ const dvm_ref gc_ref_o_22=(ref); if(!gc_operation_admit(v,gc_ref_o_22))return 0;
+ if(dvm__obj(v,gc_ref_o_22)&&dvm__obj(v,gc_ref_o_22)->kind==DVM_OBJ_STRING)return ref;
  union dvm_value text={0};
- if(o&&o->cls){
-  struct dvm_method *m=dvm_find_method(v,o->cls,"toString","()Ljava/lang/String;");
+ if(dvm__obj(v,gc_ref_o_22)&&dvm__obj(v,gc_ref_o_22)->cls){
+  struct dvm_method *m=dvm_find_method(v,dvm__obj(v,gc_ref_o_22)->cls,"toString","()Ljava/lang/String;");
   if(m&&(m->has_code||m->builtin)){if(dvm_call(v,m,ref,NULL,0,&text)&&!dvm_exception(v)&&text.l)return text.l;return 0;}
-  if(java_basics_call(v,o->cls->name,"toString","()Ljava/lang/String;",ref,NULL,0,&text)&&!dvm_exception(v))return text.l;
+  if(java_basics_call(v,dvm__obj(v,gc_ref_o_22)->cls->name,"toString","()Ljava/lang/String;",ref,NULL,0,&text)&&!dvm_exception(v))return text.l;
  }
- return dvm_new_string(v,o&&o->cls&&o->cls->name?o->cls->name:"null");
+ return dvm_new_string(v,dvm__obj(v,gc_ref_o_22)&&dvm__obj(v,gc_ref_o_22)->cls&&dvm__obj(v,gc_ref_o_22)->cls->name?dvm__obj(v,gc_ref_o_22)->cls->name:"null");
 }
 static bool entry_tostring_builtin(struct dvm *v,dvm_ref self,const union dvm_value *a,int n,union dvm_value *out){
- (void)a;(void)n;struct dvm_object *o=dvm__obj(v,self);entry_view *e=o?o->data:NULL;if(!e)return false;
+ (void)a;(void)n;const dvm_ref gc_ref_o_23=(self); if(!gc_operation_admit(v,gc_ref_o_23))return 0;entry_view *e=dvm__obj(v,gc_ref_o_23)?dvm__obj(v,gc_ref_o_23)->data:NULL;if(!e)return false;
  dvm_ref key=entry_render(v,e->key);if(dvm_exception(v))return true;
  dvm_ref value=entry_render(v,entry_current_value(v,e));if(dvm_exception(v))return true;
  if(!key||!value){dvm__throw(v,"java/lang/OutOfMemoryError","Map.Entry toString");return true;}
@@ -387,7 +405,7 @@ static bool entry_tostring_builtin(struct dvm *v,dvm_ref self,const union dvm_va
  return true;
 }
 static bool entry_set_call(struct dvm *v,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int nargs,union dvm_value *out){
- (void)nargs;struct dvm_object *o=dvm__obj(v,self);entry_set_view *s=o?o->data:NULL;if(!s)return false;
+ (void)nargs;const dvm_ref gc_ref_o_24=(self); if(!gc_operation_admit(v,gc_ref_o_24))return 0;entry_set_view *s=dvm__obj(v,gc_ref_o_24)?dvm__obj(v,gc_ref_o_24)->data:NULL;if(!s)return false;
  struct rt_map *mp=entry_map_data(v,s->map);
  if(IS("size","()I")){out->i=mp?(int32_t)mp->size:0;return true;}
  if(IS("isEmpty","()Z")){out->i=!(mp&&mp->size);return true;}
@@ -413,11 +431,11 @@ static bool entry_set_call(struct dvm *v,const char *m,const char *sig,dvm_ref s
   struct dvm_class *cls=dvm_find_class_or_external(v,"sdktrace/collections/EntryIterator");
   entry_iter_view *it=calloc(1,sizeof *it);
   if(!cls||!it){free(it);dvm__throw(v,"java/lang/OutOfMemoryError","entrySet iterator");return true;}
-  dvm_ref ref=dvm_new_object(v,cls);struct dvm_object *io=dvm__obj(v,ref);
-  if(!io){free(it);dvm__throw(v,"java/lang/OutOfMemoryError","entrySet iterator object");return true;}
+  dvm_ref ref=dvm_new_object(v,cls);const dvm_ref gc_ref_io_25=(ref); if(!gc_operation_admit(v,gc_ref_io_25))return 0;
+  if(!dvm__obj(v,gc_ref_io_25)){free(it);dvm__throw(v,"java/lang/OutOfMemoryError","entrySet iterator object");return true;}
   it->vm=v;it->owner=self;it->expected=mp?mp->mod_count:0;it->last=-1;
   dvm_pin(v,self);
-  io->data=it;io->data_destroy=entry_iter_destroy;
+  dvm__obj(v,gc_ref_io_25)->data=it;dvm__obj(v,gc_ref_io_25)->data_destroy=entry_iter_destroy;
   out->l=ref;return true;
  }
  if(IS("toArray","()[Ljava/lang/Object;")){
@@ -430,21 +448,21 @@ static bool entry_set_call(struct dvm *v,const char *m,const char *sig,dvm_ref s
  }
  if(IS("toArray","([Ljava/lang/Object;)[Ljava/lang/Object;")){
   if(!a[0].l){dvm__throw(v,"java/lang/NullPointerException","entrySet.toArray array");return true;}
-  struct dvm_object *array=dvm__obj(v,a[0].l);
-  if(!array||array->kind!=DVM_OBJ_ARRAY||array->elem_kind!='L'){dvm__throw(v,"java/lang/ArrayStoreException","entrySet.toArray requires an object array");return true;}
+  dvm_ref gc_ref_array_26=(a[0].l); if(!gc_operation_admit(v,gc_ref_array_26))return 0;
+  if(!dvm__obj(v,gc_ref_array_26)||dvm__obj(v,gc_ref_array_26)->kind!=DVM_OBJ_ARRAY||dvm__obj(v,gc_ref_array_26)->elem_kind!='L'){dvm__throw(v,"java/lang/ArrayStoreException","entrySet.toArray requires an object array");return true;}
   uint32_t count=mp?mp->size:0;dvm_ref result=a[0].l;
-  if(array->length<count){const char *elem_desc=(array->cls&&array->cls->desc&&array->cls->desc[0]=='[')?array->cls->desc+1:"Ljava/lang/Object;";result=dvm_new_array(v,'L',elem_desc,count);if(!result){dvm__throw(v,"java/lang/OutOfMemoryError","entrySet array");return true;}array=dvm__obj(v,result);}
+  if(dvm__obj(v,gc_ref_array_26)->length<count){const char *elem_desc=(dvm__obj(v,gc_ref_array_26)->cls&&dvm__obj(v,gc_ref_array_26)->cls->desc&&dvm__obj(v,gc_ref_array_26)->cls->desc[0]=='[')?dvm__obj(v,gc_ref_array_26)->cls->desc+1:"Ljava/lang/Object;";result=dvm_new_array(v,'L',elem_desc,count);if(!result){dvm__throw(v,"java/lang/OutOfMemoryError","entrySet array");return true;}gc_ref_array_26=result; if(!gc_operation_admit(v,gc_ref_array_26))return true;}
   dvm_ref *items=dvm_array_data(v,result);
   for(uint32_t i=0;i<count;i++){items[i]=entry_new(v,s->map,mp->e[i].k,mp->e[i].v);if(!items[i])return true;}
-  if(array->length>count)items[count]=0;
+  if(dvm__obj(v,gc_ref_array_26)->length>count)items[count]=0;
   out->l=result;return true;
  }
  if(IS("add","(Ljava/lang/Object;)Z")||IS("addAll","(Ljava/util/Collection;)Z")){dvm__throw(v,"java/lang/UnsupportedOperationException","Map.entrySet does not support add");return true;}
  return false;
 }
 static bool entry_iter_call(struct dvm *v,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int nargs,union dvm_value *out){
- (void)nargs;(void)a;struct dvm_object *o=dvm__obj(v,self);entry_iter_view *it=o?o->data:NULL;if(!it)return false;
- struct dvm_object *owner=dvm__obj(v,it->owner);entry_set_view *s=owner&&owner->data_destroy==entry_set_destroy?owner->data:NULL;
+ (void)nargs;(void)a;const dvm_ref gc_ref_o_27=(self); if(!gc_operation_admit(v,gc_ref_o_27))return 0;entry_iter_view *it=dvm__obj(v,gc_ref_o_27)?dvm__obj(v,gc_ref_o_27)->data:NULL;if(!it)return false;
+ const dvm_ref gc_ref_owner_28=(it->owner); if(!gc_operation_admit(v,gc_ref_owner_28))return 0;entry_set_view *s=dvm__obj(v,gc_ref_owner_28)&&dvm__obj(v,gc_ref_owner_28)->data_destroy==entry_set_destroy?dvm__obj(v,gc_ref_owner_28)->data:NULL;
  struct rt_map *mp=s?entry_map_data(v,s->map):NULL;
  if(!s||!mp){dvm__throw(v,"java/lang/IllegalStateException","entrySet iterator detached");return true;}
  if(IS("hasNext","()Z")){out->i=it->index<mp->size;return true;}
@@ -480,7 +498,7 @@ static void key_set_destroy(void *p){key_set_view *s=p;if(s){if(s->map)dvm_unpin
 static void key_iter_destroy(void *p){key_iter_view *i=p;if(i){if(i->owner)dvm_unpin(i->vm,i->owner);free(i);}}
 
 static bool key_set_call(struct dvm *v,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int nargs,union dvm_value *out){
- (void)nargs;struct dvm_object *o=dvm__obj(v,self);key_set_view *s=o?o->data:NULL;if(!s)return false;
+ (void)nargs;const dvm_ref gc_ref_o_29=(self); if(!gc_operation_admit(v,gc_ref_o_29))return 0;key_set_view *s=dvm__obj(v,gc_ref_o_29)?dvm__obj(v,gc_ref_o_29)->data:NULL;if(!s)return false;
  struct rt_map *mp=entry_map_data(v,s->map);
  if(IS("size","()I")){out->i=mp?(int32_t)mp->size:0;return true;}
  if(IS("isEmpty","()Z")){out->i=!(mp&&mp->size);return true;}
@@ -501,11 +519,11 @@ static bool key_set_call(struct dvm *v,const char *m,const char *sig,dvm_ref sel
   struct dvm_class *cls=dvm_find_class_or_external(v,"sdktrace/collections/KeyIterator");
   key_iter_view *it=calloc(1,sizeof *it);
   if(!cls||!it){free(it);dvm__throw(v,"java/lang/OutOfMemoryError","keySet iterator");return true;}
-  dvm_ref ref=dvm_new_object(v,cls);struct dvm_object *io=dvm__obj(v,ref);
-  if(!io){free(it);dvm__throw(v,"java/lang/OutOfMemoryError","keySet iterator object");return true;}
+  dvm_ref ref=dvm_new_object(v,cls);const dvm_ref gc_ref_io_30=(ref); if(!gc_operation_admit(v,gc_ref_io_30))return 0;
+  if(!dvm__obj(v,gc_ref_io_30)){free(it);dvm__throw(v,"java/lang/OutOfMemoryError","keySet iterator object");return true;}
   it->vm=v;it->owner=self;it->expected=mp?mp->mod_count:0;it->last=-1;
   dvm_pin(v,self);
-  io->data=it;io->data_destroy=key_iter_destroy;
+  dvm__obj(v,gc_ref_io_30)->data=it;dvm__obj(v,gc_ref_io_30)->data_destroy=key_iter_destroy;
   out->l=ref;return true;
  }
  if(IS("toArray","()[Ljava/lang/Object;")){
@@ -518,21 +536,21 @@ static bool key_set_call(struct dvm *v,const char *m,const char *sig,dvm_ref sel
  }
  if(IS("toArray","([Ljava/lang/Object;)[Ljava/lang/Object;")){
   if(!a[0].l){dvm__throw(v,"java/lang/NullPointerException","keySet.toArray array");return true;}
-  struct dvm_object *array=dvm__obj(v,a[0].l);
-  if(!array||array->kind!=DVM_OBJ_ARRAY||array->elem_kind!='L'){dvm__throw(v,"java/lang/ArrayStoreException","keySet.toArray requires an object array");return true;}
+  dvm_ref gc_ref_array_31=(a[0].l); if(!gc_operation_admit(v,gc_ref_array_31))return 0;
+  if(!dvm__obj(v,gc_ref_array_31)||dvm__obj(v,gc_ref_array_31)->kind!=DVM_OBJ_ARRAY||dvm__obj(v,gc_ref_array_31)->elem_kind!='L'){dvm__throw(v,"java/lang/ArrayStoreException","keySet.toArray requires an object array");return true;}
   uint32_t count=mp?mp->size:0;dvm_ref result=a[0].l;
-  if(array->length<count){const char *elem_desc=(array->cls&&array->cls->desc&&array->cls->desc[0]=='[')?array->cls->desc+1:"Ljava/lang/Object;";result=dvm_new_array(v,'L',elem_desc,count);if(!result){dvm__throw(v,"java/lang/OutOfMemoryError","keySet array");return true;}array=dvm__obj(v,result);}
+  if(dvm__obj(v,gc_ref_array_31)->length<count){const char *elem_desc=(dvm__obj(v,gc_ref_array_31)->cls&&dvm__obj(v,gc_ref_array_31)->cls->desc&&dvm__obj(v,gc_ref_array_31)->cls->desc[0]=='[')?dvm__obj(v,gc_ref_array_31)->cls->desc+1:"Ljava/lang/Object;";result=dvm_new_array(v,'L',elem_desc,count);if(!result){dvm__throw(v,"java/lang/OutOfMemoryError","keySet array");return true;}gc_ref_array_31=result; if(!gc_operation_admit(v,gc_ref_array_31))return true;}
   dvm_ref *items=dvm_array_data(v,result);
   for(uint32_t i=0;i<count;i++)items[i]=mp->e[i].k;
-  if(array->length>count)items[count]=0;
+  if(dvm__obj(v,gc_ref_array_31)->length>count)items[count]=0;
   out->l=result;return true;
  }
  if(IS("add","(Ljava/lang/Object;)Z")||IS("addAll","(Ljava/util/Collection;)Z")){dvm__throw(v,"java/lang/UnsupportedOperationException","Map.keySet does not support add");return true;}
  return false;
 }
 static bool key_iter_call(struct dvm *v,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int nargs,union dvm_value *out){
- (void)nargs;(void)a;struct dvm_object *o=dvm__obj(v,self);key_iter_view *it=o?o->data:NULL;
- struct dvm_object *owner=dvm__obj(v,it?it->owner:0);key_set_view *s=owner&&owner->data_destroy==key_set_destroy?owner->data:NULL;
+ (void)nargs;(void)a;const dvm_ref gc_ref_o_32=(self); if(!gc_operation_admit(v,gc_ref_o_32))return 0;key_iter_view *it=dvm__obj(v,gc_ref_o_32)?dvm__obj(v,gc_ref_o_32)->data:NULL;
+ const dvm_ref gc_ref_owner_33=(it?it->owner:0); if(!gc_operation_admit(v,gc_ref_owner_33))return 0;key_set_view *s=dvm__obj(v,gc_ref_owner_33)&&dvm__obj(v,gc_ref_owner_33)->data_destroy==key_set_destroy?dvm__obj(v,gc_ref_owner_33)->data:NULL;
  struct rt_map *mp=s?entry_map_data(v,s->map):NULL;
  if(!it||!s||!mp){dvm__throw(v,"java/lang/IllegalStateException","keySet iterator detached");return true;}
  if(IS("hasNext","()Z")){out->i=it->index<mp->size;return true;}
@@ -638,7 +656,7 @@ static void value_iter_destroy(void *p){value_iter_view *i=p;if(i){if(i->owner)d
  * order is this Map's storage order and carries no Java-specified promise.
  * add()/addAll() are unsupported, matching HashMap.Values. */
 static bool values_call(struct dvm *v,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int nargs,union dvm_value *out){
- (void)nargs;struct dvm_object *o=dvm__obj(v,self);values_view *s=o?o->data:NULL;if(!s)return false;
+ (void)nargs;const dvm_ref gc_ref_o_34=(self); if(!gc_operation_admit(v,gc_ref_o_34))return 0;values_view *s=dvm__obj(v,gc_ref_o_34)?dvm__obj(v,gc_ref_o_34)->data:NULL;if(!s)return false;
  struct rt_map *mp=entry_map_data(v,s->map);
  if(IS("size","()I")){out->i=mp?(int32_t)mp->size:0;return true;}
  if(IS("isEmpty","()Z")){out->i=!(mp&&mp->size);return true;}
@@ -651,11 +669,11 @@ static bool values_call(struct dvm *v,const char *m,const char *sig,dvm_ref self
   struct dvm_class *cls=dvm_find_class_or_external(v,"sdktrace/collections/ValueIterator");
   value_iter_view *it=calloc(1,sizeof *it);
   if(!cls||!it){free(it);dvm__throw(v,"java/lang/OutOfMemoryError","values iterator");return true;}
-  dvm_ref ref=dvm_new_object(v,cls);struct dvm_object *io=dvm__obj(v,ref);
-  if(!io){free(it);dvm__throw(v,"java/lang/OutOfMemoryError","values iterator object");return true;}
+  dvm_ref ref=dvm_new_object(v,cls);const dvm_ref gc_ref_io_35=(ref); if(!gc_operation_admit(v,gc_ref_io_35))return 0;
+  if(!dvm__obj(v,gc_ref_io_35)){free(it);dvm__throw(v,"java/lang/OutOfMemoryError","values iterator object");return true;}
   it->vm=v;it->owner=self;it->expected=mp?mp->mod_count:0;it->last=-1;
   dvm_pin(v,self);
-  io->data=it;io->data_destroy=value_iter_destroy;
+  dvm__obj(v,gc_ref_io_35)->data=it;dvm__obj(v,gc_ref_io_35)->data_destroy=value_iter_destroy;
   out->l=ref;return true;
  }
  if(IS("toArray","()[Ljava/lang/Object;")){
@@ -667,13 +685,13 @@ static bool values_call(struct dvm *v,const char *m,const char *sig,dvm_ref self
  }
  if(IS("toArray","([Ljava/lang/Object;)[Ljava/lang/Object;")){
   if(!a[0].l){dvm__throw(v,"java/lang/NullPointerException","values.toArray array");return true;}
-  struct dvm_object *array=dvm__obj(v,a[0].l);
-  if(!array||array->kind!=DVM_OBJ_ARRAY||array->elem_kind!='L'){dvm__throw(v,"java/lang/ArrayStoreException","values.toArray requires an object array");return true;}
+  dvm_ref gc_ref_array_36=(a[0].l); if(!gc_operation_admit(v,gc_ref_array_36))return 0;
+  if(!dvm__obj(v,gc_ref_array_36)||dvm__obj(v,gc_ref_array_36)->kind!=DVM_OBJ_ARRAY||dvm__obj(v,gc_ref_array_36)->elem_kind!='L'){dvm__throw(v,"java/lang/ArrayStoreException","values.toArray requires an object array");return true;}
   uint32_t count=mp?mp->size:0;dvm_ref result=a[0].l;
-  if(array->length<count){const char *elem_desc=(array->cls&&array->cls->desc&&array->cls->desc[0]=='[')?array->cls->desc+1:"Ljava/lang/Object;";result=dvm_new_array(v,'L',elem_desc,count);if(!result){dvm__throw(v,"java/lang/OutOfMemoryError","values array");return true;}array=dvm__obj(v,result);}
+  if(dvm__obj(v,gc_ref_array_36)->length<count){const char *elem_desc=(dvm__obj(v,gc_ref_array_36)->cls&&dvm__obj(v,gc_ref_array_36)->cls->desc&&dvm__obj(v,gc_ref_array_36)->cls->desc[0]=='[')?dvm__obj(v,gc_ref_array_36)->cls->desc+1:"Ljava/lang/Object;";result=dvm_new_array(v,'L',elem_desc,count);if(!result){dvm__throw(v,"java/lang/OutOfMemoryError","values array");return true;}gc_ref_array_36=result; if(!gc_operation_admit(v,gc_ref_array_36))return true;}
   dvm_ref *items=dvm_array_data(v,result);
   for(uint32_t i=0;i<count;i++)items[i]=mp->e[i].v;
-  if(array->length>count)items[count]=0;
+  if(dvm__obj(v,gc_ref_array_36)->length>count)items[count]=0;
   out->l=result;return true;
  }
  if(IS("clear","()V"))return map_clear(v,s->map,NULL,0,out);
@@ -690,8 +708,8 @@ static bool values_builtin(struct dvm *v,dvm_ref self,const union dvm_value *a,i
  return m&&values_call(v,m->name,m->sig,self,a,n,out);
 }
 static bool value_iter_call(struct dvm *v,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int nargs,union dvm_value *out){
- (void)nargs;(void)a;struct dvm_object *o=dvm__obj(v,self);value_iter_view *it=o?o->data:NULL;
- struct dvm_object *owner=dvm__obj(v,it?it->owner:0);values_view *s=owner&&owner->data_destroy==values_view_destroy?owner->data:NULL;
+ (void)nargs;(void)a;const dvm_ref gc_ref_o_37=(self); if(!gc_operation_admit(v,gc_ref_o_37))return 0;value_iter_view *it=dvm__obj(v,gc_ref_o_37)?dvm__obj(v,gc_ref_o_37)->data:NULL;
+ const dvm_ref gc_ref_owner_38=(it?it->owner:0); if(!gc_operation_admit(v,gc_ref_owner_38))return 0;values_view *s=dvm__obj(v,gc_ref_owner_38)&&dvm__obj(v,gc_ref_owner_38)->data_destroy==values_view_destroy?dvm__obj(v,gc_ref_owner_38)->data:NULL;
  struct rt_map *mp=s?entry_map_data(v,s->map):NULL;
  if(!it||!s||!mp){dvm__throw(v,"java/lang/IllegalStateException","values iterator detached");return true;}
  if(IS("hasNext","()Z")){out->i=it->index<mp->size;return true;}
@@ -740,7 +758,7 @@ static void map_values_vm_start(struct dvm *v){
  * semantics.  A pending exception stops the walk and leaves the result to the
  * interpreter. */
 static bool map_hashcode(struct dvm *v,dvm_ref self,union dvm_value *out){
- struct dvm_object *o=dvm__obj(v,self);struct rt_map *mp=o?o->data:NULL;
+ const dvm_ref gc_ref_o_39=(self); if(!gc_operation_admit(v,gc_ref_o_39))return 0;struct rt_map *mp=dvm__obj(v,gc_ref_o_39)?dvm__obj(v,gc_ref_o_39)->data:NULL;
  if(!mp){dvm__throw(v,"java/lang/IllegalStateException","HashMap constructor not called");return true;}
  uint32_t hash=0;
  for(uint32_t i=0;i<mp->size;++i){
@@ -753,7 +771,7 @@ static bool map_hashcode(struct dvm *v,dvm_ref self,union dvm_value *out){
  out->i=(int32_t)hash;return true;
 }
 static bool map_tostring(struct dvm *v,dvm_ref self,union dvm_value *out){
- struct dvm_object *o=dvm__obj(v,self);struct rt_map *mp=o?o->data:NULL;
+ const dvm_ref gc_ref_o_40=(self); if(!gc_operation_admit(v,gc_ref_o_40))return 0;struct rt_map *mp=dvm__obj(v,gc_ref_o_40)?dvm__obj(v,gc_ref_o_40)->data:NULL;
  if(!mp){dvm__throw(v,"java/lang/IllegalStateException","HashMap constructor not called");return true;}
  size_t len=0,cap=32;char *text=malloc(cap);
  if(!text){dvm__throw(v,"java/lang/OutOfMemoryError","Map.toString buffer");return true;}
@@ -782,22 +800,22 @@ static bool map_tostring(struct dvm *v,dvm_ref self,union dvm_value *out){
 }
 static bool map_equals(struct dvm *v,dvm_ref self,dvm_ref other,union dvm_value *out){
  if(other==self){out->i=1;return true;}
- struct dvm_object *o=dvm__obj(v,self);struct rt_map *mp=o?o->data:NULL;
+ const dvm_ref gc_ref_o_41=(self); if(!gc_operation_admit(v,gc_ref_o_41))return 0;struct rt_map *mp=dvm__obj(v,gc_ref_o_41)?dvm__obj(v,gc_ref_o_41)->data:NULL;
  if(!mp){dvm__throw(v,"java/lang/IllegalStateException","HashMap constructor not called");return true;}
  out->i=0;if(!other)return true;
- struct dvm_object *other_object=dvm__obj(v,other);
+ const dvm_ref gc_ref_other_object_42=(other); if(!gc_operation_admit(v,gc_ref_other_object_42))return 0;
  struct dvm_class *map_iface=dvm_find_class_or_external(v,"java/util/Map");
- if(!other_object||!other_object->cls||!map_iface||!dvm__class_assignable(v,other_object->cls,map_iface))return true;
+ if(!dvm__obj(v,gc_ref_other_object_42)||!dvm__obj(v,gc_ref_other_object_42)->cls||!map_iface||!dvm__class_assignable(v,dvm__obj(v,gc_ref_other_object_42)->cls,map_iface))return true;
  union dvm_value size={0};
- if(!collections_call(v,other_object->cls->name,"size","()I",other,NULL,0,&size))return false;
+ if(!collections_call(v,dvm__obj(v,gc_ref_other_object_42)->cls->name,"size","()I",other,NULL,0,&size))return false;
  if(dvm_exception(v))return true;
  if(size.i!=(int32_t)mp->size)return true;
  for(uint32_t i=0;i<mp->size;++i){
   union dvm_value key={.l=mp->e[i].k},has={0},value={0};
-  if(!collections_call(v,other_object->cls->name,"containsKey","(Ljava/lang/Object;)Z",other,&key,1,&has))return false;
+  if(!collections_call(v,dvm__obj(v,gc_ref_other_object_42)->cls->name,"containsKey","(Ljava/lang/Object;)Z",other,&key,1,&has))return false;
   if(dvm_exception(v))return true;
   if(!has.i)return true;
-  if(!collections_call(v,other_object->cls->name,"get","(Ljava/lang/Object;)Ljava/lang/Object;",other,&key,1,&value))return false;
+  if(!collections_call(v,dvm__obj(v,gc_ref_other_object_42)->cls->name,"get","(Ljava/lang/Object;)Ljava/lang/Object;",other,&key,1,&value))return false;
   if(dvm_exception(v))return true;
   /* Other Map's get() may have reentered and mutated this map. */
   if(i>=mp->size)return true;
@@ -854,9 +872,9 @@ static int synchronized_map_arity(const char *m,const char *sig){
  return -1;
 }
 static bool synchronized_map_call(struct dvm *v,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int nargs,union dvm_value *out){
- struct dvm_object *o=dvm__obj(v,self);
+ const dvm_ref gc_ref_o_43=(self); if(!gc_operation_admit(v,gc_ref_o_43))return 0;
 
- synchronized_map_view *s=o&&o->data_destroy==synchronized_map_destroy?(synchronized_map_view *)o->data:NULL;
+ synchronized_map_view *s=dvm__obj(v,gc_ref_o_43)&&dvm__obj(v,gc_ref_o_43)->data_destroy==synchronized_map_destroy?(synchronized_map_view *)dvm__obj(v,gc_ref_o_43)->data:NULL;
  if(!s)return false;
  int arity=synchronized_map_arity(m,sig);
  if(arity<0||nargs!=arity)return false;
@@ -866,8 +884,8 @@ static bool synchronized_map_call(struct dvm *v,const char *m,const char *sig,dv
  if(IS("equals","(Ljava/lang/Object;)Z")&&a[0].l==self){out->i=1;return true;}
  int rc=pthread_mutex_lock(&s->lock);
  if(rc){dvm__throw(v,"java/lang/IllegalStateException","SynchronizedMap lock failed (%d)",rc);return true;}
- struct dvm_object *backing=dvm__obj(v,s->backing);
- const char *backing_class=backing&&backing->cls&&backing->cls->name?backing->cls->name:"java/util/Map";
+ const dvm_ref gc_ref_backing_44=(s->backing); if(!gc_operation_admit(v,gc_ref_backing_44))return 0;
+ const char *backing_class=dvm__obj(v,gc_ref_backing_44)&&dvm__obj(v,gc_ref_backing_44)->cls&&dvm__obj(v,gc_ref_backing_44)->cls->name?dvm__obj(v,gc_ref_backing_44)->cls->name:"java/util/Map";
  bool ok=collections_call(v,backing_class,m,sig,s->backing,a,nargs,out);
  (void)pthread_mutex_unlock(&s->lock);
  return ok;
@@ -889,10 +907,10 @@ static dvm_ref synchronized_map_new(struct dvm *v,dvm_ref backing){
  }
  if(rc){free(s);dvm__throw(v,"java/lang/OutOfMemoryError","SynchronizedMap mutex (%d)",rc);return 0;}
  s->lock_ready=true;
- dvm_ref ref=dvm_new_object(v,cls);struct dvm_object *o=dvm__obj(v,ref);
- if(!o){(void)pthread_mutex_destroy(&s->lock);free(s);dvm__throw(v,"java/lang/OutOfMemoryError","SynchronizedMap object");return 0;}
+ dvm_ref ref=dvm_new_object(v,cls);const dvm_ref gc_ref_o_45=(ref); if(!gc_operation_admit(v,gc_ref_o_45))return 0;
+ if(!dvm__obj(v,gc_ref_o_45)){(void)pthread_mutex_destroy(&s->lock);free(s);dvm__throw(v,"java/lang/OutOfMemoryError","SynchronizedMap object");return 0;}
  s->vm=v;s->backing=backing;dvm_pin(v,backing);
- o->data=s;o->data_destroy=synchronized_map_destroy;
+ dvm__obj(v,gc_ref_o_45)->data=s;dvm__obj(v,gc_ref_o_45)->data_destroy=synchronized_map_destroy;
  return ref;
 }
 /* UnmodifiableMap and its live views retain their backing objects. Entries
@@ -905,12 +923,12 @@ static dvm_ref readonly_new(struct dvm *v,dvm_ref backing,enum readonly_kind kin
  if(!backing){dvm__throw(v,"java/lang/NullPointerException","unmodifiable backing");return 0;}
  readonly_view *r=calloc(1,sizeof *r);
  dvm_ref ref=r?dvm_new_object(v,dvm_find_class_or_external(v,readonly_names[kind])):0;
- struct dvm_object *o=ref?dvm__obj(v,ref):NULL;
- if(!o){free(r);dvm__throw(v,"java/lang/OutOfMemoryError","unmodifiable view");return 0;}
- r->vm=v;r->backing=backing;r->kind=kind;dvm_pin(v,backing);o->data=r;o->data_destroy=readonly_destroy;return ref;
+ const dvm_ref gc_ref_o_46=(ref); if(!gc_operation_admit(v,gc_ref_o_46))return 0;
+ if(!dvm__obj(v,gc_ref_o_46)){free(r);dvm__throw(v,"java/lang/OutOfMemoryError","unmodifiable view");return 0;}
+ r->vm=v;r->backing=backing;r->kind=kind;dvm_pin(v,backing);dvm__obj(v,gc_ref_o_46)->data=r;dvm__obj(v,gc_ref_o_46)->data_destroy=readonly_destroy;return ref;
 }
 static bool readonly_call(struct dvm *v,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int n,union dvm_value *out){
- struct dvm_object *o=dvm__obj(v,self);readonly_view *r=o&&o->data_destroy==readonly_destroy?o->data:NULL;
+ const dvm_ref gc_ref_o_47=(self); if(!gc_operation_admit(v,gc_ref_o_47))return 0;readonly_view *r=dvm__obj(v,gc_ref_o_47)&&dvm__obj(v,gc_ref_o_47)->data_destroy==readonly_destroy?dvm__obj(v,gc_ref_o_47)->data:NULL;
  if(!r)return false;
  if(!strcmp(m,"put")||!strcmp(m,"putAll")||!strcmp(m,"remove")||!strcmp(m,"clear")||!strcmp(m,"add")||!strcmp(m,"addAll")||!strcmp(m,"removeAll")||!strcmp(m,"retainAll")||!strcmp(m,"setValue")){
   dvm__throw(v,"java/lang/UnsupportedOperationException","unmodifiable view");return true;
@@ -919,9 +937,9 @@ static bool readonly_call(struct dvm *v,const char *m,const char *sig,dvm_ref se
  /* Collection wrappers intentionally retain Object identity semantics. */
  if(r->kind==RO_VALUES&&IS("equals","(Ljava/lang/Object;)Z")){out->i=a[0].l==self;return true;}
  if(r->kind==RO_VALUES&&IS("hashCode","()I")){out->i=(int32_t)self;return true;}
- struct dvm_object *b=dvm__obj(v,r->backing);
- if(!b||!b->cls)return false;
- bool ok=collections_call(v,b->cls->name,m,sig,r->backing,a,n,out);
+ const dvm_ref gc_ref_b_48=(r->backing); if(!gc_operation_admit(v,gc_ref_b_48))return 0;
+ if(!dvm__obj(v,gc_ref_b_48)||!dvm__obj(v,gc_ref_b_48)->cls)return false;
+ bool ok=collections_call(v,dvm__obj(v,gc_ref_b_48)->cls->name,m,sig,r->backing,a,n,out);
  if(!ok||dvm_exception(v))return ok;
  if(IS("keySet","()Ljava/util/Set;"))out->l=readonly_new(v,out->l,RO_SET);
  else if(IS("values","()Ljava/util/Collection;"))out->l=readonly_new(v,out->l,RO_VALUES);
@@ -929,8 +947,8 @@ static bool readonly_call(struct dvm *v,const char *m,const char *sig,dvm_ref se
  else if(IS("iterator","()Ljava/util/Iterator;"))out->l=readonly_new(v,out->l,r->kind==RO_ENTRIES?RO_ENTRY_ITERATOR:RO_ITERATOR);
  else if(r->kind==RO_ENTRY_ITERATOR&&IS("next","()Ljava/lang/Object;"))out->l=readonly_new(v,out->l,RO_ENTRY);
  else if(r->kind==RO_ENTRIES&&(!strcmp(m,"toArray"))){
-  struct dvm_object *array=dvm__obj(v,out->l);
-  if(array&&array->kind==DVM_OBJ_ARRAY){dvm_ref *items=array->data;for(uint32_t i=0;i<array->length&&items[i];++i){items[i]=readonly_new(v,items[i],RO_ENTRY);if(dvm_exception(v))break;}}
+  const dvm_ref gc_ref_array_49=(out->l); if(!gc_operation_admit(v,gc_ref_array_49))return 0;
+  if(dvm__obj(v,gc_ref_array_49)&&dvm__obj(v,gc_ref_array_49)->kind==DVM_OBJ_ARRAY){dvm_ref *items=dvm__obj(v,gc_ref_array_49)->data;for(uint32_t i=0;i<dvm__obj(v,gc_ref_array_49)->length&&items[i];++i){items[i]=readonly_new(v,items[i],RO_ENTRY);if(dvm_exception(v))break;}}
  }
  return true;
 }
@@ -988,7 +1006,7 @@ static void synchronized_map_vm_start(struct dvm *v){
 }
 /* White-box selftest for the wrapper and its delegation contracts.  It runs
  * inside the collection selftest and prints synchronized_map=1 on success. */
-bool collections_synchronized_map_selftest(struct dvm *v){
+static bool collections_synchronized_map_selftest_operation(struct dvm *v){
  const char *hm="java/util/HashMap",*mp="java/util/Map",*set="java/util/Set",*collection="java/util/Collection";
  union dvm_value out={0},a[2]={{0},{0}};
  bool okay=true;
@@ -1098,8 +1116,8 @@ bool collections_synchronized_map_selftest(struct dvm *v){
  SCHECK(out.l&&strstr(dvm_string_utf8(v,out.l),"key=value"));
  SCHECK(collections_call(v,mp,"size","()I",outer,NULL,0,&out)&&out.i==1&&!dvm_exception(v));
  /* The per-instance mutex must really be recursive. */
- struct dvm_object *wrap_object=dvm__obj(v,wrap);
- synchronized_map_view *wrap_view=wrap_object&&wrap_object->data_destroy==synchronized_map_destroy?(synchronized_map_view *)wrap_object->data:NULL;
+ const dvm_ref gc_ref_wrap_object_50=(wrap); if(!gc_operation_admit(v,gc_ref_wrap_object_50))return 0;
+ synchronized_map_view *wrap_view=dvm__obj(v,gc_ref_wrap_object_50)&&dvm__obj(v,gc_ref_wrap_object_50)->data_destroy==synchronized_map_destroy?(synchronized_map_view *)dvm__obj(v,gc_ref_wrap_object_50)->data:NULL;
  bool recursive=false;
  if(wrap_view&&pthread_mutex_lock(&wrap_view->lock)==0){
   recursive=pthread_mutex_lock(&wrap_view->lock)==0;
@@ -1122,6 +1140,13 @@ bool collections_synchronized_map_selftest(struct dvm *v){
 #undef SCHECK
  return okay;
 }
+bool collections_synchronized_map_selftest(struct dvm *v){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return false;
+ bool result=collections_synchronized_map_selftest_operation(v);
+ return result;
+}
+
 /* ---- Collections.synchronizedList(List) -----------------------------
  * Same ownership model as synchronizedMap above: one recursive mutex per
  * wrapper, a pinned backing List, marker-destructor dispatch, installed
@@ -1184,8 +1209,8 @@ static dvm_ref synchronized_list_snapshot(struct dvm *v,synchronized_list_view *
   if(!list_toArray(v,s->backing,NULL,0,&r))return 0;
   return r.l;
  }
- struct dvm_object *b=dvm__obj(v,s->backing);
- const char *bc=b&&b->cls&&b->cls->name?b->cls->name:"java/util/List";
+ const dvm_ref gc_ref_b_51=(s->backing); if(!gc_operation_admit(v,gc_ref_b_51))return 0;
+ const char *bc=dvm__obj(v,gc_ref_b_51)&&dvm__obj(v,gc_ref_b_51)->cls&&dvm__obj(v,gc_ref_b_51)->cls->name?dvm__obj(v,gc_ref_b_51)->cls->name:"java/util/List";
  if(!collections_call(v,bc,"toArray","()[Ljava/lang/Object;",s->backing,NULL,0,&r))return 0;
  return r.l;
 }
@@ -1194,25 +1219,25 @@ static dvm_ref synchronized_list_snapshot(struct dvm *v,synchronized_list_view *
  * cannot provide one the caller fails closed instead of inventing a value. */
 static bool synchronized_list_element_hash(struct dvm *v,dvm_ref x,int32_t *hash){
  if(!x){*hash=0;return true;}
- struct dvm_object *o=dvm__obj(v,x);
- const char *cn=o&&o->cls&&o->cls->name?o->cls->name:"java/lang/Object";
+ const dvm_ref gc_ref_o_52=(x); if(!gc_operation_admit(v,gc_ref_o_52))return 0;
+ const char *cn=dvm__obj(v,gc_ref_o_52)&&dvm__obj(v,gc_ref_o_52)->cls&&dvm__obj(v,gc_ref_o_52)->cls->name?dvm__obj(v,gc_ref_o_52)->cls->name:"java/lang/Object";
  union dvm_value r={0};
  if(!strcmp(cn,"java/lang/String")&&string_runtime_call(v,cn,"hashCode","()I",x,NULL,0,&r)){*hash=r.i;return true;}
  if(java_basics_call(v,cn,"hashCode","()I",x,NULL,0,&r)){*hash=r.i;return true;}
  if(dvm_exception(v))return false;
- struct dvm_method *m=o&&o->cls?dvm_find_method(v,o->cls,"hashCode","()I"):NULL;
+ struct dvm_method *m=dvm__obj(v,gc_ref_o_52)&&dvm__obj(v,gc_ref_o_52)->cls?dvm_find_method(v,dvm__obj(v,gc_ref_o_52)->cls,"hashCode","()I"):NULL;
  if(m&&(m->has_code||m->builtin)&&dvm_call(v,m,x,NULL,0,&r)){*hash=r.i;return true;}
  return false;
 }
 static bool synchronized_list_element_string(struct dvm *v,dvm_ref x,dvm_ref *result){
  if(!x){*result=dvm_new_string(v,"null");return *result!=0;}
- struct dvm_object *o=dvm__obj(v,x);
- const char *cn=o&&o->cls&&o->cls->name?o->cls->name:"java/lang/Object";
+ const dvm_ref gc_ref_o_53=(x); if(!gc_operation_admit(v,gc_ref_o_53))return 0;
+ const char *cn=dvm__obj(v,gc_ref_o_53)&&dvm__obj(v,gc_ref_o_53)->cls&&dvm__obj(v,gc_ref_o_53)->cls->name?dvm__obj(v,gc_ref_o_53)->cls->name:"java/lang/Object";
  union dvm_value r={0};
  if(!strcmp(cn,"java/lang/String")){*result=x;return true;}
  if(java_basics_call(v,cn,"toString","()Ljava/lang/String;",x,NULL,0,&r)&&r.l){*result=r.l;return true;}
  if(dvm_exception(v))return false;
- struct dvm_method *m=o&&o->cls?dvm_find_method(v,o->cls,"toString","()Ljava/lang/String;"):NULL;
+ struct dvm_method *m=dvm__obj(v,gc_ref_o_53)&&dvm__obj(v,gc_ref_o_53)->cls?dvm_find_method(v,dvm__obj(v,gc_ref_o_53)->cls,"toString","()Ljava/lang/String;"):NULL;
  if(m&&(m->has_code||m->builtin)&&dvm_call(v,m,x,NULL,0,&r)&&r.l){*result=r.l;return true;}
  return false;
 }
@@ -1268,10 +1293,10 @@ static bool synchronized_list_hash_value(struct dvm *v,dvm_ref array,union dvm_v
 static bool synchronized_list_equals_value(struct dvm *v,dvm_ref array,dvm_ref other,union dvm_value *out){
  out->i=0;
  if(!other)return true;
- struct dvm_object *oo=dvm__obj(v,other);
+ const dvm_ref gc_ref_oo_54=(other); if(!gc_operation_admit(v,gc_ref_oo_54))return 0;
  struct dvm_class *li=dvm_find_class_or_external(v,"java/util/List");
- if(!oo||!oo->cls||!li||!dvm__class_assignable(v,oo->cls,li))return true;
- const char *oc=oo->cls->name;
+ if(!dvm__obj(v,gc_ref_oo_54)||!dvm__obj(v,gc_ref_oo_54)->cls||!li||!dvm__class_assignable(v,dvm__obj(v,gc_ref_oo_54)->cls,li))return true;
+ const char *oc=dvm__obj(v,gc_ref_oo_54)->cls->name;
  union dvm_value size={0};
  if(!collections_call(v,oc,"size","()I",other,NULL,0,&size)){
   if(dvm_exception(v))return false;
@@ -1294,8 +1319,8 @@ static bool synchronized_list_equals_value(struct dvm *v,dvm_ref array,dvm_ref o
 }
 static bool synchronized_list_contains_all_value(struct dvm *v,dvm_ref array,dvm_ref c,union dvm_value *out){
  if(!c){dvm__throw(v,"java/lang/NullPointerException","collection");return true;}
- struct dvm_object *co=dvm__obj(v,c);
- const char *cc=co&&co->cls&&co->cls->name?co->cls->name:"java/util/Collection";
+ const dvm_ref gc_ref_co_55=(c); if(!gc_operation_admit(v,gc_ref_co_55))return 0;
+ const char *cc=dvm__obj(v,gc_ref_co_55)&&dvm__obj(v,gc_ref_co_55)->cls&&dvm__obj(v,gc_ref_co_55)->cls->name?dvm__obj(v,gc_ref_co_55)->cls->name:"java/util/Collection";
  union dvm_value it={0};
  if(!collections_call(v,cc,"iterator","()Ljava/util/Iterator;",c,NULL,0,&it)||!it.l){
   if(dvm_exception(v))return false;
@@ -1339,21 +1364,21 @@ static bool synchronized_list_iterator_make(struct dvm *v,dvm_ref owner,dvm_ref 
  if(!it){dvm__throw(v,"java/lang/OutOfMemoryError","SynchronizedListIterator");return false;}
  it->vm=v;it->owner=owner;it->cursor=(uint32_t)index;it->expected=l->mod_count;it->last=-1;
  dvm_pin(v,owner);
- dvm_ref r=dvm_new_object(v,cls);struct dvm_object *o=dvm__obj(v,r);
- if(!o){dvm_unpin(v,owner);free(it);dvm__throw(v,"java/lang/OutOfMemoryError","SynchronizedListIterator object");return false;}
- o->data=it;o->data_destroy=synchronized_list_iterator_destroy;result->l=r;return true;
+ dvm_ref r=dvm_new_object(v,cls);const dvm_ref gc_ref_o_56=(r); if(!gc_operation_admit(v,gc_ref_o_56))return 0;
+ if(!dvm__obj(v,gc_ref_o_56)){dvm_unpin(v,owner);free(it);dvm__throw(v,"java/lang/OutOfMemoryError","SynchronizedListIterator object");return false;}
+ dvm__obj(v,gc_ref_o_56)->data=it;dvm__obj(v,gc_ref_o_56)->data_destroy=synchronized_list_iterator_destroy;result->l=r;return true;
 }
 static bool synchronized_list_iterator_call(struct dvm *v,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int nargs,union dvm_value *out){
- struct dvm_object *o=dvm__obj(v,self);
- synchronized_list_iterator_view *it=o&&o->data_destroy==synchronized_list_iterator_destroy?(synchronized_list_iterator_view *)o->data:NULL;
+ const dvm_ref gc_ref_o_57=(self); if(!gc_operation_admit(v,gc_ref_o_57))return 0;
+ synchronized_list_iterator_view *it=dvm__obj(v,gc_ref_o_57)&&dvm__obj(v,gc_ref_o_57)->data_destroy==synchronized_list_iterator_destroy?(synchronized_list_iterator_view *)dvm__obj(v,gc_ref_o_57)->data:NULL;
  if(!it)return false;
  int arity=0;
  if(IS("hasNext","()Z")||IS("next","()Ljava/lang/Object;")||IS("hasPrevious","()Z")||IS("previous","()Ljava/lang/Object;")||IS("nextIndex","()I")||IS("previousIndex","()I")||IS("remove","()V"))arity=0;
  else if(IS("set","(Ljava/lang/Object;)V")||IS("add","(Ljava/lang/Object;)V"))arity=1;
  else return false;
  if(nargs!=arity||(arity>0&&!a))return false;
- struct dvm_object *wo=dvm__obj(v,it->owner);
- synchronized_list_view *s=wo&&wo->data_destroy==synchronized_list_destroy?(synchronized_list_view *)wo->data:NULL;
+ const dvm_ref gc_ref_wo_58=(it->owner); if(!gc_operation_admit(v,gc_ref_wo_58))return 0;
+ synchronized_list_view *s=dvm__obj(v,gc_ref_wo_58)&&dvm__obj(v,gc_ref_wo_58)->data_destroy==synchronized_list_destroy?(synchronized_list_view *)dvm__obj(v,gc_ref_wo_58)->data:NULL;
  if(!s)return false;
  int rc=pthread_mutex_lock(&s->lock);
  if(rc){dvm__throw(v,"java/lang/IllegalStateException","SynchronizedListIterator lock failed (%d)",rc);return true;}
@@ -1407,8 +1432,8 @@ static bool synchronized_list_iterator_builtin(struct dvm *v,dvm_ref self,const 
  return m&&synchronized_list_iterator_call(v,m->name,m->sig,self,a,n,out);
 }
 static bool synchronized_list_call(struct dvm *v,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int nargs,union dvm_value *out){
- struct dvm_object *o=dvm__obj(v,self);
- synchronized_list_view *s=o&&o->data_destroy==synchronized_list_destroy?(synchronized_list_view *)o->data:NULL;
+ const dvm_ref gc_ref_o_59=(self); if(!gc_operation_admit(v,gc_ref_o_59))return 0;
+ synchronized_list_view *s=dvm__obj(v,gc_ref_o_59)&&dvm__obj(v,gc_ref_o_59)->data_destroy==synchronized_list_destroy?(synchronized_list_view *)dvm__obj(v,gc_ref_o_59)->data:NULL;
  if(!s)return false;
  int arity=synchronized_list_arity(m,sig);
  if(arity<0||nargs!=arity)return false;
@@ -1416,8 +1441,8 @@ static bool synchronized_list_call(struct dvm *v,const char *m,const char *sig,d
  if(IS("equals","(Ljava/lang/Object;)Z")&&a[0].l==self){out->i=1;return true;}
  int rc=pthread_mutex_lock(&s->lock);
  if(rc){dvm__throw(v,"java/lang/IllegalStateException","SynchronizedList lock failed (%d)",rc);return true;}
- struct dvm_object *backing=dvm__obj(v,s->backing);
- const char *backing_class=backing&&backing->cls&&backing->cls->name?backing->cls->name:"java/util/List";
+ const dvm_ref gc_ref_backing_60=(s->backing); if(!gc_operation_admit(v,gc_ref_backing_60))return 0;
+ const char *backing_class=dvm__obj(v,gc_ref_backing_60)&&dvm__obj(v,gc_ref_backing_60)->cls&&dvm__obj(v,gc_ref_backing_60)->cls->name?dvm__obj(v,gc_ref_backing_60)->cls->name:"java/util/List";
  bool ok=false;
  if(IS("listIterator","()Ljava/util/ListIterator;")){
   ok=synchronized_list_iterator_make(v,self,s->backing,0,out);
@@ -1461,10 +1486,10 @@ static dvm_ref synchronized_list_new(struct dvm *v,dvm_ref backing){
  }
  if(rc){free(s);dvm__throw(v,"java/lang/OutOfMemoryError","SynchronizedList mutex (%d)",rc);return 0;}
  s->lock_ready=true;
- dvm_ref ref=dvm_new_object(v,cls);struct dvm_object *o=dvm__obj(v,ref);
- if(!o){(void)pthread_mutex_destroy(&s->lock);free(s);dvm__throw(v,"java/lang/OutOfMemoryError","SynchronizedList object");return 0;}
+ dvm_ref ref=dvm_new_object(v,cls);const dvm_ref gc_ref_o_61=(ref); if(!gc_operation_admit(v,gc_ref_o_61))return 0;
+ if(!dvm__obj(v,gc_ref_o_61)){(void)pthread_mutex_destroy(&s->lock);free(s);dvm__throw(v,"java/lang/OutOfMemoryError","SynchronizedList object");return 0;}
  s->vm=v;s->backing=backing;dvm_pin(v,backing);
- o->data=s;o->data_destroy=synchronized_list_destroy;
+ dvm__obj(v,gc_ref_o_61)->data=s;dvm__obj(v,gc_ref_o_61)->data_destroy=synchronized_list_destroy;
  return ref;
 }
 static void synchronized_list_vm_start(struct dvm *v){
@@ -1539,9 +1564,9 @@ static dvm_ref singleton_list_new(struct dvm *v,dvm_ref element){
  if(!cls||!s){free(s);dvm__throw(v,"java/lang/OutOfMemoryError","SingletonList");return 0;}
  s->vm=v;s->element=element;
  if(element)dvm_pin(v,element);
- dvm_ref r=dvm_new_object(v,cls);struct dvm_object *o=dvm__obj(v,r);
- if(!o){if(element)dvm_unpin(v,element);free(s);dvm__throw(v,"java/lang/OutOfMemoryError","SingletonList object");return 0;}
- o->data=s;o->data_destroy=singleton_list_destroy;
+ dvm_ref r=dvm_new_object(v,cls);const dvm_ref gc_ref_o_62=(r); if(!gc_operation_admit(v,gc_ref_o_62))return 0;
+ if(!dvm__obj(v,gc_ref_o_62)){if(element)dvm_unpin(v,element);free(s);dvm__throw(v,"java/lang/OutOfMemoryError","SingletonList object");return 0;}
+ dvm__obj(v,gc_ref_o_62)->data=s;dvm__obj(v,gc_ref_o_62)->data_destroy=singleton_list_destroy;
  return r;
 }
 static int singleton_list_arity(const char *m,const char *sig){
@@ -1578,29 +1603,29 @@ static dvm_ref singleton_list_iterator_new(struct dvm *v,dvm_ref owner,int index
  if(!cls||!it){free(it);dvm__throw(v,"java/lang/OutOfMemoryError","SingletonListIterator");return 0;}
  it->vm=v;it->owner=owner;it->cursor=(uint32_t)index;it->last=-1;
  dvm_pin(v,owner);
- dvm_ref r=dvm_new_object(v,cls);struct dvm_object *o=dvm__obj(v,r);
- if(!o){dvm_unpin(v,owner);free(it);dvm__throw(v,"java/lang/OutOfMemoryError","SingletonListIterator object");return 0;}
- o->data=it;o->data_destroy=singleton_list_iterator_destroy;
+ dvm_ref r=dvm_new_object(v,cls);const dvm_ref gc_ref_o_63=(r); if(!gc_operation_admit(v,gc_ref_o_63))return 0;
+ if(!dvm__obj(v,gc_ref_o_63)){dvm_unpin(v,owner);free(it);dvm__throw(v,"java/lang/OutOfMemoryError","SingletonListIterator object");return 0;}
+ dvm__obj(v,gc_ref_o_63)->data=it;dvm__obj(v,gc_ref_o_63)->data_destroy=singleton_list_iterator_destroy;
  return r;
 }
 static bool singleton_list_iterator_call(struct dvm *v,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int nargs,union dvm_value *out){
- struct dvm_object *o=dvm__obj(v,self);
- singleton_list_iterator_view *it=o&&o->data_destroy==singleton_list_iterator_destroy?(singleton_list_iterator_view *)o->data:NULL;
+ const dvm_ref gc_ref_o_64=(self); if(!gc_operation_admit(v,gc_ref_o_64))return 0;
+ singleton_list_iterator_view *it=dvm__obj(v,gc_ref_o_64)&&dvm__obj(v,gc_ref_o_64)->data_destroy==singleton_list_iterator_destroy?(singleton_list_iterator_view *)dvm__obj(v,gc_ref_o_64)->data:NULL;
  if(!it)return false;
  if(IS("hasNext","()Z")){out->i=it->cursor<1;return true;}
  if(IS("next","()Ljava/lang/Object;")){
   if(it->cursor>=1){dvm__throw(v,"java/util/NoSuchElementException","SingletonListIterator.next");return true;}
   it->last=(int32_t)it->cursor++;
-  struct dvm_object *lo=dvm__obj(v,it->owner);
-  singleton_list_view *s=lo&&lo->data_destroy==singleton_list_destroy?(singleton_list_view *)lo->data:NULL;
+  const dvm_ref gc_ref_lo_65=(it->owner); if(!gc_operation_admit(v,gc_ref_lo_65))return 0;
+  singleton_list_view *s=dvm__obj(v,gc_ref_lo_65)&&dvm__obj(v,gc_ref_lo_65)->data_destroy==singleton_list_destroy?(singleton_list_view *)dvm__obj(v,gc_ref_lo_65)->data:NULL;
   out->l=s?s->element:0;return true;
  }
  if(IS("hasPrevious","()Z")){out->i=it->cursor>0;return true;}
  if(IS("previous","()Ljava/lang/Object;")){
   if(it->cursor==0){dvm__throw(v,"java/util/NoSuchElementException","SingletonListIterator.previous");return true;}
   --it->cursor;it->last=(int32_t)it->cursor;
-  struct dvm_object *lo=dvm__obj(v,it->owner);
-  singleton_list_view *s=lo&&lo->data_destroy==singleton_list_destroy?(singleton_list_view *)lo->data:NULL;
+  const dvm_ref gc_ref_lo_66=(it->owner); if(!gc_operation_admit(v,gc_ref_lo_66))return 0;
+  singleton_list_view *s=dvm__obj(v,gc_ref_lo_66)&&dvm__obj(v,gc_ref_lo_66)->data_destroy==singleton_list_destroy?(singleton_list_view *)dvm__obj(v,gc_ref_lo_66)->data:NULL;
   out->l=s?s->element:0;return true;
  }
  if(IS("nextIndex","()I")){out->i=(int32_t)it->cursor;return true;}
@@ -1621,8 +1646,8 @@ static bool singleton_list_iterator_builtin(struct dvm *v,dvm_ref self,const uni
  return m&&singleton_list_iterator_call(v,m->name,m->sig,self,a,n,out);
 }
 static bool singleton_list_call(struct dvm *v,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int nargs,union dvm_value *out){
- struct dvm_object *o=dvm__obj(v,self);
- singleton_list_view *s=o&&o->data_destroy==singleton_list_destroy?(singleton_list_view *)o->data:NULL;
+ const dvm_ref gc_ref_o_67=(self); if(!gc_operation_admit(v,gc_ref_o_67))return 0;
+ singleton_list_view *s=dvm__obj(v,gc_ref_o_67)&&dvm__obj(v,gc_ref_o_67)->data_destroy==singleton_list_destroy?(singleton_list_view *)dvm__obj(v,gc_ref_o_67)->data:NULL;
  if(!s)return false;
  int arity=singleton_list_arity(m,sig);
  if(arity<0||nargs!=arity)return false;
@@ -1645,8 +1670,8 @@ static bool singleton_list_call(struct dvm *v,const char *m,const char *sig,dvm_
  }
  if(IS("containsAll","(Ljava/util/Collection;)Z")){
   if(!a[0].l){dvm__throw(v,"java/lang/NullPointerException","collection");return true;}
-  struct dvm_object *co=dvm__obj(v,a[0].l);
-  const char *cc=co&&co->cls&&co->cls->name?co->cls->name:"java/util/Collection";
+  const dvm_ref gc_ref_co_68=(a[0].l); if(!gc_operation_admit(v,gc_ref_co_68))return 0;
+  const char *cc=dvm__obj(v,gc_ref_co_68)&&dvm__obj(v,gc_ref_co_68)->cls&&dvm__obj(v,gc_ref_co_68)->cls->name?dvm__obj(v,gc_ref_co_68)->cls->name:"java/util/Collection";
   union dvm_value arg={.l=s->element},r={0};
   if(collections_call(v,cc,"contains","(Ljava/lang/Object;)Z",a[0].l,&arg,1,&r)){out->i=r.i;return true;}
   if(dvm_exception(v))return false;
@@ -1672,28 +1697,28 @@ static bool singleton_list_call(struct dvm *v,const char *m,const char *sig,dvm_
  }
  if(IS("toArray","([Ljava/lang/Object;)[Ljava/lang/Object;")){
   if(!a[0].l){dvm__throw(v,"java/lang/NullPointerException","SingletonList toArray");return true;}
-  struct dvm_object *array=dvm__obj(v,a[0].l);
-  if(!array||array->kind!=DVM_OBJ_ARRAY||array->elem_kind!='L'){dvm__throw(v,"java/lang/ArrayStoreException","SingletonList toArray requires an object array");return true;}
+  dvm_ref gc_ref_array_69=(a[0].l); if(!gc_operation_admit(v,gc_ref_array_69))return 0;
+  if(!dvm__obj(v,gc_ref_array_69)||dvm__obj(v,gc_ref_array_69)->kind!=DVM_OBJ_ARRAY||dvm__obj(v,gc_ref_array_69)->elem_kind!='L'){dvm__throw(v,"java/lang/ArrayStoreException","SingletonList toArray requires an object array");return true;}
   dvm_ref result=a[0].l;
-  if(array->length==0){
-   const char *ed=array->cls&&array->cls->desc&&array->cls->desc[0]=='['?array->cls->desc+1:"Ljava/lang/Object;";
+  if(dvm__obj(v,gc_ref_array_69)->length==0){
+   const char *ed=dvm__obj(v,gc_ref_array_69)->cls&&dvm__obj(v,gc_ref_array_69)->cls->desc&&dvm__obj(v,gc_ref_array_69)->cls->desc[0]=='['?dvm__obj(v,gc_ref_array_69)->cls->desc+1:"Ljava/lang/Object;";
    result=dvm_new_array(v,'L',ed,1);
    if(!result){dvm__throw(v,"java/lang/OutOfMemoryError","SingletonList toArray");return true;}
-   array=dvm__obj(v,result);
+   gc_ref_array_69=result; if(!gc_operation_admit(v,gc_ref_array_69))return true;
   }
   dvm_ref *items=dvm_array_data(v,result);
   items[0]=s->element;
-  if(array->length>1)items[1]=0;
+  if(dvm__obj(v,gc_ref_array_69)->length>1)items[1]=0;
   out->l=result;return true;
  }
  if(IS("equals","(Ljava/lang/Object;)Z")){
   out->i=0;
   if(!a[0].l)return true;
   if(a[0].l==self){out->i=1;return true;}
-  struct dvm_object *oo=dvm__obj(v,a[0].l);
+  const dvm_ref gc_ref_oo_70=(a[0].l); if(!gc_operation_admit(v,gc_ref_oo_70))return 0;
   struct dvm_class *li=dvm_find_class_or_external(v,"java/util/List");
-  if(!oo||!oo->cls||!li||!dvm__class_assignable(v,oo->cls,li))return true;
-  const char *oc=oo->cls->name;
+  if(!dvm__obj(v,gc_ref_oo_70)||!dvm__obj(v,gc_ref_oo_70)->cls||!li||!dvm__class_assignable(v,dvm__obj(v,gc_ref_oo_70)->cls,li))return true;
+  const char *oc=dvm__obj(v,gc_ref_oo_70)->cls->name;
   union dvm_value size={0};
   if(!collections_call(v,oc,"size","()I",a[0].l,NULL,0,&size)){
    if(dvm_exception(v))return false;
@@ -1734,8 +1759,8 @@ static bool singleton_list_call(struct dvm *v,const char *m,const char *sig,dvm_
  }
  if(IS("forEach","(Ljava/util/function/Consumer;)V")){
   if(!a[0].l){dvm__throw(v,"java/lang/NullPointerException","SingletonList forEach");return true;}
-  struct dvm_object *co=dvm__obj(v,a[0].l);
-  struct dvm_method *accept=co&&co->cls?dvm_find_method(v,co->cls,"accept","(Ljava/lang/Object;)V"):NULL;
+  const dvm_ref gc_ref_co_71=(a[0].l); if(!gc_operation_admit(v,gc_ref_co_71))return 0;
+  struct dvm_method *accept=dvm__obj(v,gc_ref_co_71)&&dvm__obj(v,gc_ref_co_71)->cls?dvm_find_method(v,dvm__obj(v,gc_ref_co_71)->cls,"accept","(Ljava/lang/Object;)V"):NULL;
   if(!accept||(!accept->has_code&&!accept->builtin)){
    dvm__throw(v,"java/lang/UnsupportedOperationException","Consumer.accept is unavailable");return true;
   }
@@ -1837,7 +1862,7 @@ static bool sl_text_is(struct dvm *v,dvm_ref ref,const char *want){
  const char *text=ref?dvm_string_utf8(v,ref):NULL;
  return text&&!strcmp(text,want);
 }
-bool collections_synchronized_list_selftest(struct dvm *v){
+static bool collections_synchronized_list_selftest_operation(struct dvm *v){
  const char *al="java/util/ArrayList",*lp="java/util/List",*itf="java/util/Iterator",*litf="java/util/ListIterator";
  union dvm_value out={0},a[2]={{0},{0}};
  bool okay=true;
@@ -1934,8 +1959,8 @@ bool collections_synchronized_list_selftest(struct dvm *v){
  a[0].l=ea;SLCHECK(collections_call(v,al,"add","(Ljava/lang/Object;)Z",back,a,1,&out)&&!dvm_exception(v));
  SLCHECK(collections_call(v,lp,"size","()I",wrap,NULL,0,&out)&&out.i==4&&!dvm_exception(v));
  /* The per-instance mutex must really be recursive. */
- struct dvm_object *wrap_object=dvm__obj(v,wrap);
- synchronized_list_view *wrap_view=wrap_object&&wrap_object->data_destroy==synchronized_list_destroy?(synchronized_list_view *)wrap_object->data:NULL;
+ const dvm_ref gc_ref_wrap_object_72=(wrap); if(!gc_operation_admit(v,gc_ref_wrap_object_72))return 0;
+ synchronized_list_view *wrap_view=dvm__obj(v,gc_ref_wrap_object_72)&&dvm__obj(v,gc_ref_wrap_object_72)->data_destroy==synchronized_list_destroy?(synchronized_list_view *)dvm__obj(v,gc_ref_wrap_object_72)->data:NULL;
  bool recursive=false;
  if(wrap_view&&pthread_mutex_lock(&wrap_view->lock)==0){
   recursive=pthread_mutex_lock(&wrap_view->lock)==0;
@@ -1984,7 +2009,14 @@ bool collections_synchronized_list_selftest(struct dvm *v){
 #undef SLCHECK
  return okay;
 }
-bool collections_singleton_list_selftest(struct dvm *v){
+bool collections_synchronized_list_selftest(struct dvm *v){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return false;
+ bool result=collections_synchronized_list_selftest_operation(v);
+ return result;
+}
+
+static bool collections_singleton_list_selftest_operation(struct dvm *v){
  const char *lp="java/util/List",*al="java/util/ArrayList",*itf="java/util/Iterator",*litf="java/util/ListIterator";
  union dvm_value out={0},a[2]={{0},{0}};
  bool okay=true;
@@ -2100,6 +2132,13 @@ bool collections_singleton_list_selftest(struct dvm *v){
 #undef SG_UOE
  return okay;
 }
+bool collections_singleton_list_selftest(struct dvm *v){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return false;
+ bool result=collections_singleton_list_selftest_operation(v);
+ return result;
+}
+
 /* ---- Collections.emptyList() ----------------------------------------
  * A real immutable List, not an ArrayList: the concrete class answers
  * instanceof List correctly, while every structural mutator throws
@@ -2128,9 +2167,9 @@ static bool empty_list_call(struct dvm *v,const char *m,const char *sig,const un
  if(IS("toArray","()[Ljava/lang/Object;")){out->l=dvm_new_array(v,'L',"Ljava/lang/Object;",0);if(!out->l)dvm__throw(v,"java/lang/OutOfMemoryError","Collections.emptyList array");return true;}
  if(IS("toArray","([Ljava/lang/Object;)[Ljava/lang/Object;")){
   if(!a[0].l){dvm__throw(v,"java/lang/NullPointerException","empty list toArray");return true;}
-  struct dvm_object *array=dvm__obj(v,a[0].l);
-  if(!array||array->kind!=DVM_OBJ_ARRAY||array->elem_kind!='L'){dvm__throw(v,"java/lang/ArrayStoreException","empty list toArray requires an object array");return true;}
-  if(array->length>0)((dvm_ref *)dvm_array_data(v,a[0].l))[0]=0;
+  const dvm_ref gc_ref_array_73=(a[0].l); if(!gc_operation_admit(v,gc_ref_array_73))return 0;
+  if(!dvm__obj(v,gc_ref_array_73)||dvm__obj(v,gc_ref_array_73)->kind!=DVM_OBJ_ARRAY||dvm__obj(v,gc_ref_array_73)->elem_kind!='L'){dvm__throw(v,"java/lang/ArrayStoreException","empty list toArray requires an object array");return true;}
+  if(dvm__obj(v,gc_ref_array_73)->length>0)((dvm_ref *)dvm_array_data(v,a[0].l))[0]=0;
   out->l=a[0].l;return true;
  }
  if(IS("toString","()Ljava/lang/String;")){out->l=dvm_new_string(v,"[]");if(!out->l)dvm__throw(v,"java/lang/OutOfMemoryError","Collections.emptyList toString");return true;}
@@ -2160,15 +2199,15 @@ static bool empty_iterator_builtin(struct dvm *v,dvm_ref self,const union dvm_va
 }
 static dvm_ref empty_iterator_new(struct dvm *v){
  struct dvm_class *cls=dvm_find_class_or_external(v,"java/util/Collections$EmptyIterator");
- dvm_ref r=cls?dvm_new_object(v,cls):0;struct dvm_object *o=dvm__obj(v,r);
- if(!o){dvm__throw(v,"java/lang/OutOfMemoryError","Collections.EmptyIterator");return 0;}
- o->data=0;o->data_destroy=empty_iterator_destroy;return r;
+ dvm_ref r=cls?dvm_new_object(v,cls):0;const dvm_ref gc_ref_o_74=(r); if(!gc_operation_admit(v,gc_ref_o_74))return 0;
+ if(!dvm__obj(v,gc_ref_o_74)){dvm__throw(v,"java/lang/OutOfMemoryError","Collections.EmptyIterator");return 0;}
+ dvm__obj(v,gc_ref_o_74)->data=0;dvm__obj(v,gc_ref_o_74)->data_destroy=empty_iterator_destroy;return r;
 }
 static dvm_ref empty_list_new(struct dvm *v){
  struct dvm_class *cls=dvm_find_class_or_external(v,"java/util/Collections$EmptyList");
- dvm_ref r=cls?dvm_new_object(v,cls):0;struct dvm_object *o=dvm__obj(v,r);
- if(!o){dvm__throw(v,"java/lang/OutOfMemoryError","Collections.EmptyList");return 0;}
- o->data=0;o->data_destroy=empty_list_destroy;return r;
+ dvm_ref r=cls?dvm_new_object(v,cls):0;const dvm_ref gc_ref_o_75=(r); if(!gc_operation_admit(v,gc_ref_o_75))return 0;
+ if(!dvm__obj(v,gc_ref_o_75)){dvm__throw(v,"java/lang/OutOfMemoryError","Collections.EmptyList");return 0;}
+ dvm__obj(v,gc_ref_o_75)->data=0;dvm__obj(v,gc_ref_o_75)->data_destroy=empty_list_destroy;return r;
 }
 static void empty_list_vm_start(struct dvm *v){
  const char *list_ifaces[]={"java/util/List"},*iter_ifaces[]={"java/util/Iterator"};
@@ -2243,10 +2282,10 @@ static bool empty_set_call(struct dvm *v,const char *m,const char *sig,const uni
  * are reached through their method table. */
 static bool empty_other_is_empty(struct dvm *v,dvm_ref ref,const char *iface_name,union dvm_value *out){
  out->i=0;if(!ref)return true;
- struct dvm_object *o=dvm__obj(v,ref);
+ const dvm_ref gc_ref_o_76=(ref); if(!gc_operation_admit(v,gc_ref_o_76))return 0;
  struct dvm_class *iface=dvm_find_class_or_external(v,iface_name);
- if(!o||!o->cls||!iface||!dvm__class_assignable(v,o->cls,iface))return true;
- if(o->data_destroy==empty_map_destroy||o->data_destroy==empty_set_destroy){out->i=1;return true;}
+ if(!dvm__obj(v,gc_ref_o_76)||!dvm__obj(v,gc_ref_o_76)->cls||!iface||!dvm__class_assignable(v,dvm__obj(v,gc_ref_o_76)->cls,iface))return true;
+ if(dvm__obj(v,gc_ref_o_76)->data_destroy==empty_map_destroy||dvm__obj(v,gc_ref_o_76)->data_destroy==empty_set_destroy){out->i=1;return true;}
  union dvm_value nested={0};
  if(collections_call(v,iface_name,"isEmpty","()Z",ref,NULL,0,&nested)){
   if(dvm_exception(v))return false;
@@ -2257,7 +2296,7 @@ static bool empty_other_is_empty(struct dvm *v,dvm_ref ref,const char *iface_nam
   if(dvm_exception(v))return false;
   out->i=nested.i!=0;return true;
  }
- struct dvm_method *method=dvm_find_method(v,o->cls,"isEmpty","()Z");
+ struct dvm_method *method=dvm_find_method(v,dvm__obj(v,gc_ref_o_76)->cls,"isEmpty","()Z");
  if(!method||(!method->has_code&&!method->builtin))return true;
  if(!dvm_call(v,method,ref,NULL,0,&nested))return false;
  out->i=nested.i!=0;return true;
@@ -2277,9 +2316,9 @@ static bool empty_set_call(struct dvm *v,const char *m,const char *sig,const uni
  if(IS("toArray","()[Ljava/lang/Object;")){out->l=dvm_new_array(v,'L',"Ljava/lang/Object;",0);if(!out->l)dvm__throw(v,"java/lang/OutOfMemoryError","Collections.emptySet array");return true;}
  if(IS("toArray","([Ljava/lang/Object;)[Ljava/lang/Object;")){
   if(!a[0].l){dvm__throw(v,"java/lang/NullPointerException","empty set toArray");return true;}
-  struct dvm_object *array=dvm__obj(v,a[0].l);
-  if(!array||array->kind!=DVM_OBJ_ARRAY||array->elem_kind!='L'){dvm__throw(v,"java/lang/ArrayStoreException","empty set toArray requires an object array");return true;}
-  if(array->length>0)((dvm_ref *)dvm_array_data(v,a[0].l))[0]=0;
+  const dvm_ref gc_ref_array_77=(a[0].l); if(!gc_operation_admit(v,gc_ref_array_77))return 0;
+  if(!dvm__obj(v,gc_ref_array_77)||dvm__obj(v,gc_ref_array_77)->kind!=DVM_OBJ_ARRAY||dvm__obj(v,gc_ref_array_77)->elem_kind!='L'){dvm__throw(v,"java/lang/ArrayStoreException","empty set toArray requires an object array");return true;}
+  if(dvm__obj(v,gc_ref_array_77)->length>0)((dvm_ref *)dvm_array_data(v,a[0].l))[0]=0;
   out->l=a[0].l;return true;
  }
  if(IS("toString","()Ljava/lang/String;")){out->l=dvm_new_string(v,"[]");if(!out->l)dvm__throw(v,"java/lang/OutOfMemoryError","Collections.emptySet toString");return true;}
@@ -2354,15 +2393,15 @@ static bool empty_map_builtin(struct dvm *v,dvm_ref self,const union dvm_value *
 }
 static dvm_ref empty_set_new(struct dvm *v){
  struct dvm_class *cls=dvm_find_class_or_external(v,"java/util/Collections$EmptySet");
- dvm_ref r=cls?dvm_new_object(v,cls):0;struct dvm_object *o=dvm__obj(v,r);
- if(!o){dvm__throw(v,"java/lang/OutOfMemoryError","Collections.EmptySet");return 0;}
- o->data=0;o->data_destroy=empty_set_destroy;return r;
+ dvm_ref r=cls?dvm_new_object(v,cls):0;const dvm_ref gc_ref_o_78=(r); if(!gc_operation_admit(v,gc_ref_o_78))return 0;
+ if(!dvm__obj(v,gc_ref_o_78)){dvm__throw(v,"java/lang/OutOfMemoryError","Collections.EmptySet");return 0;}
+ dvm__obj(v,gc_ref_o_78)->data=0;dvm__obj(v,gc_ref_o_78)->data_destroy=empty_set_destroy;return r;
 }
 static dvm_ref empty_map_new(struct dvm *v){
  struct dvm_class *cls=dvm_find_class_or_external(v,"java/util/Collections$EmptyMap");
- dvm_ref r=cls?dvm_new_object(v,cls):0;struct dvm_object *o=dvm__obj(v,r);
- if(!o){dvm__throw(v,"java/lang/OutOfMemoryError","Collections.EmptyMap");return 0;}
- o->data=0;o->data_destroy=empty_map_destroy;return r;
+ dvm_ref r=cls?dvm_new_object(v,cls):0;const dvm_ref gc_ref_o_79=(r); if(!gc_operation_admit(v,gc_ref_o_79))return 0;
+ if(!dvm__obj(v,gc_ref_o_79)){dvm__throw(v,"java/lang/OutOfMemoryError","Collections.EmptyMap");return 0;}
+ dvm__obj(v,gc_ref_o_79)->data=0;dvm__obj(v,gc_ref_o_79)->data_destroy=empty_map_destroy;return r;
 }
 static void empty_map_set_vm_start(struct dvm *v){
  const char *map_ifaces[]={"java/util/Map"},*set_ifaces[]={"java/util/Set"};
@@ -2590,10 +2629,10 @@ static void entry_views_vm_start(struct dvm *v){
  * stays unhandled, and collections_add_all() then reports fail-closed before
  * any element has been inserted. */
 static bool collection_add_one(struct dvm *v,dvm_ref target,dvm_ref element,union dvm_value *out,bool *handled){
- struct dvm_object *o=dvm__obj(v,target);union dvm_value arg={.l=element};
+ const dvm_ref gc_ref_o_80=(target); if(!gc_operation_admit(v,gc_ref_o_80))return 0;union dvm_value arg={.l=element};
  *handled=false;
- if(!o||!o->cls||!o->cls->name)return true;
- const char *cls=o->cls->name;
+ if(!dvm__obj(v,gc_ref_o_80)||!dvm__obj(v,gc_ref_o_80)->cls||!dvm__obj(v,gc_ref_o_80)->cls->name)return true;
+ const char *cls=dvm__obj(v,gc_ref_o_80)->cls->name;
  if(set_runtime_call(v,cls,"add","(Ljava/lang/Object;)Z",target,&arg,1,out)){*handled=true;return true;}
  if(dvm_exception(v))return true;
  if(list_views_call(v,cls,"add","(Ljava/lang/Object;)Z",target,&arg,1,out)){*handled=true;return true;}
@@ -2602,7 +2641,7 @@ static bool collection_add_one(struct dvm *v,dvm_ref target,dvm_ref element,unio
  if(dvm_exception(v))return true;
  if(java_basics_call(v,cls,"add","(Ljava/lang/Object;)Z",target,&arg,1,out)){*handled=true;return true;}
  if(dvm_exception(v))return true;
- struct dvm_method *method=dvm_find_method(v,o->cls,"add","(Ljava/lang/Object;)Z");
+ struct dvm_method *method=dvm_find_method(v,dvm__obj(v,gc_ref_o_80)->cls,"add","(Ljava/lang/Object;)Z");
  if(method&&(method->has_code||method->builtin)){
   /* A guest override keeps its own null/immutability checks and exceptions. */
   if(!dvm_call(v,method,target,&arg,1,out))return true;
@@ -2613,8 +2652,8 @@ static bool collection_add_one(struct dvm *v,dvm_ref target,dvm_ref element,unio
 static bool collections_add_all(struct dvm *v,dvm_ref collection,dvm_ref elements,union dvm_value *out){
  if(!collection){dvm__throw(v,"java/lang/NullPointerException","Collections.addAll collection");return true;}
  if(!elements){dvm__throw(v,"java/lang/NullPointerException","Collections.addAll elements");return true;}
- struct dvm_object *array=dvm__obj(v,elements);
- if(!array||array->kind!=DVM_OBJ_ARRAY||array->elem_kind!='L')return false;
+ const dvm_ref gc_ref_array_81=(elements); if(!gc_operation_admit(v,gc_ref_array_81))return 0;
+ if(!dvm__obj(v,gc_ref_array_81)||dvm__obj(v,gc_ref_array_81)->kind!=DVM_OBJ_ARRAY||dvm__obj(v,gc_ref_array_81)->elem_kind!='L')return false;
  uint32_t n=dvm_array_length(v,elements);bool changed=false;
  for(uint32_t i=0;i<n;++i){
   union dvm_value added={0};bool handled=false;
@@ -2632,8 +2671,8 @@ static bool collections_add_all(struct dvm *v,dvm_ref collection,dvm_ref element
  * own compare(Object,Object)I method. */
 static bool collection_sort(struct dvm *v,dvm_ref list,dvm_ref comparator,union dvm_value *out){
  (void)out;
- struct dvm_object *o=dvm__obj(v,list);
- if(!o){dvm__throw(v,"java/lang/NullPointerException","Collections.sort list");return false;}
+ const dvm_ref gc_ref_o_82=(list); if(!gc_operation_admit(v,gc_ref_o_82))return 0;
+ if(!dvm__obj(v,gc_ref_o_82)){dvm__throw(v,"java/lang/NullPointerException","Collections.sort list");return false;}
  struct rt_list *l=list_of(v,list);
  if(!l){dvm__throw(v,"java/lang/UnsupportedOperationException","Collections.sort receiver is not a mutable list");return false;}
  struct dvm_method *cmp=NULL;struct dvm_class *cc=NULL;
@@ -2676,9 +2715,9 @@ static bool collection_dispatch_method(struct dvm *v,const char *cls,const char 
  if(list_views_call(v,cls,m,sig,self,a,n,out)){*handled=true;return true;}
  if(collections_call(v,cls,m,sig,self,a,n,out)){*handled=true;return true;}
  if(dvm_exception(v))return false;
- struct dvm_object *o=dvm__obj(v,self);
- if(o&&o->cls){
-  struct dvm_method *method=dvm_find_method(v,o->cls,m,sig);
+ const dvm_ref gc_ref_o_83=(self); if(!gc_operation_admit(v,gc_ref_o_83))return 0;
+ if(dvm__obj(v,gc_ref_o_83)&&dvm__obj(v,gc_ref_o_83)->cls){
+  struct dvm_method *method=dvm_find_method(v,dvm__obj(v,gc_ref_o_83)->cls,m,sig);
   if(method&&method->has_code){
    if(!dvm_call(v,method,self,a,n,out))return false;
    *handled=true;return true;
@@ -2694,13 +2733,13 @@ static bool collection_dispatch_method(struct dvm *v,const char *cls,const char 
  * entry by entry. */
 static bool map_copy_from_source(struct dvm *v,dvm_ref self,dvm_ref source,union dvm_value *out){
  (void)out;
- struct dvm_object *src=dvm__obj(v,source);
- if(!src||!src->cls){dvm__throw(v,"java/lang/UnsupportedOperationException","Map source has no runtime class");return true;}
+ const dvm_ref gc_ref_src_84=(source); if(!gc_operation_admit(v,gc_ref_src_84))return 0;
+ if(!dvm__obj(v,gc_ref_src_84)||!dvm__obj(v,gc_ref_src_84)->cls){dvm__throw(v,"java/lang/UnsupportedOperationException","Map source has no runtime class");return true;}
  bool handled=false;
  union dvm_value view={0};
- if(!collection_dispatch_method(v,src->cls->name,"entrySet","()Ljava/util/Set;",source,NULL,0,&view,&handled)){
+ if(!collection_dispatch_method(v,dvm__obj(v,gc_ref_src_84)->cls->name,"entrySet","()Ljava/util/Set;",source,NULL,0,&view,&handled)){
   if(dvm_exception(v))return true;
-  sdk_trace_missing_api(src->cls->name,"entrySet","()Ljava/util/Set;");
+  sdk_trace_missing_api(dvm__obj(v,gc_ref_src_84)->cls->name,"entrySet","()Ljava/util/Set;");
   dvm__throw(v,"java/lang/UnsupportedOperationException","Map source has no entrySet view");
   return true;
  }
@@ -2746,7 +2785,7 @@ static bool map_copy_from_source(struct dvm *v,dvm_ref self,dvm_ref source,union
  }
  return true;
 }
-bool collections_call(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int nargs,union dvm_value *out){
+static bool collections_call_operation(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int nargs,union dvm_value *out){
  memset(out,0,sizeof *out);
  /* AbstractMap's protected constructor has no storage initialization. Guest
   * subclasses (Gson LinkedTreeMap) own their own tree and sentinel fields. */
@@ -2778,18 +2817,18 @@ bool collections_call(struct dvm *v,const char *c,const char *m,const char *sig,
  }
  if(!strcmp(c,"java/util/Arrays")&&IS("equals","([Ljava/lang/Object;[Ljava/lang/Object;)Z")&&nargs==2&&a){
   if(a[0].l==a[1].l){out->i=1;return true;}if(!a[0].l||!a[1].l){out->i=0;return true;}
-  struct dvm_object *left=dvm__obj(v,a[0].l),*right=dvm__obj(v,a[1].l);
-  if(!left||!right||left->kind!=DVM_OBJ_ARRAY||right->kind!=DVM_OBJ_ARRAY||left->elem_kind!='L'||right->elem_kind!='L'){dvm__throw(v,"java/lang/ClassCastException","Arrays.equals Object arrays");return true;}
+  const dvm_ref gc_ref_left_85=(a[0].l); if(!gc_operation_admit(v,gc_ref_left_85))return true;const dvm_ref gc_ref_right_86=(a[1].l); if(!gc_operation_admit(v,gc_ref_right_86))return true;
+  if(!dvm__obj(v,gc_ref_left_85)||!dvm__obj(v,gc_ref_right_86)||dvm__obj(v,gc_ref_left_85)->kind!=DVM_OBJ_ARRAY||dvm__obj(v,gc_ref_right_86)->kind!=DVM_OBJ_ARRAY||dvm__obj(v,gc_ref_left_85)->elem_kind!='L'||dvm__obj(v,gc_ref_right_86)->elem_kind!='L'){dvm__throw(v,"java/lang/ClassCastException","Arrays.equals Object arrays");return true;}
   uint32_t count=dvm_array_length(v,a[0].l);if(count!=dvm_array_length(v,a[1].l)){out->i=0;return true;}
   for(uint32_t i=0;i<count;i++){dvm_ref x=((dvm_ref*)dvm_array_data(v,a[0].l))[i],y=((dvm_ref*)dvm_array_data(v,a[1].l))[i];bool equal=java_basics_equal(v,x,y);if(dvm_exception(v))return true;if(!equal){out->i=0;return true;}}
   out->i=1;return true;
  }
  if(!strcmp(c,"java/util/Arrays")&&IS("hashCode","([Ljava/lang/Object;)I")&&nargs==1&&a){
   if(!a[0].l){out->i=0;return true;}
-  struct dvm_object *array=dvm__obj(v,a[0].l);
-  if(!array||array->kind!=DVM_OBJ_ARRAY||array->elem_kind!='L'){dvm__throw(v,"java/lang/ClassCastException","Arrays.hashCode Object array");return true;}
+  const dvm_ref gc_ref_array_87=(a[0].l); if(!gc_operation_admit(v,gc_ref_array_87))return true;
+  if(!dvm__obj(v,gc_ref_array_87)||dvm__obj(v,gc_ref_array_87)->kind!=DVM_OBJ_ARRAY||dvm__obj(v,gc_ref_array_87)->elem_kind!='L'){dvm__throw(v,"java/lang/ClassCastException","Arrays.hashCode Object array");return true;}
   uint32_t hash=1;dvm_ref *items=dvm_array_data(v,a[0].l);
-  for(uint32_t i=0;i<array->length;i++){uint32_t element=entry_hash_part(v,items[i]);if(dvm_exception(v))return true;hash=31u*hash+element;}
+  for(uint32_t i=0;i<dvm__obj(v,gc_ref_array_87)->length;i++){uint32_t element=entry_hash_part(v,items[i]);if(dvm_exception(v))return true;hash=31u*hash+element;}
   out->i=(int32_t)hash;return true;
  }
  if(!strcmp(c,"java/util/Collections")&&IS("emptyList","()Ljava/util/List;")){
@@ -2848,23 +2887,23 @@ bool collections_call(struct dvm *v,const char *c,const char *m,const char *sig,
   if(!out->l&&!dvm_exception(v))dvm__throw(v,"java/lang/OutOfMemoryError","Collections.synchronizedMap");
   return true;
  }
- struct dvm_object *o=dvm__obj(v,self);
+ const dvm_ref gc_ref_o_88=(self); if(!gc_operation_admit(v,gc_ref_o_88))return true;
  /* Vector's supported List operations reuse actual recursive-lock storage,
   * not an unsynchronised ArrayList alias. Unsupported Vector-only APIs fail
   * normal dispatch rather than returning invented values. */
- if(o&&is_type(o->cls,"java/util/Vector")&&!strcmp(m,"<init>")){
+ if(dvm__obj(v,gc_ref_o_88)&&is_type(dvm__obj(v,gc_ref_o_88)->cls,"java/util/Vector")&&!strcmp(m,"<init>")){
   if(strcmp(sig,"()V")&&strcmp(sig,"(I)V")&&strcmp(sig,"(Ljava/util/Collection;)V"))return false;
-  if(o->data){dvm__throw(v,"java/lang/IllegalStateException","Vector already constructed");return true;}
+  if(dvm__obj(v,gc_ref_o_88)->data){dvm__throw(v,"java/lang/IllegalStateException","Vector already constructed");return true;}
   dvm_ref backing=dvm_new_object(v,dvm_find_class_or_external(v,"java/util/ArrayList"));
   if(!backing||!collections_call(v,"java/util/ArrayList","<init>",sig,backing,a,nargs,out)||dvm_exception(v))return true;
-  dvm_ref wrapper=synchronized_list_new(v,backing);struct dvm_object *w=dvm__obj(v,wrapper);
-  if(!w)return true;o->data=w->data;o->data_destroy=w->data_destroy;w->data=NULL;w->data_destroy=NULL;return true;
+  dvm_ref wrapper=synchronized_list_new(v,backing);const dvm_ref gc_ref_w_89=(wrapper); if(!gc_operation_admit(v,gc_ref_w_89))return true;
+  if(!dvm__obj(v,gc_ref_w_89))return true;dvm__obj(v,gc_ref_o_88)->data=dvm__obj(v,gc_ref_w_89)->data;dvm__obj(v,gc_ref_o_88)->data_destroy=dvm__obj(v,gc_ref_w_89)->data_destroy;dvm__obj(v,gc_ref_w_89)->data=NULL;dvm__obj(v,gc_ref_w_89)->data_destroy=NULL;return true;
  }
  /* Vector/Stack compound operations hold the same recursive lock as List calls. */
- if(o&&o->data_destroy==synchronized_list_destroy&&is_type(o->cls,"java/util/Vector")){
+ if(dvm__obj(v,gc_ref_o_88)&&dvm__obj(v,gc_ref_o_88)->data_destroy==synchronized_list_destroy&&is_type(dvm__obj(v,gc_ref_o_88)->cls,"java/util/Vector")){
   bool last=IS("lastElement","()Ljava/lang/Object;"),peek=IS("peek","()Ljava/lang/Object;"),pop=IS("pop","()Ljava/lang/Object;");
   if(last||peek||pop||IS("empty","()Z")||IS("push","(Ljava/lang/Object;)Ljava/lang/Object;")){
-   synchronized_list_view *state=o->data;int rc=pthread_mutex_lock(&state->lock);
+   synchronized_list_view *state=dvm__obj(v,gc_ref_o_88)->data;int rc=pthread_mutex_lock(&state->lock);
    if(rc){dvm__throw(v,"java/lang/IllegalStateException","Vector lock failed");return true;}
    union dvm_value size={0};synchronized_list_call(v,"size","()I",self,NULL,0,&size);
    if(!dvm_exception(v)){
@@ -2878,28 +2917,28 @@ bool collections_call(struct dvm *v,const char *c,const char *m,const char *sig,
    pthread_mutex_unlock(&state->lock);return true;
   }
  }
- if(o&&o->data_destroy==readonly_destroy)return readonly_call(v,m,sig,self,a,nargs,out);
- if(o&&o->data_destroy==empty_list_destroy)return empty_list_call(v,m,sig,a,nargs,out);
- if(o&&o->data_destroy==empty_iterator_destroy)return empty_iterator_call(v,m,sig,a,nargs,out);
- if(o&&o->data_destroy==empty_map_destroy)return empty_map_call(v,m,sig,a,nargs,out);
- if(o&&o->data_destroy==empty_set_destroy)return empty_set_call(v,m,sig,a,nargs,out);
- if(o&&o->data_destroy==entry_view_destroy)return entry_call(v,m,sig,self,a,nargs,out);
- if(o&&o->data_destroy==entry_set_destroy)return entry_set_call(v,m,sig,self,a,nargs,out);
- if(o&&o->data_destroy==entry_iter_destroy)return entry_iter_call(v,m,sig,self,a,nargs,out);
- if(o&&o->data_destroy==key_set_destroy)return key_set_call(v,m,sig,self,a,nargs,out);
- if(o&&o->data_destroy==key_iter_destroy)return key_iter_call(v,m,sig,self,a,nargs,out);
- if(o&&o->data_destroy==values_view_destroy)return values_call(v,m,sig,self,a,nargs,out);
- if(o&&o->data_destroy==value_iter_destroy)return value_iter_call(v,m,sig,self,a,nargs,out);
- if(o&&o->data_destroy==synchronized_map_destroy)return synchronized_map_call(v,m,sig,self,a,nargs,out);
- if(o&&o->data_destroy==synchronized_list_destroy)return synchronized_list_call(v,m,sig,self,a,nargs,out);
- if(o&&o->data_destroy==synchronized_list_iterator_destroy)return synchronized_list_iterator_call(v,m,sig,self,a,nargs,out);
- if(o&&o->data_destroy==singleton_list_destroy)return singleton_list_call(v,m,sig,self,a,nargs,out);
- if(o&&o->data_destroy==singleton_list_iterator_destroy)return singleton_list_iterator_call(v,m,sig,self,a,nargs,out);
- if(o&&o->cls&&!strcmp(o->cls->name,"java/util/ArrayList$Itr"))return iterator_call(v,m,sig,self,out);
- bool linked=o&&is_type(o->cls,"java/util/LinkedList"), arraydeque=o&&is_type(o->cls,"java/util/ArrayDeque");
+ if(dvm__obj(v,gc_ref_o_88)&&dvm__obj(v,gc_ref_o_88)->data_destroy==readonly_destroy)return readonly_call(v,m,sig,self,a,nargs,out);
+ if(dvm__obj(v,gc_ref_o_88)&&dvm__obj(v,gc_ref_o_88)->data_destroy==empty_list_destroy)return empty_list_call(v,m,sig,a,nargs,out);
+ if(dvm__obj(v,gc_ref_o_88)&&dvm__obj(v,gc_ref_o_88)->data_destroy==empty_iterator_destroy)return empty_iterator_call(v,m,sig,a,nargs,out);
+ if(dvm__obj(v,gc_ref_o_88)&&dvm__obj(v,gc_ref_o_88)->data_destroy==empty_map_destroy)return empty_map_call(v,m,sig,a,nargs,out);
+ if(dvm__obj(v,gc_ref_o_88)&&dvm__obj(v,gc_ref_o_88)->data_destroy==empty_set_destroy)return empty_set_call(v,m,sig,a,nargs,out);
+ if(dvm__obj(v,gc_ref_o_88)&&dvm__obj(v,gc_ref_o_88)->data_destroy==entry_view_destroy)return entry_call(v,m,sig,self,a,nargs,out);
+ if(dvm__obj(v,gc_ref_o_88)&&dvm__obj(v,gc_ref_o_88)->data_destroy==entry_set_destroy)return entry_set_call(v,m,sig,self,a,nargs,out);
+ if(dvm__obj(v,gc_ref_o_88)&&dvm__obj(v,gc_ref_o_88)->data_destroy==entry_iter_destroy)return entry_iter_call(v,m,sig,self,a,nargs,out);
+ if(dvm__obj(v,gc_ref_o_88)&&dvm__obj(v,gc_ref_o_88)->data_destroy==key_set_destroy)return key_set_call(v,m,sig,self,a,nargs,out);
+ if(dvm__obj(v,gc_ref_o_88)&&dvm__obj(v,gc_ref_o_88)->data_destroy==key_iter_destroy)return key_iter_call(v,m,sig,self,a,nargs,out);
+ if(dvm__obj(v,gc_ref_o_88)&&dvm__obj(v,gc_ref_o_88)->data_destroy==values_view_destroy)return values_call(v,m,sig,self,a,nargs,out);
+ if(dvm__obj(v,gc_ref_o_88)&&dvm__obj(v,gc_ref_o_88)->data_destroy==value_iter_destroy)return value_iter_call(v,m,sig,self,a,nargs,out);
+ if(dvm__obj(v,gc_ref_o_88)&&dvm__obj(v,gc_ref_o_88)->data_destroy==synchronized_map_destroy)return synchronized_map_call(v,m,sig,self,a,nargs,out);
+ if(dvm__obj(v,gc_ref_o_88)&&dvm__obj(v,gc_ref_o_88)->data_destroy==synchronized_list_destroy)return synchronized_list_call(v,m,sig,self,a,nargs,out);
+ if(dvm__obj(v,gc_ref_o_88)&&dvm__obj(v,gc_ref_o_88)->data_destroy==synchronized_list_iterator_destroy)return synchronized_list_iterator_call(v,m,sig,self,a,nargs,out);
+ if(dvm__obj(v,gc_ref_o_88)&&dvm__obj(v,gc_ref_o_88)->data_destroy==singleton_list_destroy)return singleton_list_call(v,m,sig,self,a,nargs,out);
+ if(dvm__obj(v,gc_ref_o_88)&&dvm__obj(v,gc_ref_o_88)->data_destroy==singleton_list_iterator_destroy)return singleton_list_iterator_call(v,m,sig,self,a,nargs,out);
+ if(dvm__obj(v,gc_ref_o_88)&&dvm__obj(v,gc_ref_o_88)->cls&&!strcmp(dvm__obj(v,gc_ref_o_88)->cls->name,"java/util/ArrayList$Itr"))return iterator_call(v,m,sig,self,out);
+ bool linked=dvm__obj(v,gc_ref_o_88)&&is_type(dvm__obj(v,gc_ref_o_88)->cls,"java/util/LinkedList"), arraydeque=dvm__obj(v,gc_ref_o_88)&&is_type(dvm__obj(v,gc_ref_o_88)->cls,"java/util/ArrayDeque");
  if(arraydeque){
   if(!strcmp(m,"<init>")){if(!IS("<init>","()V"))return false;return invoke(list_init,v,self,NULL,0,out);}
-  if(!o->data){dvm__throw(v,"java/lang/IllegalStateException","ArrayDeque constructor not called");return true;}
+  if(!dvm__obj(v,gc_ref_o_88)->data){dvm__throw(v,"java/lang/IllegalStateException","ArrayDeque constructor not called");return true;}
   bool first=IS("addFirst","(Ljava/lang/Object;)V")||IS("offerFirst","(Ljava/lang/Object;)Z")||IS("push","(Ljava/lang/Object;)V");
   bool tailadd=IS("addLast","(Ljava/lang/Object;)V")||IS("offerLast","(Ljava/lang/Object;)Z")||IS("offer","(Ljava/lang/Object;)Z")||IS("add","(Ljava/lang/Object;)Z");
   if(first||tailadd){if(!a[0].l){dvm__throw(v,"java/lang/NullPointerException","ArrayDeque rejects null");return true;}union dvm_value x[2]={{.i=first?0:(int)list_of(v,self)->size},{.l=a[0].l}};if(first)invoke(list_add_at,v,self,x,2,out);else invoke(list_add,v,self,a,1,out);if(!dvm_exception(v))out->i=1;return true;}
@@ -2911,27 +2950,27 @@ bool collections_call(struct dvm *v,const char *c,const char *m,const char *sig,
   if(IS("contains","(Ljava/lang/Object;)Z"))return invoke(list_contains,v,self,a,nargs,out);
   if(IS("remove","(Ljava/lang/Object;)Z")||IS("removeFirstOccurrence","(Ljava/lang/Object;)Z"))return invoke(list_remove_obj,v,self,a,nargs,out);
   if(IS("iterator","()Ljava/util/Iterator;")){
-   out->l=dvm_new_object(v,dvm_find_class_or_external(v,"java/util/ArrayList$Itr"));struct dvm_object *iter=dvm__obj(v,out->l);struct iterator *it=calloc(1,sizeof *it);
-   if(!iter||!it){free(it);dvm__throw(v,"java/lang/OutOfMemoryError","deque iterator");return true;}
-   it->target=self;it->expected=list_of(v,self)->mod_count;it->last=-1;iter->data=it;iter->data_destroy=iterator_gc_destroy;return true;
+   out->l=dvm_new_object(v,dvm_find_class_or_external(v,"java/util/ArrayList$Itr"));const dvm_ref gc_ref_iter_90=(out->l); if(!gc_operation_admit(v,gc_ref_iter_90))return true;struct iterator *it=calloc(1,sizeof *it);
+   if(!dvm__obj(v,gc_ref_iter_90)||!it){free(it);dvm__throw(v,"java/lang/OutOfMemoryError","deque iterator");return true;}
+   it->target=self;it->expected=list_of(v,self)->mod_count;it->last=-1;dvm__obj(v,gc_ref_iter_90)->data=it;dvm__obj(v,gc_ref_iter_90)->data_destroy=iterator_gc_destroy;return true;
   }
   return false;
  }
  /* AbstractMap.isEmpty uses the concrete receiver's virtual size. */
- if(o&&!is_type(o->cls,"java/util/HashMap")&&!is_type(o->cls,"java/util/WeakHashMap")&&IS("isEmpty","()Z")&&
-    (is_type(o->cls,"java/util/AbstractMap")||dvm__class_assignable(v,o->cls,dvm_find_class_or_external(v,"java/util/Map")))){
-  struct dvm_method *size=dvm_find_method(v,o->cls,"size","()I");
+ if(dvm__obj(v,gc_ref_o_88)&&!is_type(dvm__obj(v,gc_ref_o_88)->cls,"java/util/HashMap")&&!is_type(dvm__obj(v,gc_ref_o_88)->cls,"java/util/WeakHashMap")&&IS("isEmpty","()Z")&&
+    (is_type(dvm__obj(v,gc_ref_o_88)->cls,"java/util/AbstractMap")||dvm__class_assignable(v,dvm__obj(v,gc_ref_o_88)->cls,dvm_find_class_or_external(v,"java/util/Map")))){
+  struct dvm_method *size=dvm_find_method(v,dvm__obj(v,gc_ref_o_88)->cls,"size","()I");
   if(size&&(size->has_code||size->builtin)){union dvm_value count={0};if(dvm_call(v,size,self,NULL,0,&count))out->i=count.i==0;return true;}
  }
- bool list=o&&(is_type(o->cls,"java/util/ArrayList")||linked),map=o&&(is_type(o->cls,"java/util/HashMap")||is_type(o->cls,"java/util/WeakHashMap"));if(!list&&!map)return false;
+ bool list=dvm__obj(v,gc_ref_o_88)&&(is_type(dvm__obj(v,gc_ref_o_88)->cls,"java/util/ArrayList")||linked),map=dvm__obj(v,gc_ref_o_88)&&(is_type(dvm__obj(v,gc_ref_o_88)->cls,"java/util/HashMap")||is_type(dvm__obj(v,gc_ref_o_88)->cls,"java/util/WeakHashMap"));if(!list&&!map)return false;
  if(list){
   bool ctor=IS("<init>","()V")||(!linked&&IS("<init>","(I)V"))||IS("<init>","(Ljava/util/Collection;)V");
   if(ctor){if(IS("<init>","(I)V")&&a[0].i<0){dvm__throw(v,"java/lang/IllegalArgumentException","negative ArrayList capacity");return true;}
    if(!list_init(v,self,NULL,0,out))return true;
-   if(IS("<init>","(I)V")&&a[0].i>8){if(a[0].i>1000000){dvm__throw(v,"java/lang/OutOfMemoryError","diagnostic collection limit");return true;}struct rt_list *l=realloc(o->data,sizeof *l+(size_t)a[0].i*sizeof(dvm_ref));if(!l){dvm__throw(v,"java/lang/OutOfMemoryError","ArrayList capacity");return true;}o->data=l;l->cap=(uint32_t)a[0].i;}
+   if(IS("<init>","(I)V")&&a[0].i>8){if(a[0].i>1000000){dvm__throw(v,"java/lang/OutOfMemoryError","diagnostic collection limit");return true;}struct rt_list *l=realloc(dvm__obj(v,gc_ref_o_88)->data,sizeof *l+(size_t)a[0].i*sizeof(dvm_ref));if(!l){dvm__throw(v,"java/lang/OutOfMemoryError","ArrayList capacity");return true;}dvm__obj(v,gc_ref_o_88)->data=l;l->cap=(uint32_t)a[0].i;}
    if(IS("<init>","(Ljava/util/Collection;)V"))return bulk_add(v,self,a[0].l,0,out);return true;
   }
-  if(!o->data){dvm__throw(v,"java/lang/IllegalStateException","ArrayList constructor not called");return true;}
+  if(!dvm__obj(v,gc_ref_o_88)->data){dvm__throw(v,"java/lang/IllegalStateException","ArrayList constructor not called");return true;}
   if(linked){
    bool first=IS("addFirst","(Ljava/lang/Object;)V")||IS("offerFirst","(Ljava/lang/Object;)Z")||IS("push","(Ljava/lang/Object;)V");
    bool last=IS("addLast","(Ljava/lang/Object;)V")||IS("offerLast","(Ljava/lang/Object;)Z")||IS("offer","(Ljava/lang/Object;)Z");
@@ -2946,7 +2985,7 @@ bool collections_call(struct dvm *v,const char *c,const char *m,const char *sig,
     return invoke(remove?list_remove:list_get,v,self,&index,1,out);
    }
   }
-  if(IS("iterator","()Ljava/util/Iterator;")){out->l=dvm_new_object(v,dvm_find_class_or_external(v,"java/util/ArrayList$Itr"));struct dvm_object *iter=dvm__obj(v,out->l);struct iterator *it=calloc(1,sizeof *it);if(!iter||!it){free(it);dvm__throw(v,"java/lang/OutOfMemoryError","ArrayList iterator");return true;}it->target=self;it->expected=list_of(v,self)->mod_count;it->last=-1;iter->data=it;iter->data_destroy=iterator_gc_destroy;return true;}
+  if(IS("iterator","()Ljava/util/Iterator;")){out->l=dvm_new_object(v,dvm_find_class_or_external(v,"java/util/ArrayList$Itr"));const dvm_ref gc_ref_iter_91=(out->l); if(!gc_operation_admit(v,gc_ref_iter_91))return true;struct iterator *it=calloc(1,sizeof *it);if(!dvm__obj(v,gc_ref_iter_91)||!it){free(it);dvm__throw(v,"java/lang/OutOfMemoryError","ArrayList iterator");return true;}it->target=self;it->expected=list_of(v,self)->mod_count;it->last=-1;dvm__obj(v,gc_ref_iter_91)->data=it;dvm__obj(v,gc_ref_iter_91)->data_destroy=iterator_gc_destroy;return true;}
   if(IS("addAll","(Ljava/util/Collection;)Z"))return bulk_add(v,self,a[0].l,(int)list_of(v,self)->size,out);
   if(IS("addAll","(ILjava/util/Collection;)Z"))return bulk_add(v,self,a[1].l,a[0].i,out);
   if(IS("indexOf","(Ljava/lang/Object;)I")||IS("lastIndexOf","(Ljava/lang/Object;)I")){
@@ -2962,7 +3001,7 @@ bool collections_call(struct dvm *v,const char *c,const char *m,const char *sig,
  }
  bool ctor=IS("<init>","()V")||IS("<init>","(I)V")||IS("<init>","(IF)V")||IS("<init>","(Ljava/util/Map;)V");
  if(ctor){if((IS("<init>","(I)V")||IS("<init>","(IF)V"))&&a[0].i<0){dvm__throw(v,"java/lang/IllegalArgumentException","negative HashMap capacity");return true;}if(IS("<init>","(IF)V")&&(!(a[1].f>0)||isnan(a[1].f))){dvm__throw(v,"java/lang/IllegalArgumentException","invalid HashMap load factor");return true;}if(!map_init(v,self,NULL,0,out))return true;if(!IS("<init>","(Ljava/util/Map;)V"))return true;}
- if(!o->data){dvm__throw(v,"java/lang/IllegalStateException","HashMap constructor not called");return true;}
+ if(!dvm__obj(v,gc_ref_o_88)->data){dvm__throw(v,"java/lang/IllegalStateException","HashMap constructor not called");return true;}
  map_expunge_stale(v,self);
  if(IS("entrySet","()Ljava/util/Set;")){
   /* Backed view, not a snapshot: size/contains/remove/clear/iterator all read
@@ -2970,10 +3009,10 @@ bool collections_call(struct dvm *v,const char *c,const char *m,const char *sig,
   struct dvm_class *cls=dvm_find_class_or_external(v,"sdktrace/collections/EntrySet");
   entry_set_view *s=calloc(1,sizeof *s);
   if(!cls||!s){free(s);dvm__throw(v,"java/lang/OutOfMemoryError","entrySet view");return true;}
-  dvm_ref ref=dvm_new_object(v,cls);struct dvm_object *so=dvm__obj(v,ref);
-  if(!so){free(s);dvm__throw(v,"java/lang/OutOfMemoryError","entrySet view object");return true;}
+  dvm_ref ref=dvm_new_object(v,cls);const dvm_ref gc_ref_so_92=(ref); if(!gc_operation_admit(v,gc_ref_so_92))return true;
+  if(!dvm__obj(v,gc_ref_so_92)){free(s);dvm__throw(v,"java/lang/OutOfMemoryError","entrySet view object");return true;}
   s->vm=v;s->map=self;dvm_pin(v,self);
-  so->data=s;so->data_destroy=entry_set_destroy;
+  dvm__obj(v,gc_ref_so_92)->data=s;dvm__obj(v,gc_ref_so_92)->data_destroy=entry_set_destroy;
   out->l=ref;return true;
  }
  if(IS("keySet","()Ljava/util/Set;")){
@@ -2982,10 +3021,10 @@ bool collections_call(struct dvm *v,const char *c,const char *m,const char *sig,
   struct dvm_class *cls=dvm_find_class_or_external(v,"sdktrace/collections/KeySet");
   key_set_view *s=calloc(1,sizeof *s);
   if(!cls||!s){free(s);dvm__throw(v,"java/lang/OutOfMemoryError","keySet view");return true;}
-  dvm_ref ref=dvm_new_object(v,cls);struct dvm_object *so=dvm__obj(v,ref);
-  if(!so){free(s);dvm__throw(v,"java/lang/OutOfMemoryError","keySet view object");return true;}
+  dvm_ref ref=dvm_new_object(v,cls);const dvm_ref gc_ref_so_93=(ref); if(!gc_operation_admit(v,gc_ref_so_93))return true;
+  if(!dvm__obj(v,gc_ref_so_93)){free(s);dvm__throw(v,"java/lang/OutOfMemoryError","keySet view object");return true;}
   s->vm=v;s->map=self;dvm_pin(v,self);
-  so->data=s;so->data_destroy=key_set_destroy;
+  dvm__obj(v,gc_ref_so_93)->data=s;dvm__obj(v,gc_ref_so_93)->data_destroy=key_set_destroy;
   out->l=ref;return true;
  }
  if(IS("values","()Ljava/util/Collection;")){
@@ -2995,22 +3034,22 @@ bool collections_call(struct dvm *v,const char *c,const char *m,const char *sig,
   struct dvm_class *cls=dvm_find_class_or_external(v,"sdktrace/collections/Values");
   values_view *s=calloc(1,sizeof *s);
   if(!cls||!s){free(s);dvm__throw(v,"java/lang/OutOfMemoryError","values view");return true;}
-  dvm_ref ref=dvm_new_object(v,cls);struct dvm_object *so=dvm__obj(v,ref);
-  if(!so){free(s);dvm__throw(v,"java/lang/OutOfMemoryError","values view object");return true;}
+  dvm_ref ref=dvm_new_object(v,cls);const dvm_ref gc_ref_so_94=(ref); if(!gc_operation_admit(v,gc_ref_so_94))return true;
+  if(!dvm__obj(v,gc_ref_so_94)){free(s);dvm__throw(v,"java/lang/OutOfMemoryError","values view object");return true;}
   s->vm=v;s->map=self;dvm_pin(v,self);
-  so->data=s;so->data_destroy=values_view_destroy;
+  dvm__obj(v,gc_ref_so_94)->data=s;dvm__obj(v,gc_ref_so_94)->data_destroy=values_view_destroy;
   out->l=ref;return true;
  }
  if(IS("putAll","(Ljava/util/Map;)V")||IS("<init>","(Ljava/util/Map;)V")){
-  if(!a[0].l){dvm__throw(v,"java/lang/NullPointerException","source Map");return true;}struct dvm_object *src=dvm__obj(v,a[0].l);
-  if(src&&src->data_destroy==map_destroy&&src->data){
+  if(!a[0].l){dvm__throw(v,"java/lang/NullPointerException","source Map");return true;}const dvm_ref gc_ref_src_95=(a[0].l); if(!gc_operation_admit(v,gc_ref_src_95))return true;
+  if(dvm__obj(v,gc_ref_src_95)&&dvm__obj(v,gc_ref_src_95)->data_destroy==map_destroy&&dvm__obj(v,gc_ref_src_95)->data){
    map_expunge_stale(v,a[0].l);
-   struct rt_map *mapdata=src->data;size_t bytes=sizeof *mapdata+(size_t)mapdata->cap*sizeof mapdata->e[0];struct rt_map *copy=malloc(bytes);if(!copy){dvm__throw(v,"java/lang/OutOfMemoryError","Map snapshot");return true;}memcpy(copy,mapdata,bytes);
+   struct rt_map *mapdata=dvm__obj(v,gc_ref_src_95)->data;size_t bytes=sizeof *mapdata+(size_t)mapdata->cap*sizeof mapdata->e[0];struct rt_map *copy=malloc(bytes);if(!copy){dvm__throw(v,"java/lang/OutOfMemoryError","Map snapshot");return true;}memcpy(copy,mapdata,bytes);
    for(uint32_t i=0;i<copy->size;++i){union dvm_value args[]={{.l=copy->e[i].k},{.l=copy->e[i].v}},ignored={0};if(!map_put(v,self,args,2,&ignored))break;}free(copy);return true;
   }
   return map_copy_from_source(v,self,a[0].l,out);
  }
- if(IS("containsValue","(Ljava/lang/Object;)Z")){struct rt_map *mp=o->data;for(uint32_t i=0;i<mp->size;++i){bool hit=java_basics_equal(v,a[0].l,mp->e[i].v);if(dvm_exception(v))return true;if(hit){out->i=1;break;}}return true;}
+ if(IS("containsValue","(Ljava/lang/Object;)Z")){struct rt_map *mp=dvm__obj(v,gc_ref_o_88)->data;for(uint32_t i=0;i<mp->size;++i){bool hit=java_basics_equal(v,a[0].l,mp->e[i].v);if(dvm_exception(v))return true;if(hit){out->i=1;break;}}return true;}
  if(IS("getOrDefault","(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;")){if(!map_get(v,self,a,1,out))return true;if(!out->l){union dvm_value present={0};if(!map_containsKey(v,self,a,1,&present))return true;if(!present.i)out->l=a[1].l;}return true;}
  /* AbstractMap contracts: Collections.synchronizedMap() delegates equals(),
   * hashCode() and toString() to the backing map, so a HashMap backing must
@@ -3022,10 +3061,18 @@ bool collections_call(struct dvm *v,const char *c,const char *m,const char *sig,
  MAP("put","(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",map_put);MAP("get","(Ljava/lang/Object;)Ljava/lang/Object;",map_get);MAP("remove","(Ljava/lang/Object;)Ljava/lang/Object;",map_remove);MAP("containsKey","(Ljava/lang/Object;)Z",map_containsKey);MAP("size","()I",map_size);MAP("isEmpty","()Z",map_isEmpty);MAP("clear","()V",map_clear);
  return false;
 }
+bool collections_call(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int nargs,union dvm_value *out){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return true;
+ bool result=collections_call_operation(v,c,m,sig,self,a,nargs,out);
+ gc_operation_result(&operation,sig,result&&out?out->l:0);
+ return result;
+}
+
 
 /* Weak-key pin ownership and real temporary-release checks. This deliberately
  * does not claim collector/reference-processing coverage. */
-bool collections_weak_map_selftest(struct dvm *v){
+static bool collections_weak_map_selftest_operation(struct dvm *v){
  const char *wm="java/util/WeakHashMap",*map="java/util/Map";
  union dvm_value out={0},a[2]={{0},{0}};
  unsigned checks=0;
@@ -3082,6 +3129,13 @@ bool collections_weak_map_selftest(struct dvm *v){
 #undef WEAK_CHECK
  return true;
 }
+bool collections_weak_map_selftest(struct dvm *v){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return false;
+ bool result=collections_weak_map_selftest_operation(v);
+ return result;
+}
+
 
 /* Native collection payload bytes, separate from guest object/slot/array
  * storage already charged to the arena. Count each owning payload once;
@@ -3114,6 +3168,10 @@ size_t collections_storage_bytes(struct dvm *v){
 }
 
 int collections_gc_payload(struct dvm *v,struct dvm_object *o,dvm_gc_visit_fn visit,void *user){
+ struct gc_operation_pin pin __attribute__((cleanup(gc_operation_pin_end)));
+ if(!gc_operation_pin_begin(v,&pin,o))return DVM_GC_PAYLOAD_INVALID;
+ o=dvm__obj(v,pin.ref);
+
  (void)v;void *p=o->data;
  if(o->data_destroy==list_gc_destroy){struct rt_list *l=p;if(l->size>l->cap||l->cap>1000000)return DVM_GC_PAYLOAD_INVALID;
   if(visit)for(uint32_t i=0;i<l->size;i++)visit(&l->items[i],user);return DVM_GC_PAYLOAD_REFS;}

@@ -1,6 +1,7 @@
 #include <time.h>
 #include <unistd.h>
 #include "platform_runtime.h"
+#include "gc_operation.h"
 #include "java_basics.h"
 #include "locale_list.h"
 #include <regex.h>
@@ -28,9 +29,13 @@ __attribute__((visibility("default"))) void sdk_set_timezone_host(timezone_host_
 struct host_timezone {char id[128];int raw_offset;};
 static void host_timezone_free(void *p){free(p);}
 static dvm_ref new_host_timezone(struct dvm *v,const struct host_timezone *source){
+ /* source may be an object payload: snapshot before any VM call. */
+ const struct host_timezone saved=*source;
+ struct gc_operation op __attribute__((cleanup(gc_operation_end)))={0};
+ if(!gc_operation_begin(v,&op))return 0;
  dvm_ref ref=dvm_new_object(v,dvm_find_class_or_external(v,"java/util/TimeZone"));if(!ref)return 0;
  struct host_timezone *copy=malloc(sizeof *copy);if(!copy){dvm__discard_temporary(v,ref);dvm__throw(v,"java/lang/OutOfMemoryError","TimeZone snapshot");return 0;}
- *copy=*source;struct dvm_object *o=dvm__obj(v,ref);o->data=copy;o->data_destroy=host_timezone_free;return ref;
+ *copy=saved;struct dvm_object *o=gc_operation_object(v,ref);if(!o){free(copy);return 0;}o->data=copy;o->data_destroy=host_timezone_free;gc_operation_result(&op,"()Ljava/util/TimeZone;",ref);return ref;
 }
 bool platform_timezone_selftest(struct dvm *v){
  dvm_ref saved=v->exception;bool parked=v->parked;uint64_t steps=v->call_steps;v->exception=0;v->parked=false;v->call_steps=0;
@@ -758,7 +763,7 @@ bool platform_runtime_vm_start(struct dvm *v) {
  return true;
 }
 #define IS(a,b) (!strcmp(m,a)&&!strcmp(sig,b))
-bool platform_runtime_call(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int n,union dvm_value *out) {
+static bool platform_runtime_call_step8_operation(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int n,union dvm_value *out) {
  if(v!=active)return false;
  fail_class=c;fail_method=m;fail_sig=sig;
  /* Locale and LocaleList own their real payloads; Configuration.getLocales()
@@ -1750,4 +1755,15 @@ restore:
 int platform_gc_payload(struct dvm *v,struct dvm_object *o,dvm_gc_visit_fn visit,void *user){
  (void)v;if(o->data_destroy==host_timezone_free||o->data_destroy==pattern_free)return DVM_GC_PAYLOAD_ATOMIC;
  if(o->data_destroy==matcher_free){matcher_data *p=o->data;if(visit){visit(&p->pattern,user);visit(&p->input,user);}return DVM_GC_PAYLOAD_REFS;}return DVM_GC_PAYLOAD_UNKNOWN;
+}
+
+bool platform_runtime_call(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int n,union dvm_value *out){
+ if(v!=active)return false;
+ if(strcmp(c,"java/util/TimeZone")&&strcmp(c,"java/util/regex/Pattern")&&strcmp(c,"java/util/regex/Matcher"))
+  return platform_runtime_call_step8_operation(v,c,m,sig,self,a,n,out);
+ struct gc_operation op __attribute__((cleanup(gc_operation_end)))={0};
+ if(!gc_operation_begin(v,&op)||!gc_operation_admit(v,self))return true;
+ bool handled=platform_runtime_call_step8_operation(v,c,m,sig,self,a,n,out);
+ if(handled&&!dvm_exception(v))gc_operation_result(&op,sig,out->l);
+ return handled;
 }

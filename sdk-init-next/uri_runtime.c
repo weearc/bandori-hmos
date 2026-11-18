@@ -1,4 +1,5 @@
 #include "uri_runtime.h"
+#include "gc_operation.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -338,7 +339,7 @@ done:
  free(text);for(int i=0;i<4;i++)free(quoted[i]);return result;
 }
 #define IS(method,signature) (!strcmp(m,method)&&!strcmp(sig,signature))
-bool uri_runtime_call(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,
+static bool uri_runtime_call_gc9_operation(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,
  const union dvm_value *a,int n,union dvm_value *out){
  memset(out,0,sizeof *out);
  if(!strcmp(c,"android/net/Uri$Builder")){
@@ -823,4 +824,14 @@ bool uri_runtime_selftest(struct dvm *v){
 
 int uri_gc_payload(struct dvm *v,struct dvm_object *o,dvm_gc_visit_fn visit,void *user){
  (void)v;(void)visit;(void)user;return o->data_destroy==uri_payload_free||o->data_destroy==uri_builder_free?DVM_GC_PAYLOAD_ATOMIC:DVM_GC_PAYLOAD_UNKNOWN;
+}
+
+bool uri_runtime_call(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,
+ const union dvm_value *a,int n,union dvm_value *out){
+
+ struct gc_operation op __attribute__((cleanup(gc_operation_end)))={0};
+ if(!gc_operation_begin(v,&op)||!gc_operation_admit(v,self))return true;
+ bool handled=uri_runtime_call_gc9_operation(v,c,m,sig,self,a,n,out);
+ if(handled&&!dvm_exception(v))gc_operation_result(&op,sig,out->l);
+ return handled;
 }

@@ -1,5 +1,6 @@
 /* Real bounded queue and executor workers for the isolated SDK runner. */
 #include "executor_runtime.h"
+#include "gc_operation.h"
 #include "java_basics.h"
 #include "thread_runtime.h"
 #include "portable.h"
@@ -165,6 +166,10 @@ static bool unit_millis(struct dvm *v,dvm_ref unit,uint64_t *scale){
 static struct executor_state *executor_of(struct dvm *v,dvm_ref self){struct dvm_object *o=dvm__obj(v,self);struct executor_state *p=o&&is_name(o,"java/util/concurrent/ThreadPoolExecutor")?o->data:NULL;return p&&p->vm==v&&p->self==self?p:NULL;}
 static struct future_state *future_of(struct dvm *v,dvm_ref self){struct dvm_object *o=dvm__obj(v,self);return o&&is_name(o,"java/util/concurrent/FutureTask")?o->data:NULL;}
 static bool invoke_runnable(struct dvm *v,dvm_ref runnable){
+ /* GC-STEP7: operation-local admission; cleanup precedes caller return. */
+ struct gc_operation gc7 __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&gc7)||!gc_operation_admit(v,runnable))return false;
+
  struct dvm_object *o=dvm__obj(v,runnable);if(!o){dvm__throw(v,"java/lang/NullPointerException","executor task");return false;}
  if(is_name(o,"java/util/concurrent/FutureTask")){union dvm_value ignored={0};return executor_runtime_call(v,"java/util/concurrent/FutureTask","run","()V",runnable,NULL,0,&ignored);}
  struct dvm_method *m=dvm_find_method(v,o->cls,"run","()V");if(!m){sdk_trace_missing_api(o->cls?o->cls->name:"?","run","()V");dvm__throw(v,"java/lang/NoSuchMethodError","Runnable.run");return false;}
@@ -235,6 +240,10 @@ static bool future_ctor(struct dvm *v,dvm_ref self,const union dvm_value *a,int 
  f->status=FUTURE_NEW;o->data=f;o->data_destroy=future_destroy;return true;
 }
 static bool future_run(struct dvm *v,dvm_ref self){
+ /* GC-STEP7: operation-local admission; cleanup precedes caller return. */
+ struct gc_operation gc7 __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&gc7)||!gc_operation_admit(v,self))return true;
+
  struct future_state *f=future_of(v,self);if(!f){dvm__throw(v,"java/lang/IllegalStateException","FutureTask constructor not called");return true;}
  pthread_mutex_lock(&f->lock);if(f->status!=FUTURE_NEW){pthread_mutex_unlock(&f->lock);return true;}f->status=FUTURE_RUNNING;dvm_ref callable=f->callable,runnable=f->runnable;pthread_mutex_unlock(&f->lock);
  dvm_ref result=f->result;bool success=true;

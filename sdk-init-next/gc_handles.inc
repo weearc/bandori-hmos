@@ -15,7 +15,7 @@ struct dvm_gc_state {
    uint32_t count,capacity,free_head,live,strong,borrows;
    struct dvm_gc_provider *providers;
    uint32_t providers_count,providers_capacity;
-   bool visiting;
+   bool visiting,visit_failed;
    struct dvm_gc_native_scope *scopes;
    dvm_ref *satb_queue; uint32_t satb_capacity,satb_head,satb_count;
    uint64_t satb_enqueued,satb_overflows; bool satb_active,satb_failed;
@@ -52,13 +52,12 @@ void dvm_gc_store_ref(struct dvm *vm,dvm_ref *slot,dvm_ref value,const char *sit
 /* Collector bookkeeping must not create a new C borrow as a side effect. */
 static struct dvm_object *gc_peek_object(struct dvm *vm,dvm_ref ref)
 {
-   if(!vm||!ref||ref>vm->heap_size)return NULL;
-   struct dvm_object *o=heap_slot(vm,ref);
-   /* Freed slots have a cleared header, not a corrupt forwarding pointer. */
-   if(!o->live)return NULL;
+   struct dvm_object *o=gc_dir_lookup(vm,ref,true);
+   if(!o)return NULL;
    o=dvm_gc_resolve(vm,o);
    return o&&o->live?o:NULL;
 }
+#include "gc_scope_generation.inc"
 /* Joint retirement avoids freeing the Long while a borrowed array still
  * contains it. Slots/payload never move; no tracing or STW is started here.
  * At admission no JNI local/global/strong handle may outlive the proof.
@@ -94,7 +93,7 @@ void dvm_leak_reap_pairs(struct dvm *vm){
 }
 static bool gc_access_ok(struct dvm *vm)
 {
-   return vm && (vm->gc_initializing || vm->gc_destroying || dvm_gil_held(vm));
+   return gc_contract_access(vm)?true:dvm_gc_contract_fail(vm,GC_CONTRACT_NON_GIL);
 }
 static struct dvm_gc_state *gc_state_ensure(struct dvm *vm)
 {
@@ -126,6 +125,7 @@ dvm_gc_handle dvm_gc_handle_new(struct dvm *vm,uint32_t ref,unsigned flags)
 {
    if(leak_scope_current&&(flags&DVM_GC_HANDLE_WEAK)&&leak_scope_mentions(vm,ref,NULL,0))leak_scope_cancel(vm,LEAK_STORE);
    if (!gc_access_ok(vm) || !ref) return 0;
+   if(vm->gc&&vm->gc->visiting){vm->gc->visit_failed=true;dvm_gc_contract_fail(vm,GC_CONTRACT_SCOPE_ORDER);return 0;}
    if ((flags&~15u) || !(flags&3u) || (flags&3u)==3u ||
        ((flags&12u)&&!(flags&DVM_GC_HANDLE_STRONG))) {
       dvm__throw(vm,"java/lang/IllegalArgumentException","GC handle flags");return 0;
@@ -158,6 +158,7 @@ dvm_gc_handle dvm_gc_handle_new(struct dvm *vm,uint32_t ref,unsigned flags)
    if(flags&12u)++s->borrows;
    return (generation<<32)|(uint64_t)(index+1u);
 overflow:
+   dvm_gc_contract_note(GC_CONTRACT_BORROW_OVERFLOW);
    dvm__throw(vm,"java/lang/OutOfMemoryError","GC handle identity/counter exhausted");return 0;
 oom:
    dvm__throw(vm,"java/lang/OutOfMemoryError","GC handle slots");return 0;
@@ -192,15 +193,20 @@ corrupt:
 }
 bool dvm_gc_handle_drop(struct dvm *vm,dvm_gc_handle h)
 {
-   struct dvm_gc_handle_slot *p=gc_handle_slot(vm,h);if(!p)return false;
+   if(vm&&vm->gc&&vm->gc->visiting){vm->gc->visit_failed=true;return dvm_gc_contract_fail(vm,GC_CONTRACT_SCOPE_ORDER);}
+   struct dvm_gc_handle_slot *p=gc_handle_slot(vm,h);if(!p){dvm_gc_contract_note(GC_CONTRACT_STALE_HANDLE);return false;}
    struct dvm_gc_state *s=vm->gc;struct dvm_object *o=gc_peek_object(vm,p->ref);
    if (o && o->identity_generation==p->identity) {
+      if(((p->flags&1u)&&(!o->gc_strong_handles||!s->strong))||
+         ((p->flags&4u)&&!o->gc_body_borrows)||((p->flags&8u)&&!o->gc_payload_borrows)||
+         ((p->flags&12u)&&!s->borrows)||!s->live)
+         return dvm_gc_contract_fail(vm,GC_CONTRACT_BORROW_UNDERFLOW);
       if(p->flags&1u)--o->gc_strong_handles;
       if(p->flags&4u)--o->gc_body_borrows;
       if(p->flags&8u)--o->gc_payload_borrows;
-      if((p->flags&2u)&&!gc_weak_unlink(s,o,(uint32_t)h))return false;
+      if((p->flags&2u)&&!gc_weak_unlink(s,o,(uint32_t)h))return dvm_gc_contract_fail(vm,GC_CONTRACT_IDENTITY);
    } else if(p->flags&1u) {
-      fprintf(stderr,"GC_CORRUPTION reason=strong_handle_lost_identity\n");return false;
+      return dvm_gc_contract_fail(vm,GC_CONTRACT_IDENTITY);
    }
    if(p->flags&1u)--s->strong;if(p->flags&12u)--s->borrows;
    --s->live;uint32_t index=(uint32_t)h;
@@ -239,13 +245,17 @@ bool dvm_gc_visit_roots(struct dvm *vm,unsigned kind,dvm_gc_visit_fn visit,void 
 {
    if(!gc_access_ok(vm)||!visit||(kind!=1u&&kind!=2u))return false;
    struct dvm_gc_state *s=vm->gc;if(!s)return kind==1u?gc_core_roots(vm,visit,user):true;if(s->visiting)return false;
-   s->visiting=true;bool ok=true;
+   s->visiting=true;s->visit_failed=false;bool ok=true;
    if(kind==1u&&!gc_core_roots(vm,visit,user))ok=false;
    if(kind==1u)for(struct dvm_gc_native_scope *q=s->scopes;q;q=q->next_vm){
       if(q->failed){ok=false;gc_root_failure("native_scope","allocation_or_capture_failed");}
       for(uint32_t i=0;i<q->count;++i){struct dvm_gc_scope_ref *r=&q->refs[i];
-         struct dvm_object *o=dvm__obj(vm,r->ref);
-         if(o&&o->identity_generation==r->identity)visit(&r->ref,user);
+         struct dvm_object *o=gc_scope_resolve(vm,q,r,GC_SCOPE_ROOT);
+         if(!o){ok=false;continue;}
+         uint32_t slot=gen_slot(r->ref),original=slot;
+         visit(&slot,user);
+         if(slot!=original){ok=false;gc_scope_reject(vm,q,r,GC_SCOPE_VISITOR);continue;}
+         if(!gc_scope_resolve(vm,q,r,GC_SCOPE_ROOT))ok=false;
       }
    }
    for(uint32_t i=0;i<s->count;++i){struct dvm_gc_handle_slot *p=&s->slots[i];
@@ -254,6 +264,10 @@ bool dvm_gc_visit_roots(struct dvm *vm,unsigned kind,dvm_gc_visit_fn visit,void 
       if(!o||o->identity_generation!=p->identity){if(kind==1u){ok=false;gc_root_failure("handle_table","strong_identity_invalid");}else p->ref=0;continue;}
       dvm_ref original=p->ref;
       visit(&p->ref,user);
+      /* Callback body addresses are not identity. Reacquire by original ID
+       * before using the weak-chain header after a safepoint. */
+      o=gc_peek_object(vm,original);
+      if(!o||o->identity_generation!=p->identity){p->ref=original;ok=false;continue;}
       /* Guest refs are stable IDs, not movable body addresses. A weak pass
        * may clear an ID; it cannot replace it without relinking identities. */
       if(p->ref!=original && (kind!=DVM_GC_ROOT_WEAK || p->ref)){
@@ -267,7 +281,7 @@ bool dvm_gc_visit_roots(struct dvm *vm,unsigned kind,dvm_gc_visit_fn visit,void 
    for(uint32_t i=0;i<s->providers_count;++i){struct dvm_gc_provider *p=&s->providers[i];
       if(p->kind==kind&&!p->fn(vm,visit,user,p->context)){ok=false;gc_root_failure(p->name,"provider_returned_false");fprintf(stderr,"GC_ROOT_FAILURE provider=%s kind=%u\n",p->name,kind);}
    }
-   s->visiting=false;return ok;
+   s->visiting=false;return ok&&!s->visit_failed;
 }
 void dvm_gc_forget_identity(struct dvm *vm,uint32_t ref,uint64_t identity)
 {
@@ -304,13 +318,16 @@ void dvm_gc_handles_destroy(struct dvm *vm)
    free(s->satb_queue);free(s->providers);free(s->slots);free(s);vm->gc=NULL;
 }
 
-void dvm_gc_native_touch(struct dvm *vm,uint32_t ref,struct dvm_object *o)
+static bool gc_native_touch_checked(struct dvm *vm,uint32_t ref,struct dvm_object *o)
 {
    struct dvm_gc_native_scope *q=gc_current_scope;
-   if(!q||q->vm!=vm||q->guest_depth!=gc_guest_execution_depth||!q->active||q->failed||!ref||!o||
-      (vm->gc&&vm->gc->visiting))return;
+   if(!q||q->vm!=vm||q->guest_depth!=gc_guest_execution_depth||!q->active||!ref||!o||
+      (vm->gc&&vm->gc->visiting))return true;
+   if(q->failed)return false;
+   if(!gc_access_ok(vm)){q->failed=true;return false;}
    for(uint32_t i=0;i<q->count;++i)
-      if(q->refs[i].ref==ref&&q->refs[i].identity==o->identity_generation)return;
+      if(gen_slot(q->refs[i].ref)==ref)
+         return gc_scope_resolve(vm,q,&q->refs[i],GC_SCOPE_TOUCH)!=NULL;
    if(q->count==q->capacity){
       uint32_t cap=q->capacity*2u;
       if(cap<q->capacity)goto oom;
@@ -319,16 +336,22 @@ void dvm_gc_native_touch(struct dvm *vm,uint32_t ref,struct dvm_object *o)
       else p=realloc(q->refs,(size_t)cap*sizeof *p);
       if(!p)goto oom;q->refs=p;q->capacity=cap;
    }
-   if(o->gc_body_borrows==UINT32_MAX || o->gc_payload_borrows==UINT32_MAX)goto oom;
+   if(o->gc_body_borrows==UINT32_MAX || o->gc_payload_borrows==UINT32_MAX){
+      q->failed=true;dvm_gc_contract_fail(vm,GC_CONTRACT_BORROW_OVERFLOW);return false;
+   }
    /* C runtimes can retain the returned body and any payload/slots address
     * until scope exit, including across a reentrant guest call or GIL yield.
     * Pin only the touched objects, never the entire heap or all C activity. */
+   struct dvm_gc_scope_ref captured;
+   if(!gc_scope_capture(vm,q,ref,o,&captured))return false;
    ++o->gc_body_borrows;++o->gc_payload_borrows;
-   q->refs[q->count++]=(struct dvm_gc_scope_ref){ref,o->identity_generation};return;
+   q->refs[q->count++]=captured;return true;
 oom:
    q->failed=true;
    if(!dvm_exception(vm))dvm__throw(vm,"java/lang/OutOfMemoryError","GC native temporary roots");
+   return false;
 }
+void dvm_gc_native_touch(struct dvm *vm,uint32_t ref,struct dvm_object *o){(void)gc_native_touch_checked(vm,ref,o);}
 bool dvm_gc_native_enter(struct dvm *vm,struct dvm_gc_native_scope *q,uint32_t self,const char *sig,const uint32_t *slots,int nslots)
 {
    if(!q)return false;memset(q,0,sizeof *q);
@@ -351,26 +374,51 @@ bool dvm_gc_native_enter(struct dvm *vm,struct dvm_gc_native_scope *q,uint32_t s
    }
    return !q->failed;
 }
+bool dvm_gc_payload_scope_active(struct dvm *vm){
+ struct dvm_gc_native_scope *q=gc_current_scope;
+ return gc_contract_access(vm)&&q&&q->vm==vm&&q->active&&!q->failed&&q->guest_depth==gc_guest_execution_depth;
+}
+bool dvm_gc_require_payload_borrow(struct dvm *vm,uint32_t ref){
+ if(!gc_contract_access(vm))return dvm_gc_contract_fail(vm,GC_CONTRACT_NON_GIL);
+ struct dvm_gc_native_scope *q=gc_current_scope;
+ if(!q||q->vm!=vm||!q->active||q->failed)return dvm_gc_contract_fail(vm,GC_CONTRACT_MISSING_SCOPE);
+ if(q->guest_depth!=gc_guest_execution_depth)return dvm_gc_contract_fail(vm,GC_CONTRACT_SCOPE_DEPTH);
+ struct dvm_object *o=dvm__obj(vm,ref);if(!o)return false;
+ for(uint32_t i=0;i<q->count;i++)if(gen_slot(q->refs[i].ref)==ref){
+  o=gc_scope_resolve(vm,q,&q->refs[i],GC_SCOPE_BORROW);if(!o)return false;
+  return o->gc_body_borrows&&o->gc_payload_borrows?true:dvm_gc_contract_fail(vm,GC_CONTRACT_BORROW_UNDERFLOW);
+ }
+ return dvm_gc_contract_fail(vm,GC_CONTRACT_MISSING_SCOPE);
+}
 void dvm_gc_native_leave(struct dvm_gc_native_scope *q)
 {
-   if(!q||!q->active)return;struct dvm_gc_state *s=q->vm->gc;
+   if(!q||!q->active)return;
+   if(!gc_access_ok(q->vm))return;
+   struct dvm_gc_state *s=q->vm->gc;
    struct dvm_gc_native_scope **p=&s->scopes;while(*p&&*p!=q)p=&(*p)->next_vm;
    if(*p)*p=q->next_vm;
-   if(gc_current_scope!=q)fprintf(stderr,"GC_SCOPE_ERROR reason=non_lifo\n");
+   if(q->guest_depth!=gc_guest_execution_depth)dvm_gc_contract_fail(q->vm,GC_CONTRACT_SCOPE_DEPTH);
+   if(gc_current_scope!=q){
+      dvm_gc_contract_fail(q->vm,GC_CONTRACT_SCOPE_ORDER);
+      /* Remove the ending stack record from the TLS chain as well. Leaving
+       * a child pointing at it would create a dangling scope after return. */
+      for(struct dvm_gc_native_scope *child=gc_current_scope;child;child=child->previous_thread)
+         if(child->previous_thread==q){child->previous_thread=q->previous_thread;break;}
+   }
    else gc_current_scope=q->previous_thread;
    /* No dvm__obj here: that would register cleanup accesses in the parent
     * scope and turn nested cleanup into an ever-growing borrow chain. */
    for(uint32_t i=0;i<q->count;++i){
       struct dvm_gc_scope_ref *r=&q->refs[i];
-      struct dvm_object *o=r->ref&&r->ref<=q->vm->heap_size?
-         dvm_gc_resolve(q->vm,heap_slot(q->vm,r->ref)):NULL;
+      struct dvm_object *o=gc_scope_resolve(q->vm,q,r,GC_SCOPE_LEAVE);
+      if(!o)continue;
       if(!o||!o->live||o->identity_generation!=r->identity ||
          !o->gc_body_borrows||!o->gc_payload_borrows){
-         fprintf(stderr,"GC_CORRUPTION reason=native_borrow_lost_identity\n");continue;
+         dvm_gc_contract_fail(q->vm,GC_CONTRACT_IDENTITY);continue;
       }
       --o->gc_body_borrows;--o->gc_payload_borrows;
       if(!o->gc_body_borrows&&!o->gc_payload_borrows&&
-         (o->gc_flags&DVM_GC_DEFERRED_FREE))heap_free(q->vm,r->ref);
+         (o->gc_flags&DVM_GC_DEFERRED_FREE))heap_free(q->vm,gen_slot(r->ref));
    }
    if(q->refs!=q->inline_refs)free(q->refs);q->active=false;
    if(s->leak_pairs_count)dvm_leak_reap_pairs(q->vm);
@@ -389,12 +437,21 @@ void dvm_gc_native_leave_result(struct dvm_gc_native_scope *q,const char *sig,ui
    bool reference=ret&&(ret[1]=='L'||ret[1]=='[');
    bool same_c_parent=vm&&q->active&&q->previous_thread&&q->previous_thread->vm==vm&&
       q->previous_thread->guest_depth==gc_guest_execution_depth;
+   struct dvm_gc_scope_ref handoff={0};
+   if(vm&&reference&&ref){
+      bool captured=false;
+      for(uint32_t i=0;i<q->count;i++)if(gen_slot(q->refs[i].ref)==ref){handoff=q->refs[i];captured=true;break;}
+      if(q->failed || (!captured&&!gc_scope_capture(vm,q,ref,gc_peek_object(vm,ref),&handoff)) ||
+         !gc_scope_resolve(vm,q,&handoff,GC_SCOPE_HANDOFF)){
+         dvm_gc_native_leave(q);return;
+      }
+   }
    if(vm&&reference&&ref&&!same_c_parent){
       /* A returned object escapes to guest registers or the host/JNI caller.
        * A formerly local discard is no longer valid: leave it for tracing GC
        * instead of freeing an escaped object when its final C borrow ends.
        * This cancels only explicit temporary cleanup, never marking/finalize. */
-      struct dvm_object *o=gc_peek_object(vm,ref);
+      struct dvm_object *o=gc_scope_resolve(vm,q,&handoff,GC_SCOPE_HANDOFF);
       if(o)o->gc_flags&=~DVM_GC_DEFERRED_FREE;
    }
    /* Transfer before releasing the child's borrow: a deferred discard must
@@ -404,7 +461,7 @@ void dvm_gc_native_leave_result(struct dvm_gc_native_scope *q,const char *sig,ui
       gc_current_scope=q->previous_thread;dvm__obj(vm,ref);gc_current_scope=saved;
    }
    dvm_gc_native_leave(q);
-   if(vm&&reference&&ref)dvm__obj(vm,ref);
+   if(vm&&reference&&ref&&gc_scope_resolve(vm,NULL,&handoff,GC_SCOPE_HANDOFF))dvm__obj(vm,gen_slot(handoff.ref));
 }
 
 struct gc2_root_check {struct dvm *vm;dvm_ref wanted;unsigned seen,invalid;};
@@ -423,7 +480,7 @@ static void gc2_weak_clear_visit(dvm_ref *slot,void *user)
 }
 static bool gc2_scope_contains(const struct dvm_gc_native_scope *scope,dvm_ref ref)
 {
-   for(uint32_t i=0;i<scope->count;++i)if(scope->refs[i].ref==ref)return true;
+   for(uint32_t i=0;i<scope->count;++i)if(gen_slot(scope->refs[i].ref)==ref)return true;
    return false;
 }
 static struct dvm_method *gc2_platform_method(struct dvm *vm,struct dvm_class *cls,

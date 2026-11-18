@@ -3,6 +3,23 @@ static size_t block_index(gcs_heap *h,gcs_object *o){
  for(size_t i=0;i<h->count;i++)if(h->objects[i]==o)return i;
  return SIZE_MAX;
 }
+int gcs_pin(gcs_heap *h,gcs_object *o){
+ if(!h||!h->page_backed)return GCS_INVALID;pthread_mutex_lock(&h->lock);
+ size_t i=block_index(h,o);int rc=GCS_INVALID;
+ if(!h->active&&i!=SIZE_MAX&&!h->blocks[i].retired&&h->blocks[i].pins!=UINT32_MAX){h->blocks[i].pins++;rc=GCS_OK;}
+ pthread_mutex_unlock(&h->lock);return rc;
+}
+int gcs_unpin(gcs_heap *h,gcs_object *o){
+ if(!h||!h->page_backed)return GCS_INVALID;pthread_mutex_lock(&h->lock);
+ size_t i=block_index(h,o);int rc=GCS_INVALID;
+ if(!h->active&&i!=SIZE_MAX&&h->blocks[i].pins){h->blocks[i].pins--;rc=GCS_OK;}
+ pthread_mutex_unlock(&h->lock);return rc;
+}
+int gcs_evacuate_checked(gcs_heap *h,gcs_object **roots,size_t count,gcs_root_writable_fn writable,void *context){
+ if(!h||count>SIZE_MAX/sizeof *roots||!writable)return GCS_INVALID;
+ if(count&&(!roots||!writable(context,roots,count*sizeof *roots)))return GCS_INVALID;
+ return gcs_evacuate(h,roots,count);
+}
 gcs_heap *gcs_create_evacuating(size_t bytes,size_t cap){
  size_t page=host_page_size();
  if(page<=0||!bytes||bytes>SIZE_MAX-((size_t)page-1))return NULL;
@@ -74,7 +91,7 @@ int gcs_evacuate(gcs_heap *h,gcs_object **roots,size_t count){
  if(!all||!copies||!sources){free(all);free(copies);free(sources);return GCS_OOM;}
  for(size_t i=0;i<original_count;i++)if(h->objects[i]&&!h->blocks[i].retired)sources[i]=h->objects[i];
  for(size_t i=0;i<count;i++)all[i]=roots[i];
- for(size_t i=0;i<original_count;i++)if(h->objects[i]&&h->blocks[i].borrows)all[nroots++]=h->objects[i];
+ for(size_t i=0;i<original_count;i++)if(h->objects[i]&&(h->blocks[i].borrows||h->blocks[i].pins))all[nroots++]=h->objects[i];
  int result=gcs_begin(h,all,nroots,false);if(!result)result=gcs_finish(h);
  free(all);if(result){free(copies);free(sources);return result;}
  /* All copies must be allocated before publishing a single forwarding
@@ -82,6 +99,7 @@ int gcs_evacuate(gcs_heap *h,gcs_object **roots,size_t count){
  for(size_t i=0;i<original_count;i++){
   gcs_object *o=sources[i];if(!o)continue;
   if(!(atomic_load_explicit(&o->flags,memory_order_acquire)&DVM_GC_MARKED))continue;
+  if(h->blocks[i].pins)continue;
   copies[i]=gcs_alloc(h,o->layout,o->nslots);
   if(!copies[i]){free(copies);free(sources);return h->error?h->error:GCS_OOM;}
   for(size_t j=0;j<o->nslots;j++)atomic_store_explicit(&copies[i]->slots[j],atomic_load_explicit(&o->slots[j],memory_order_acquire),memory_order_release);
@@ -92,8 +110,8 @@ int gcs_evacuate(gcs_heap *h,gcs_object **roots,size_t count){
  /* Repair managed roots/fields before releasing source pages. Brooks still
   * serves borrowed raw pointers; managed slots no longer need old stubs. */
  for(size_t i=0;i<count;i++)if(roots[i]){roots[i]=resolve_locked(h,roots[i]);if(!roots[i])result=GCS_INVALID;}
- for(size_t i=0;i<original_count;i++)if(copies[i]){
-  gcs_object *o=copies[i];
+ for(size_t i=0;i<original_count;i++)if(copies[i]||(sources[i]&&h->blocks[i].pins)){
+  gcs_object *o=copies[i]?copies[i]:sources[i];
   for(size_t j=0;j<o->layout->instance_count;j++){
    size_t slot=o->layout->instance_slots[j];gcs_object *old=(gcs_object *)atomic_load_explicit(&o->slots[slot],memory_order_acquire);
    gcs_object *target=old?resolve_locked(h,old):NULL;
@@ -102,6 +120,7 @@ int gcs_evacuate(gcs_heap *h,gcs_object **roots,size_t count){
   }
  }
  for(size_t i=0;i<original_count;i++)if(sources[i]){
+  if(h->blocks[i].pins)continue;
   h->blocks[i].retired=true;h->evac.logical_reclaimed_bytes+=h->blocks[i].bytes;
   if(!copies[i])h->evac.logical_dead_bytes+=h->blocks[i].bytes;
  }

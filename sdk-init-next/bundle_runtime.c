@@ -7,8 +7,9 @@
  * bundle_runtime_call returns false for it and the dispatcher keeps looking.
  *
  * Values are stored by reference for every object/array type.  No Parcel
- * serialisation, no copying of array contents and no pinning is performed; the
- * VM has no collector, so a reference stays valid for the VM lifetime.
+ * serialisation or copying of array contents. An operation-local native scope
+ * borrows touched bodies/payloads across reentrant calls. Payload visitors pin
+ * their owner only for the visitation interval. Production moving stays off.
  * Every entry point runs under the interpreter GIL and performs no locking.
  *
  * Object boxing in get(String)Object is delegated to java_basics_call.  It
@@ -19,6 +20,7 @@
  * pretending success. */
 #include "bundle_runtime.h"
 #include "java_basics.h"
+#include "gc_operation.h"
 #include <limits.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -62,9 +64,9 @@ static bool bundle_ref_type(int type){
  }
 }
 
-bool bundle_runtime_trace_keys(struct dvm *v,dvm_ref ref,int fd){
- struct dvm_object *o=dvm__obj(v,ref);
- bundle_data *b=o&&o->data_destroy==bundle_destroy?o->data:NULL;
+static bool bundle_runtime_trace_keys_operation(struct dvm *v,dvm_ref ref,int fd){
+ const dvm_ref gc_ref_o_0=(ref); if(!gc_operation_admit(v,gc_ref_o_0))return 0;
+ bundle_data *b=dvm__obj(v,gc_ref_o_0)&&dvm__obj(v,gc_ref_o_0)->data_destroy==bundle_destroy?dvm__obj(v,gc_ref_o_0)->data:NULL;
  if(!b||b->magic!=BUNDLE_MAGIC){dprintf(fd,"BUNDLE_KEYS ref=%u unavailable=1\n",ref);return false;}
  dprintf(fd,"BUNDLE_KEYS ref=%u count=%zu\n",ref,b->count);
  for(size_t i=0;i<b->count;i++){
@@ -80,8 +82,16 @@ bool bundle_runtime_trace_keys(struct dvm *v,dvm_ref ref,int fd){
  }
  return true;
 }
+bool bundle_runtime_trace_keys(struct dvm *v,dvm_ref ref,int fd){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return false;
+ bool result=bundle_runtime_trace_keys_operation(v,ref,fd);
+ return result;
+}
 
-static bundle_data *bundle_attach(struct dvm *v,struct dvm_object *o,size_t capacity){
+
+static bundle_data *bundle_attach(struct dvm *v,dvm_ref ref,size_t capacity){
+ if(!gc_operation_admit(v,ref))return 0;
  if(capacity>SIZE_MAX/sizeof(bundle_entry)){dvm__throw(v,"java/lang/OutOfMemoryError","Bundle capacity");return NULL;}
  bundle_data *b=calloc(1,sizeof *b);
  if(!b){dvm__throw(v,"java/lang/OutOfMemoryError","Bundle state");return NULL;}
@@ -91,7 +101,9 @@ static bundle_data *bundle_attach(struct dvm *v,struct dvm_object *o,size_t capa
   if(!b->entries){free(b);dvm__throw(v,"java/lang/OutOfMemoryError","Bundle entries");return NULL;}
   b->capacity=capacity;
  }
- o->data=b;o->data_destroy=bundle_destroy;return b;
+ const dvm_ref gc_ref_o_1=(ref); if(!gc_operation_admit(v,gc_ref_o_1))return 0;
+ if(!dvm__obj(v,gc_ref_o_1)){bundle_destroy(b);dvm__throw(v,"java/lang/IllegalStateException","Bundle allocation");return NULL;}
+ dvm__obj(v,gc_ref_o_1)->data=b;dvm__obj(v,gc_ref_o_1)->data_destroy=bundle_destroy;return b;
 }
 
 static bool bundle_reserve(struct dvm *v,bundle_data *b,size_t need){
@@ -154,27 +166,27 @@ static bool bundle_key_arg(struct dvm *v,const union dvm_value *a,const char **k
 }
 
 static bool bundle_is_string_obj(struct dvm *v,dvm_ref ref){
- struct dvm_object *o=dvm__obj(v,ref);
- return o&&o->kind==DVM_OBJ_STRING;
+ const dvm_ref gc_ref_o_2=(ref); if(!gc_operation_admit(v,gc_ref_o_2))return 0;
+ return dvm__obj(v,gc_ref_o_2)&&dvm__obj(v,gc_ref_o_2)->kind==DVM_OBJ_STRING;
 }
 
 static bool bundle_prim_array_is(struct dvm *v,dvm_ref ref,char kind){
- struct dvm_object *o=dvm__obj(v,ref);
- return o&&o->kind==DVM_OBJ_ARRAY&&o->elem_kind==kind;
+ const dvm_ref gc_ref_o_3=(ref); if(!gc_operation_admit(v,gc_ref_o_3))return 0;
+ return dvm__obj(v,gc_ref_o_3)&&dvm__obj(v,gc_ref_o_3)->kind==DVM_OBJ_ARRAY&&dvm__obj(v,gc_ref_o_3)->elem_kind==kind;
 }
 
 static bool bundle_object_array_is(struct dvm *v,dvm_ref ref,const char *elem_a,const char *elem_b){
- struct dvm_object *o=dvm__obj(v,ref);
- if(!o||o->kind!=DVM_OBJ_ARRAY||o->elem_kind!='L')return false;
- const char *name=o->cls&&o->cls->elem?o->cls->elem->name:NULL;
+ const dvm_ref gc_ref_o_4=(ref); if(!gc_operation_admit(v,gc_ref_o_4))return 0;
+ if(!dvm__obj(v,gc_ref_o_4)||dvm__obj(v,gc_ref_o_4)->kind!=DVM_OBJ_ARRAY||dvm__obj(v,gc_ref_o_4)->elem_kind!='L')return false;
+ const char *name=dvm__obj(v,gc_ref_o_4)->cls&&dvm__obj(v,gc_ref_o_4)->cls->elem?dvm__obj(v,gc_ref_o_4)->cls->elem->name:NULL;
  if(!name)return true; /* unknown component metadata must not block the app */
  return !strcmp(name,elem_a)||(elem_b&&!strcmp(name,elem_b));
 }
 
 static bool bundle_is_bundle_obj(struct dvm *v,dvm_ref ref){
- struct dvm_object *o=dvm__obj(v,ref);
- if(!o||!o->cls)return false;
- for(struct dvm_class *k=o->cls;k;k=k->super)
+ const dvm_ref gc_ref_o_5=(ref); if(!gc_operation_admit(v,gc_ref_o_5))return 0;
+ if(!dvm__obj(v,gc_ref_o_5)||!dvm__obj(v,gc_ref_o_5)->cls)return false;
+ for(struct dvm_class *k=dvm__obj(v,gc_ref_o_5)->cls;k;k=k->super)
   if(k->name&&!strcmp(k->name,"android/os/Bundle"))return true;
  return false;
 }
@@ -339,22 +351,30 @@ static bool bundle_key_set(struct dvm *v,bundle_data *b,union dvm_value *out){
  out->l=set;return true;
 }
 
-dvm_ref bundle_runtime_new(struct dvm *v){
+static dvm_ref bundle_runtime_new_operation(struct dvm *v){
  struct dvm_class *cls=dvm_find_class_or_external(v,"android/os/Bundle");
  if(!cls){dvm__throw(v,"java/lang/NoClassDefFoundError","android/os/Bundle");return 0;}
  dvm_ref ref=dvm_new_object(v,cls);
  if(!ref){dvm__throw(v,"java/lang/OutOfMemoryError","Bundle");return 0;}
- struct dvm_object *o=dvm__obj(v,ref);
- if(!o){dvm__throw(v,"java/lang/IllegalStateException","Bundle allocation");return 0;}
- if(!bundle_attach(v,o,0))return 0;
+ const dvm_ref gc_ref_o_6=(ref); if(!gc_operation_admit(v,gc_ref_o_6))return 0;
+ if(!dvm__obj(v,gc_ref_o_6)){dvm__throw(v,"java/lang/IllegalStateException","Bundle allocation");return 0;}
+ if(!bundle_attach(v,ref,0))return 0;
  return ref;
 }
+dvm_ref bundle_runtime_new(struct dvm *v){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return 0;
+ dvm_ref result=bundle_runtime_new_operation(v);
+ gc_operation_result(&operation,"()Ljava/lang/Object;",result);
+ return result;
+}
 
-bool bundle_runtime_call(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int n,union dvm_value *out){
+
+static bool bundle_runtime_call_operation(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int n,union dvm_value *out){
  (void)n;
  if(strcmp(c,"android/os/Bundle"))return false;
- struct dvm_object *o=self?dvm__obj(v,self):NULL;
- if(!o||!o->cls||!o->cls->name||strcmp(o->cls->name,"android/os/Bundle")){
+ const dvm_ref gc_ref_o_7=(self); if(!gc_operation_admit(v,gc_ref_o_7))return true;
+ if(!dvm__obj(v,gc_ref_o_7)||!dvm__obj(v,gc_ref_o_7)->cls||!dvm__obj(v,gc_ref_o_7)->cls->name||strcmp(dvm__obj(v,gc_ref_o_7)->cls->name,"android/os/Bundle")){
   if(!self){dvm__throw(v,"java/lang/NullPointerException","Bundle receiver");return true;}
   return false;
  }
@@ -362,42 +382,42 @@ bool bundle_runtime_call(struct dvm *v,const char *c,const char *m,const char *s
  bool init_copy=IS("<init>","(Landroid/os/Bundle;)V");
  bool init_capacity=IS("<init>","(I)V");
  if(init_empty||init_copy||init_capacity){
-  if(o->data||o->data_destroy){dvm__throw(v,"java/lang/IllegalStateException","Bundle already initialized");return true;}
+  if(dvm__obj(v,gc_ref_o_7)->data||dvm__obj(v,gc_ref_o_7)->data_destroy){dvm__throw(v,"java/lang/IllegalStateException","Bundle already initialized");return true;}
   if(init_capacity){
    if(a[0].i<0){dvm__throw(v,"java/lang/IllegalArgumentException","negative Bundle capacity");return true;}
-   if(!bundle_attach(v,o,(size_t)a[0].i))return true;
+   if(!bundle_attach(v,self,(size_t)a[0].i))return true;
    return true;
   }
-  bundle_data *dst=bundle_attach(v,o,0);
+  bundle_data *dst=bundle_attach(v,self,0);
   if(!dst)return true;
   if(init_copy&&a[0].l){
    if(a[0].l==self){dvm__throw(v,"java/lang/IllegalStateException","Bundle copy from itself");return true;}
    if(!bundle_is_bundle_obj(v,a[0].l)){dvm__throw(v,"java/lang/ClassCastException","Bundle copy source");return true;}
-   struct dvm_object *src_obj=dvm__obj(v,a[0].l);
-   if(!src_obj||!src_obj->data_destroy){dvm__throw(v,"java/lang/IllegalStateException","source Bundle constructor not called");return true;}
-   if(src_obj->data_destroy!=bundle_destroy||!src_obj->data||((bundle_data*)src_obj->data)->magic!=BUNDLE_MAGIC){
+   const dvm_ref gc_ref_src_obj_8=(a[0].l); if(!gc_operation_admit(v,gc_ref_src_obj_8))return true;
+   if(!dvm__obj(v,gc_ref_src_obj_8)||!dvm__obj(v,gc_ref_src_obj_8)->data_destroy){dvm__throw(v,"java/lang/IllegalStateException","source Bundle constructor not called");return true;}
+   if(dvm__obj(v,gc_ref_src_obj_8)->data_destroy!=bundle_destroy||!dvm__obj(v,gc_ref_src_obj_8)->data||((bundle_data*)dvm__obj(v,gc_ref_src_obj_8)->data)->magic!=BUNDLE_MAGIC){
     /* A PackageManager metadata Bundle has no enumerable in-memory map.  Do
      * not invent an empty copy for it. */
     dvm__throw(v,"java/lang/UnsupportedOperationException","Bundle copy source is not an in-memory Bundle");return true;
    }
-   if(!bundle_clone_entries(v,dst,src_obj->data))return true;
+   if(!bundle_clone_entries(v,dst,dvm__obj(v,gc_ref_src_obj_8)->data))return true;
   }
   return true;
  }
- if(o->data_destroy!=bundle_destroy){
+ if(dvm__obj(v,gc_ref_o_7)->data_destroy!=bundle_destroy){
   /* package_metadata.c owns the fixed metadata view; leave it untouched. */
-  if(!o->data_destroy){dvm__throw(v,"java/lang/IllegalStateException","Bundle constructor not called");return true;}
+  if(!dvm__obj(v,gc_ref_o_7)->data_destroy){dvm__throw(v,"java/lang/IllegalStateException","Bundle constructor not called");return true;}
   return false;
  }
- bundle_data *b=o->data;
+ bundle_data *b=dvm__obj(v,gc_ref_o_7)->data;
  if(!b||b->magic!=BUNDLE_MAGIC)return false;
  if(IS("putAll","(Landroid/os/Bundle;)V")&&n==1){
   if(!a[0].l){dvm__throw(v,"java/lang/NullPointerException","Bundle putAll source");return true;}
   if(a[0].l==self)return true;
-  struct dvm_object *src=dvm__obj(v,a[0].l);
+  const dvm_ref gc_ref_src_9=(a[0].l); if(!gc_operation_admit(v,gc_ref_src_9))return true;
   if(!bundle_is_bundle_obj(v,a[0].l)){dvm__throw(v,"java/lang/ClassCastException","Bundle putAll source");return true;}
-  if(!src||src->data_destroy!=bundle_destroy||!src->data||((bundle_data*)src->data)->magic!=BUNDLE_MAGIC){dvm__throw(v,"java/lang/UnsupportedOperationException","Bundle putAll source is not an in-memory Bundle");return true;}
-  (void)bundle_clone_entries(v,b,src->data);return true;
+  if(!dvm__obj(v,gc_ref_src_9)||dvm__obj(v,gc_ref_src_9)->data_destroy!=bundle_destroy||!dvm__obj(v,gc_ref_src_9)->data||((bundle_data*)dvm__obj(v,gc_ref_src_9)->data)->magic!=BUNDLE_MAGIC){dvm__throw(v,"java/lang/UnsupportedOperationException","Bundle putAll source is not an in-memory Bundle");return true;}
+  (void)bundle_clone_entries(v,b,dvm__obj(v,gc_ref_src_9)->data);return true;
  }
 
  if(IS("size","()I")){out->i=b->count>(size_t)INT_MAX?INT_MAX:(int)b->count;return true;}
@@ -536,6 +556,14 @@ bool bundle_runtime_call(struct dvm *v,const char *c,const char *m,const char *s
  }
  return false;
 }
+bool bundle_runtime_call(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int n,union dvm_value *out){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return true;
+ bool result=bundle_runtime_call_operation(v,c,m,sig,self,a,n,out);
+ gc_operation_result(&operation,sig,result&&out?out->l:0);
+ return result;
+}
+
 
 /* A different destroy function deliberately has a different body/address from
  * package_metadata.c's bundle_free, and the magic check makes recognition
@@ -550,7 +578,7 @@ static dvm_ref bundle_test_raw(struct dvm *v){
  return dvm_new_object(v,dvm_find_class_or_external(v,"android/os/Bundle"));
 }
 
-bool bundle_runtime_selftest(struct dvm *v){
+static bool bundle_runtime_selftest_operation(struct dvm *v){
  union dvm_value out={0},a[2]={{0},{0}},sout={0};
  bool ok=true;const char *stage="init",*first_fail=NULL;
 #define MARK_FAIL() do{ok=false;if(!first_fail)first_fail=stage;}while(0)
@@ -819,13 +847,13 @@ bool bundle_runtime_selftest(struct dvm *v){
  stage="foreign";
  /* A foreign Bundle (package_metadata-style data_destroy) must not be claimed. */
  dvm_ref foreign=bundle_test_raw(v);
- struct dvm_object *fo=foreign?dvm__obj(v,foreign):NULL;
- if(!fo)MARK_FAIL();
+ const dvm_ref gc_ref_fo_10=(foreign); if(!gc_operation_admit(v,gc_ref_fo_10))return 0;
+ if(!dvm__obj(v,gc_ref_fo_10))MARK_FAIL();
  else{
-  fo->data=calloc(1,1);fo->data_destroy=bundle_test_foreign_destroy;
+  dvm__obj(v,gc_ref_fo_10)->data=calloc(1,1);dvm__obj(v,gc_ref_fo_10)->data_destroy=bundle_test_foreign_destroy;
   bool claimed=bundle_test_call(v,foreign,"size","()I",NULL,0,&out);
   if(claimed||dvm_exception(v))MARK_FAIL();
-  free(fo->data);fo->data=NULL;fo->data_destroy=NULL;
+  free(dvm__obj(v,gc_ref_fo_10)->data);dvm__obj(v,gc_ref_fo_10)->data=NULL;dvm__obj(v,gc_ref_fo_10)->data_destroy=NULL;
  }
 
  if(dvm_exception(v))MARK_FAIL();
@@ -833,10 +861,21 @@ bool bundle_runtime_selftest(struct dvm *v){
 #undef MARK_FAIL
  return ok;
 }
+bool bundle_runtime_selftest(struct dvm *v){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return false;
+ bool result=bundle_runtime_selftest_operation(v);
+ return result;
+}
+
 
 /* Explicit native payload ownership descriptor; unknown never implies atomic. */
 
 int bundle_gc_payload(struct dvm *v,struct dvm_object *o,dvm_gc_visit_fn visit,void *user){
+ struct gc_operation_pin pin __attribute__((cleanup(gc_operation_pin_end)));
+ if(!gc_operation_pin_begin(v,&pin,o))return DVM_GC_PAYLOAD_INVALID;
+ o=dvm__obj(v,pin.ref);
+
  (void)v;if(o->data_destroy!=bundle_destroy)return DVM_GC_PAYLOAD_UNKNOWN;bundle_data *p=o->data;
  if(p->magic!=BUNDLE_MAGIC||p->count>p->capacity||(!p->entries&&p->count))return DVM_GC_PAYLOAD_INVALID;
  if(visit)for(size_t i=0;i<p->count;i++)if(bundle_ref_type(p->entries[i].type))visit(&p->entries[i].value.l,user);return DVM_GC_PAYLOAD_REFS;

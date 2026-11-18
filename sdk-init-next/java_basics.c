@@ -3,6 +3,7 @@
  * Java SE contract references are recorded in README.md. All calls occur under
  * the interpreter GIL. AtomicBoolean additionally uses C11 seq_cst atomics. */
 #include "java_basics.h"
+#include "gc_operation.h"
 #include "uri_runtime.h"
 #include "numeric_runtime.h"
 #include <stdlib.h>
@@ -47,9 +48,14 @@ void java_basics_integer_vm_end(struct dvm *v){
  if(p){dvm_gc_root_provider_remove(v,"java-basics/Integer-cache",p);for(unsigned i=0;i<256;i++){if(p->refs[i])dvm_unpin(v,p->refs[i]);if(p->long_refs[i])dvm_unpin(v,p->long_refs[i]);}free(p);}
 }
 bool integer_runtime_selftest(struct dvm *v);
-static struct boxed_integer *boxed_integer_of(struct dvm *v,dvm_ref ref){
- struct dvm_object *o=dvm__obj(v,ref);return o&&o->cls&&o->cls->name&&!strcmp(o->cls->name,"java/lang/Integer")?(struct boxed_integer *)o->data:NULL;
+static bool boxed_integer_copy(struct dvm *v,dvm_ref ref,struct boxed_integer *out){
+ struct gc_operation op __attribute__((cleanup(gc_operation_end)))={0};
+ if(!gc_operation_begin(v,&op)||!gc_operation_admit(v,ref))return false;
+ struct dvm_object *o=dvm__obj(v,ref);if(!o||!o->cls||!o->cls->name||strcmp(o->cls->name,"java/lang/Integer")||!o->data)return false;
+ *out=*(struct boxed_integer *)o->data;return true;
 }
+static bool boxed_integer_value_is(struct dvm *v,dvm_ref ref,int32_t expected){struct boxed_integer value;return boxed_integer_copy(v,ref,&value)&&value.value==expected;}
+
 /* Exercise public method lookup/call, not the cache helper itself. */
 bool integer_runtime_selftest(struct dvm *v){
  FILE *f=fopen("/data/storage/el2/base/haps/entry/files/sdkdex/integer-cache-selftest.txt","w");
@@ -63,7 +69,7 @@ bool integer_runtime_selftest(struct dvm *v){
  ICHECK("method lookup",factory&&ctor);
  for(int i=-128;i<=127;i++){
   arg.i=i;ICHECK("warm cache actual VM call",dvm_call(v,factory,0,&arg,1,&q)&&!dvm_exception(v)&&q.l);
-  first[i+128]=q.l;ICHECK("cached payload value",boxed_integer_of(v,q.l)&&boxed_integer_of(v,q.l)->value==i);
+  first[i+128]=q.l;ICHECK("cached payload value",boxed_integer_value_is(v,q.l,i));
  }
  /* Resolve dispatch metadata before measuring allocation-free cached calls. */
  struct dvm_method *intvalue=dvm_find_method(v,k,"intValue","()I");
@@ -71,9 +77,9 @@ bool integer_runtime_selftest(struct dvm *v){
  ICHECK("Integer declared intValue",intvalue&&dvm_call(v,intvalue,first[135],NULL,0,&q)&&q.i==7&&!dvm_exception(v));
  arg.l=first[135];ICHECK("Integer declared equals",equals&&dvm_call(v,equals,first[135],&arg,1,&q)&&q.i&&!dvm_exception(v));
  if(f)fprintf(f,"NOT_COVERED Number/Object declared metadata dispatch; cache test uses actual Integer declarations\n");
- for(int i=-129;i<=128;i+=257){arg.i=i;ICHECK("outside cache bounds value",dvm_call(v,factory,0,&arg,1,&q)&&q.l&&boxed_integer_of(v,q.l)&&boxed_integer_of(v,q.l)->value==i);}
+ for(int i=-129;i<=128;i+=257){arg.i=i;ICHECK("outside cache bounds value",dvm_call(v,factory,0,&arg,1,&q)&&q.l&&boxed_integer_value_is(v,q.l,i));}
  arg.i=7;dvm_ref fresh=dvm_new_object(v,k);
- ICHECK("constructor creates distinct identity",fresh&&dvm_call(v,ctor,fresh,&arg,1,&q)&&!dvm_exception(v)&&fresh!=first[135]&&boxed_integer_of(v,fresh)->value==7);
+ ICHECK("constructor creates distinct identity",fresh&&dvm_call(v,ctor,fresh,&arg,1,&q)&&!dvm_exception(v)&&fresh!=first[135]&&boxed_integer_value_is(v,fresh,7));
  heap_before=v->heap_size;
 #ifdef LUNARIA_TASK7_LOGIN_PANEL
  used_before=vm_arena_used();
@@ -120,8 +126,11 @@ static bool unsigned_to_hex_string(struct dvm *v,uint64_t bits,union dvm_value *
  if(!out->l)dvm__throw(v,"java/lang/OutOfMemoryError","toHexString");
  return true;
 }
-static struct boxed_long *boxed_long_of(struct dvm *v,dvm_ref ref){
- struct dvm_object *o=dvm__obj(v,ref);return o&&o->cls&&o->cls->name&&!strcmp(o->cls->name,"java/lang/Long")?(struct boxed_long *)o->data:NULL;
+static bool boxed_long_copy(struct dvm *v,dvm_ref ref,struct boxed_long *out){
+ struct gc_operation op __attribute__((cleanup(gc_operation_end)))={0};
+ if(!gc_operation_begin(v,&op)||!gc_operation_admit(v,ref))return false;
+ struct dvm_object *o=dvm__obj(v,ref);if(!o||!o->cls||!o->cls->name||strcmp(o->cls->name,"java/lang/Long")||!o->data)return false;
+ *out=*(struct boxed_long *)o->data;return true;
 }
 /* Startup-only HAP test. No render/vsync hook and no guest state mutation. */
 bool mem_long_cache_selftest(struct dvm *v){
@@ -352,45 +361,54 @@ static bool java_character_is_space_char(uint32_t ch){
 static bool java_character_is_iso_control(uint32_t cp){
  return (cp>=0x0000u&&cp<=0x001fu)||(cp>=0x007fu&&cp<=0x009fu);
 }
-static struct boxed_float *boxed_float_of(struct dvm *v,dvm_ref ref){
+static bool boxed_float_copy(struct dvm *v,dvm_ref ref,struct boxed_float *out){
+ struct gc_operation op __attribute__((cleanup(gc_operation_end)))={0};
+ if(!gc_operation_begin(v,&op)||!gc_operation_admit(v,ref))return false;
  struct dvm_object *o=dvm__obj(v,ref);
- if(!o||!o->cls||!o->cls->name||strcmp(o->cls->name,"java/lang/Float")||o->data_destroy!=boxed_destroy)return NULL;
- struct boxed_float *p=o->data;return p&&p->kind==PAY_FLOAT?p:NULL;
+ if(!o||!o->cls||!o->cls->name||strcmp(o->cls->name,"java/lang/Float")||o->data_destroy!=boxed_destroy)return false;
+ struct boxed_float *p=o->data;if(!p||p->kind!=PAY_FLOAT)return false;
+ *out=*p;return true;
 }
-static struct boxed_double *boxed_double_of(struct dvm *v,dvm_ref ref){
+static bool boxed_double_copy(struct dvm *v,dvm_ref ref,struct boxed_double *out){
+ struct gc_operation op __attribute__((cleanup(gc_operation_end)))={0};
+ if(!gc_operation_begin(v,&op)||!gc_operation_admit(v,ref))return false;
  struct dvm_object *o=dvm__obj(v,ref);
- if(!o||!o->cls||!o->cls->name||strcmp(o->cls->name,"java/lang/Double")||o->data_destroy!=boxed_destroy)return NULL;
- struct boxed_double *p=o->data;return p&&p->kind==PAY_DOUBLE?p:NULL;
+ if(!o||!o->cls||!o->cls->name||strcmp(o->cls->name,"java/lang/Double")||o->data_destroy!=boxed_destroy)return false;
+ struct boxed_double *p=o->data;if(!p||p->kind!=PAY_DOUBLE)return false;
+ *out=*p;return true;
 }
-static struct boxed_character *boxed_character_of(struct dvm *v,dvm_ref ref){
+static bool boxed_character_copy(struct dvm *v,dvm_ref ref,struct boxed_character *out){
+ struct gc_operation op __attribute__((cleanup(gc_operation_end)))={0};
+ if(!gc_operation_begin(v,&op)||!gc_operation_admit(v,ref))return false;
  struct dvm_object *o=dvm__obj(v,ref);
- if(!o||!o->cls||!o->cls->name||strcmp(o->cls->name,"java/lang/Character")||o->data_destroy!=boxed_destroy)return NULL;
- struct boxed_character *p=o->data;return p&&p->kind==PAY_CHARACTER?p:NULL;
+ if(!o||!o->cls||!o->cls->name||strcmp(o->cls->name,"java/lang/Character")||o->data_destroy!=boxed_destroy)return false;
+ struct boxed_character *p=o->data;if(!p||p->kind!=PAY_CHARACTER)return false;
+ *out=*p;return true;
 }
-static struct boxed_float *require_boxed_float(struct dvm *v,dvm_ref ref,const char *where){
- if(!ref){dvm__throw(v,"java/lang/NullPointerException","%s receiver",where);return NULL;}
- struct boxed_float *p=boxed_float_of(v,ref);
- if(!p)dvm__throw(v,"java/lang/IllegalStateException","%s receiver is not an initialized %s",where,where);
- return p;
+static bool require_boxed_float_copy(struct dvm *v,dvm_ref ref,const char *where,struct boxed_float *out){
+ if(!ref){dvm__throw(v,"java/lang/NullPointerException","%s receiver",where);return false;}
+ bool ok=boxed_float_copy(v,ref,out);
+ if(!ok)dvm__throw(v,"java/lang/IllegalStateException","%s receiver is not an initialized %s",where,where);
+ return ok;
 }
-static struct boxed_double *require_boxed_double(struct dvm *v,dvm_ref ref,const char *where){
- if(!ref){dvm__throw(v,"java/lang/NullPointerException","%s receiver",where);return NULL;}
- struct boxed_double *p=boxed_double_of(v,ref);
- if(!p)dvm__throw(v,"java/lang/IllegalStateException","%s receiver is not an initialized %s",where,where);
- return p;
+static bool require_boxed_double_copy(struct dvm *v,dvm_ref ref,const char *where,struct boxed_double *out){
+ if(!ref){dvm__throw(v,"java/lang/NullPointerException","%s receiver",where);return false;}
+ bool ok=boxed_double_copy(v,ref,out);
+ if(!ok)dvm__throw(v,"java/lang/IllegalStateException","%s receiver is not an initialized %s",where,where);
+ return ok;
 }
-static struct boxed_character *require_boxed_character(struct dvm *v,dvm_ref ref,const char *where){
- if(!ref){dvm__throw(v,"java/lang/NullPointerException","%s receiver",where);return NULL;}
- struct boxed_character *p=boxed_character_of(v,ref);
- if(!p)dvm__throw(v,"java/lang/IllegalStateException","%s receiver is not an initialized %s",where,where);
- return p;
+static bool require_boxed_character_copy(struct dvm *v,dvm_ref ref,const char *where,struct boxed_character *out){
+ if(!ref){dvm__throw(v,"java/lang/NullPointerException","%s receiver",where);return false;}
+ bool ok=boxed_character_copy(v,ref,out);
+ if(!ok)dvm__throw(v,"java/lang/IllegalStateException","%s receiver is not an initialized %s",where,where);
+ return ok;
 }
 static bool install_boxed(struct dvm *v,dvm_ref ref,const char *cls_name,const char *where,void *data){
- struct dvm_object *o=dvm__obj(v,ref);
- if(!o){dvm__throw(v,"java/lang/NullPointerException","%s receiver",where);free(data);return false;}
- if(!o->cls||!o->cls->name||strcmp(o->cls->name,cls_name)){dvm__throw(v,"java/lang/IllegalStateException","%s receiver type mismatch",where);free(data);return false;}
- if(o->data){if(o->data_destroy)o->data_destroy(o->data);else free(o->data);}
- o->data=data;o->data_destroy=boxed_destroy;return true;
+ const dvm_ref gc4_ref_o=(ref); if(!gc_operation_admit(v,gc4_ref_o))return false;
+ if(!dvm__obj(v,gc4_ref_o)){dvm__throw(v,"java/lang/NullPointerException","%s receiver",where);free(data);return false;}
+ if(!dvm__obj(v,gc4_ref_o)->cls||!dvm__obj(v,gc4_ref_o)->cls->name||strcmp(dvm__obj(v,gc4_ref_o)->cls->name,cls_name)){dvm__throw(v,"java/lang/IllegalStateException","%s receiver type mismatch",where);free(data);return false;}
+ if(dvm__obj(v,gc4_ref_o)->data){if(dvm__obj(v,gc4_ref_o)->data_destroy)dvm__obj(v,gc4_ref_o)->data_destroy(dvm__obj(v,gc4_ref_o)->data);else free(dvm__obj(v,gc4_ref_o)->data);}
+ dvm__obj(v,gc4_ref_o)->data=data;dvm__obj(v,gc4_ref_o)->data_destroy=boxed_destroy;return true;
 }
 static dvm_ref new_boxed_float(struct dvm *v,float value){
  struct dvm_class *cls=dvm_find_class_or_external(v,"java/lang/Float");
@@ -458,32 +476,39 @@ static struct payload *boolean_of(struct dvm *v,dvm_ref ref){
  if(!o||!o->cls||!o->cls->name||strcmp(o->cls->name,"java/lang/Boolean")||o->data_destroy!=destroy)return NULL;
  struct payload *p=o->data;return p&&p->kind==PAY_BOOLEAN?p:NULL;
 }
-bool java_basics_equal(struct dvm *v,dvm_ref a,dvm_ref b){
+static bool java_basics_equal_gc4_operation(struct dvm *v,dvm_ref a,dvm_ref b){
  if(a==b)return true;if(!a||!b)return false;
- struct dvm_object *x=dvm__obj(v,a),*y=dvm__obj(v,b);
- if(x&&y&&x->kind==DVM_OBJ_STRING&&y->kind==DVM_OBJ_STRING)return x->utf8_len==y->utf8_len&&!memcmp(x->utf8,y->utf8,x->utf8_len);
+ const dvm_ref gc4_ref_x=(a); if(!gc_operation_admit(v,gc4_ref_x))return false;const dvm_ref gc4_ref_y=(b); if(!gc_operation_admit(v,gc4_ref_y))return false;
+ if(dvm__obj(v,gc4_ref_x)&&dvm__obj(v,gc4_ref_y)&&dvm__obj(v,gc4_ref_x)->kind==DVM_OBJ_STRING&&dvm__obj(v,gc4_ref_y)->kind==DVM_OBJ_STRING)return dvm__obj(v,gc4_ref_x)->utf8_len==dvm__obj(v,gc4_ref_y)->utf8_len&&!memcmp(dvm__obj(v,gc4_ref_x)->utf8,dvm__obj(v,gc4_ref_y)->utf8,dvm__obj(v,gc4_ref_x)->utf8_len);
  /* java.lang.Class has identity equality.  The VM may materialise the same
   * class through separate Class objects, so compare the underlying class. */
- if(x&&y&&x->kind==DVM_OBJ_CLASS&&y->kind==DVM_OBJ_CLASS)
-  return x->klass&&y->klass&&(x->klass==y->klass||!strcmp(x->klass->desc,y->klass->desc));
- struct boxed_integer *ix=boxed_integer_of(v,a),*iy=boxed_integer_of(v,b);
+ if(dvm__obj(v,gc4_ref_x)&&dvm__obj(v,gc4_ref_y)&&dvm__obj(v,gc4_ref_x)->kind==DVM_OBJ_CLASS&&dvm__obj(v,gc4_ref_y)->kind==DVM_OBJ_CLASS)
+  return dvm__obj(v,gc4_ref_x)->klass&&dvm__obj(v,gc4_ref_y)->klass&&(dvm__obj(v,gc4_ref_x)->klass==dvm__obj(v,gc4_ref_y)->klass||!strcmp(dvm__obj(v,gc4_ref_x)->klass->desc,dvm__obj(v,gc4_ref_y)->klass->desc));
+ struct boxed_integer ix_snapshot;struct boxed_integer *ix=boxed_integer_copy(v,a,&ix_snapshot)?&ix_snapshot:NULL;struct boxed_integer iy_snapshot;struct boxed_integer *iy=boxed_integer_copy(v,b,&iy_snapshot)?&iy_snapshot:NULL;
  if(ix||iy)return ix&&iy&&ix->value==iy->value;
  struct payload *bx=boolean_of(v,a),*by=boolean_of(v,b);
  if(bx||by)return bx&&by&&(atomic_load(&bx->flag)!=0)==(atomic_load(&by->flag)!=0);
- struct boxed_float *fx=boxed_float_of(v,a),*fy=boxed_float_of(v,b);
+ struct boxed_float fx_snapshot;struct boxed_float *fx=boxed_float_copy(v,a,&fx_snapshot)?&fx_snapshot:NULL;struct boxed_float fy_snapshot;struct boxed_float *fy=boxed_float_copy(v,b,&fy_snapshot)?&fy_snapshot:NULL;
  if(fx||fy)return fx&&fy&&float_to_int_bits(fx->value)==float_to_int_bits(fy->value);
- struct boxed_double *dx=boxed_double_of(v,a),*dy=boxed_double_of(v,b);
+ struct boxed_double dx_snapshot;struct boxed_double *dx=boxed_double_copy(v,a,&dx_snapshot)?&dx_snapshot:NULL;struct boxed_double dy_snapshot;struct boxed_double *dy=boxed_double_copy(v,b,&dy_snapshot)?&dy_snapshot:NULL;
  if(dx||dy)return dx&&dy&&double_to_long_bits(dx->value)==double_to_long_bits(dy->value);
- struct boxed_character *cx=boxed_character_of(v,a),*cy=boxed_character_of(v,b);
+ struct boxed_character cx_snapshot;struct boxed_character *cx=boxed_character_copy(v,a,&cx_snapshot)?&cx_snapshot:NULL;struct boxed_character cy_snapshot;struct boxed_character *cy=boxed_character_copy(v,b,&cy_snapshot)?&cy_snapshot:NULL;
  if(cx||cy)return cx&&cy&&cx->value==cy->value;
- struct dvm_method *m=x?dvm_find_method(v,x->cls,"equals","(Ljava/lang/Object;)Z"):NULL;
+ struct dvm_method *m=dvm__obj(v,gc4_ref_x)?dvm_find_method(v,dvm__obj(v,gc4_ref_x)->cls,"equals","(Ljava/lang/Object;)Z"):NULL;
  if(m){union dvm_value arg={.l=b},r={0};return dvm_call(v,m,a,&arg,1,&r)&&r.i;}
- if(x&&x->cls&&x->cls->external&&strcmp(x->cls->name,"java/lang/Object")){
-  dvm__throw(v,"java/lang/UnsupportedOperationException","equals contract not implemented for external class %s",x->cls->name);
+ if(dvm__obj(v,gc4_ref_x)&&dvm__obj(v,gc4_ref_x)->cls&&dvm__obj(v,gc4_ref_x)->cls->external&&strcmp(dvm__obj(v,gc4_ref_x)->cls->name,"java/lang/Object")){
+  dvm__throw(v,"java/lang/UnsupportedOperationException","equals contract not implemented for external class %s",dvm__obj(v,gc4_ref_x)->cls->name);
  }
  /* java.lang.Object.equals defaults to reference identity, already tested. */
  return false;
 }
+bool java_basics_equal(struct dvm *v,dvm_ref a,dvm_ref b){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return false;
+ bool ok=java_basics_equal_gc4_operation(v,a,b);
+ return ok;
+}
+
 /* java.util.Locale.US / Locale.ROOT / Locale.ENGLISH are external static
  * fields: the DEX uses sget-object and the VM field resolver has no field
  * table for the external class, so it reaches hooks.get_external_static ->
@@ -496,10 +521,13 @@ struct locale_value {char language[16];char country[16];};
 static void locale_destroy(void *data){free(data);}
 static struct dvm *locale_statics_vm;
 static dvm_ref locale_statics[3]; /* 0 = US, 1 = ROOT, 2 = ENGLISH */
-static struct locale_value *locale_of(struct dvm *v,dvm_ref ref){
+static bool locale_copy(struct dvm *v,dvm_ref ref,struct locale_value *out){
+ struct gc_operation op __attribute__((cleanup(gc_operation_end)))={0};
+ if(!gc_operation_begin(v,&op)||!gc_operation_admit(v,ref))return false;
  struct dvm_object *o=dvm__obj(v,ref);
- if(!o||!o->cls||!o->cls->name||strcmp(o->cls->name,"java/util/Locale")||o->data_destroy!=locale_destroy)return NULL;
- return o->data;
+ if(!o||!o->cls||!o->cls->name||strcmp(o->cls->name,"java/util/Locale")||o->data_destroy!=locale_destroy)return false;
+ if(!o->data)return false;
+ *out=*(struct locale_value *)o->data;return true;
 }
 static struct dvm *boolean_statics_vm;
 static dvm_ref boolean_statics[2];
@@ -548,7 +576,7 @@ void java_basics_reset(struct dvm *v){
  file_statics_vm=NULL;file_statics[0]=file_statics[1]=0;
  proxy_statics_vm=NULL;proxy_none=proxy_direct=proxy_http=proxy_socks=0;
 }
-bool java_basics_static(struct dvm *v,const char *c,const char *f,const char *t,union dvm_value *out){
+static bool java_basics_static_gc4_operation(struct dvm *v,const char *c,const char *f,const char *t,union dvm_value *out){
  if((!strcmp(c,"android/webkit/WebSettings$ZoomDensity")&&(!strcmp(f,"FAR")||!strcmp(f,"MEDIUM")||!strcmp(f,"CLOSE")))||(!strcmp(c,"android/webkit/WebSettings$LayoutAlgorithm")&&(!strcmp(f,"NARROW_COLUMNS")||!strcmp(f,"NORMAL")||!strcmp(f,"SINGLE_COLUMN")))||(!strcmp(c,"android/webkit/WebSettings$PluginState")&&(!strcmp(f,"OFF")||!strcmp(f,"ON")||!strcmp(f,"ON_DEMAND")))){
   if(websettings_serial!=v->serial){websettings_serial=v->serial;memset(websettings_values,0,sizeof websettings_values);}
   const char *names[]={"FAR","MEDIUM","CLOSE","NARROW_COLUMNS","NORMAL","SINGLE_COLUMN","OFF","ON","ON_DEMAND"};int i=0;while(i<9&&strcmp(f,names[i]))i++;
@@ -592,8 +620,8 @@ bool java_basics_static(struct dvm *v,const char *c,const char *f,const char *t,
    if(!value){dvm__discard_temporary(v,ref);dvm__throw(v,"java/lang/OutOfMemoryError","Locale static constant");return true;}
    if(index!=1)memcpy(value->language,"en",3); /* US and ENGLISH are both en */
    if(!index)memcpy(value->country,"US",3);
-   struct dvm_object *object=dvm__obj(v,ref);
-   object->data=value;object->data_destroy=locale_destroy;
+   const dvm_ref gc4_ref_object=(ref); if(!gc_operation_admit(v,gc4_ref_object))return true;
+   dvm__obj(v,gc4_ref_object)->data=value;dvm__obj(v,gc4_ref_object)->data_destroy=locale_destroy;
    dvm_pin(v,ref);*slot=ref;
   }
   out->l=*slot;return true;
@@ -674,6 +702,14 @@ bool java_basics_static(struct dvm *v,const char *c,const char *f,const char *t,
  }
  return false;
 }
+bool java_basics_static(struct dvm *v,const char *c,const char *f,const char *t,union dvm_value *out){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return true;
+ bool ok=java_basics_static_gc4_operation(v,c,f,t,out);
+ gc_operation_result(&operation,"()Ljava/lang/Object;",ok&&out&&t&&(t[0]=='L'||t[0]=='[')?out->l:0);
+ return ok;
+}
+
 /* Shared factory for Boolean.TRUE/FALSE and Boolean.valueOf(Z). */
 dvm_ref java_basics_boolean_box(struct dvm *v,int value){
  union dvm_value out={0};
@@ -683,11 +719,18 @@ dvm_ref java_basics_boolean_box(struct dvm *v,int value){
  }
  return out.l;
 }
-bool java_basics_timeunit_nanos(struct dvm *v,dvm_ref unit,uint64_t *nanos){
- struct dvm_object *o=dvm__obj(v,unit);struct payload *p=o?o->data:NULL;
- if(!o||o->data_destroy!=destroy||!p||p->kind!=PAY_TIMEUNIT)return false;
+static bool java_basics_timeunit_nanos_gc4_operation(struct dvm *v,dvm_ref unit,uint64_t *nanos){
+ const dvm_ref gc4_ref_o=(unit); if(!gc_operation_admit(v,gc4_ref_o))return false;struct payload *p=dvm__obj(v,gc4_ref_o)?dvm__obj(v,gc4_ref_o)->data:NULL;
+ if(!dvm__obj(v,gc4_ref_o)||dvm__obj(v,gc4_ref_o)->data_destroy!=destroy||!p||p->kind!=PAY_TIMEUNIT)return false;
  *nanos=p->unit_nanos;return *nanos!=0;
 }
+bool java_basics_timeunit_nanos(struct dvm *v,dvm_ref unit,uint64_t *nanos){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return false;
+ bool ok=java_basics_timeunit_nanos_gc4_operation(v,unit,nanos);
+ return ok;
+}
+
 /* java.util.Arrays.toString(Object[]) needs the same element text Java's
  * StringBuilder.append(Object) produces: null -> "null", a String's contents,
  * otherwise the element's real toString().  A failure inside that toString is
@@ -725,19 +768,19 @@ static bool arrays_text_append(struct dvm *v,struct arrays_text *t,const char *t
 }
 static bool arrays_element_text(struct dvm *v,dvm_ref ref,const char **text,size_t *length){
  if(!ref){*text="null";*length=4;return true;}
- struct dvm_object *o=dvm__obj(v,ref);
- if(!o){dvm__throw(v,"java/lang/IllegalStateException","Arrays.toString element handle");return false;}
- if(o->kind==DVM_OBJ_STRING){
-  if(!o->utf8){dvm__throw(v,"java/lang/IllegalStateException","Arrays.toString String element");return false;}
-  *text=o->utf8;*length=o->utf8_len;return true;
+ const dvm_ref gc4_ref_o=(ref); if(!gc_operation_admit(v,gc4_ref_o))return false;
+ if(!dvm__obj(v,gc4_ref_o)){dvm__throw(v,"java/lang/IllegalStateException","Arrays.toString element handle");return false;}
+ if(dvm__obj(v,gc4_ref_o)->kind==DVM_OBJ_STRING){
+  if(!dvm__obj(v,gc4_ref_o)->utf8){dvm__throw(v,"java/lang/IllegalStateException","Arrays.toString String element");return false;}
+  *text=dvm__obj(v,gc4_ref_o)->utf8;*length=dvm__obj(v,gc4_ref_o)->utf8_len;return true;
  }
- const char *cls=o->cls&&o->cls->name?o->cls->name:NULL;
+ const char *cls=dvm__obj(v,gc4_ref_o)->cls&&dvm__obj(v,gc4_ref_o)->cls->name?dvm__obj(v,gc4_ref_o)->cls->name:NULL;
  if(!cls){dvm__throw(v,"java/lang/IllegalStateException","Arrays.toString element class");return false;}
  union dvm_value result={0};
  bool handled=java_basics_call(v,cls,"toString","()Ljava/lang/String;",ref,NULL,0,&result);
  if(dvm_exception(v))return false;
  if(!handled){
-  struct dvm_method *method=dvm_find_method(v,o->cls,"toString","()Ljava/lang/String;");
+  struct dvm_method *method=dvm_find_method(v,dvm__obj(v,gc4_ref_o)->cls,"toString","()Ljava/lang/String;");
   if(method&&(method->has_code||method->builtin)){
    if(!dvm_call(v,method,ref,NULL,0,&result))return false;
    handled=true;
@@ -749,12 +792,12 @@ static bool arrays_element_text(struct dvm *v,dvm_ref ref,const char **text,size
   return false;
  }
  if(!result.l){*text="null";*length=4;return true;}
- struct dvm_object *rendered=dvm__obj(v,result.l);
- if(!rendered||rendered->kind!=DVM_OBJ_STRING||!rendered->utf8){
+ const dvm_ref gc4_ref_rendered=(result.l); if(!gc_operation_admit(v,gc4_ref_rendered))return false;
+ if(!dvm__obj(v,gc4_ref_rendered)||dvm__obj(v,gc4_ref_rendered)->kind!=DVM_OBJ_STRING||!dvm__obj(v,gc4_ref_rendered)->utf8){
   dvm__throw(v,"java/lang/ClassCastException","Arrays.toString element toString did not return a String");
   return false;
  }
- *text=rendered->utf8;*length=rendered->utf8_len;
+ *text=dvm__obj(v,gc4_ref_rendered)->utf8;*length=dvm__obj(v,gc4_ref_rendered)->utf8_len;
  return true;
 }
 static bool arrays_to_string(struct dvm *v,dvm_ref array,union dvm_value *out){
@@ -763,12 +806,12 @@ static bool arrays_to_string(struct dvm *v,dvm_ref array,union dvm_value *out){
   if(!out->l){dvm__throw(v,"java/lang/OutOfMemoryError","Arrays.toString null");return true;}
   return true;
  }
- struct dvm_object *arr=dvm__obj(v,array);
- if(!arr||arr->kind!=DVM_OBJ_ARRAY||(arr->elem_kind!='L'&&arr->elem_kind!='[')){
+ const dvm_ref gc4_ref_arr=(array); if(!gc_operation_admit(v,gc4_ref_arr))return true;
+ if(!dvm__obj(v,gc4_ref_arr)||dvm__obj(v,gc4_ref_arr)->kind!=DVM_OBJ_ARRAY||(dvm__obj(v,gc4_ref_arr)->elem_kind!='L'&&dvm__obj(v,gc4_ref_arr)->elem_kind!='[')){
   dvm__throw(v,"java/lang/ClassCastException","Arrays.toString requires an Object array");
   return true;
  }
- uint32_t count=arr->length;
+ uint32_t count=dvm__obj(v,gc4_ref_arr)->length;
  dvm_ref *items=count?(dvm_ref*)dvm_array_data(v,array):NULL;
  if(count&&!items){dvm__throw(v,"java/lang/IllegalStateException","Arrays.toString array data");return true;}
  struct arrays_text text={0};
@@ -794,9 +837,9 @@ struct java_inflater {z_stream stream;dvm_ref input;uint32_t offset,remaining;bo
 static void inflater_destroy(void *data){struct java_inflater *p=data;if(p){if(!p->ended)inflateEnd(&p->stream);free(p);}}
 static bool inflater_bytes(struct dvm *v,dvm_ref ref,int64_t offset,int64_t length,uint8_t **bytes){
  if(!ref){dvm__throw(v,"java/lang/NullPointerException","Inflater bytes");return false;}
- struct dvm_object *o=dvm__obj(v,ref);
- if(!o||o->kind!=DVM_OBJ_ARRAY||o->elem_kind!='B'){dvm__throw(v,"java/lang/IllegalArgumentException","Inflater byte array");return false;}
- if(offset<0||length<0||offset+length>o->length){dvm__throw(v,"java/lang/ArrayIndexOutOfBoundsException","Inflater range");return false;}
+ const dvm_ref gc4_ref_o=(ref); if(!gc_operation_admit(v,gc4_ref_o))return false;
+ if(!dvm__obj(v,gc4_ref_o)||dvm__obj(v,gc4_ref_o)->kind!=DVM_OBJ_ARRAY||dvm__obj(v,gc4_ref_o)->elem_kind!='B'){dvm__throw(v,"java/lang/IllegalArgumentException","Inflater byte array");return false;}
+ if(offset<0||length<0||offset+length>dvm__obj(v,gc4_ref_o)->length){dvm__throw(v,"java/lang/ArrayIndexOutOfBoundsException","Inflater range");return false;}
  *bytes=dvm_array_data(v,ref);if(length)*bytes+=offset;return true;
 }
 static bool inflater_call(struct dvm *v,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int nargs,union dvm_value *out){
@@ -805,9 +848,9 @@ static bool inflater_call(struct dvm *v,const char *m,const char *sig,dvm_ref se
  bool decode=IS("inflate","([B)I")||IS("inflate","([BII)I");
  bool query=IS("needsInput","()Z")||IS("needsDictionary","()Z")||IS("finished","()Z")||IS("getRemaining","()I")||IS("getBytesRead","()J")||IS("getBytesWritten","()J")||IS("getTotalIn","()I")||IS("getTotalOut","()I")||IS("getAdler","()I");
  if(!ctor&&!end&&!reset&&!input&&!dict&&!decode&&!query)return false;
- struct dvm_object *o=dvm__obj(v,self);if(!o){dvm__throw(v,"java/lang/NullPointerException","Inflater receiver");return true;}
- if(ctor){if(o->data){dvm__throw(v,"java/lang/IllegalStateException","Inflater initialized");return true;}struct java_inflater *p=calloc(1,sizeof *p);if(!p){dvm__throw(v,"java/lang/OutOfMemoryError","Inflater state");return true;}int rc=inflateInit2(&p->stream,nargs&&a[0].i?-MAX_WBITS:MAX_WBITS);if(rc!=Z_OK){free(p);dvm__throw(v,"java/lang/OutOfMemoryError","Inflater initialization");return true;}o->data=p;o->data_destroy=inflater_destroy;return true;}
- struct java_inflater *p=o->data;if(!p){dvm__throw(v,"java/lang/IllegalStateException","Inflater uninitialized");return true;}
+ const dvm_ref gc4_ref_o=(self); if(!gc_operation_admit(v,gc4_ref_o))return true;if(!dvm__obj(v,gc4_ref_o)){dvm__throw(v,"java/lang/NullPointerException","Inflater receiver");return true;}
+ if(ctor){if(dvm__obj(v,gc4_ref_o)->data){dvm__throw(v,"java/lang/IllegalStateException","Inflater initialized");return true;}struct java_inflater *p=calloc(1,sizeof *p);if(!p){dvm__throw(v,"java/lang/OutOfMemoryError","Inflater state");return true;}int rc=inflateInit2(&p->stream,nargs&&a[0].i?-MAX_WBITS:MAX_WBITS);if(rc!=Z_OK){free(p);dvm__throw(v,"java/lang/OutOfMemoryError","Inflater initialization");return true;}dvm__obj(v,gc4_ref_o)->data=p;dvm__obj(v,gc4_ref_o)->data_destroy=inflater_destroy;return true;}
+ struct java_inflater *p=dvm__obj(v,gc4_ref_o)->data;if(!p){dvm__throw(v,"java/lang/IllegalStateException","Inflater uninitialized");return true;}
  if(end){if(!p->ended){inflateEnd(&p->stream);p->ended=true;p->input=0;p->remaining=0;}return true;}
  if(IS("needsInput","()Z")){out->i=p->remaining==0;return true;}if(IS("finished","()Z")){out->i=p->finished;return true;}if(IS("needsDictionary","()Z")){out->i=p->dictionary;return true;}if(IS("getRemaining","()I")){out->i=p->remaining;return true;}
  if(p->ended){dvm__throw(v,"java/lang/NullPointerException","Inflater closed");return true;}
@@ -829,30 +872,30 @@ static bool crc32_call(struct dvm *v,const char *m,const char *sig,dvm_ref self,
  bool ctor=IS("<init>","()V"),reset=IS("reset","()V"),get=IS("getValue","()J");
  bool one=IS("update","(I)V"),all=IS("update","([B)V"),slice=IS("update","([BII)V");
  if(!ctor&&!reset&&!get&&!one&&!all&&!slice)return false;
- struct dvm_object *o=dvm__obj(v,self);
- if(!o){dvm__throw(v,"java/lang/NullPointerException","CRC32 receiver");return true;}
- if(ctor){if(nargs)return false;if(o->data){dvm__throw(v,"java/lang/IllegalStateException","CRC32 initialized");return true;}uint32_t *state=malloc(sizeof *state);if(!state){dvm__throw(v,"java/lang/OutOfMemoryError","CRC32 state");return true;}*state=UINT32_MAX;o->data=state;o->data_destroy=boxed_destroy;return true;}
- uint32_t *state=o->data;if(!state){dvm__throw(v,"java/lang/IllegalStateException","CRC32 uninitialized");return true;}
+ const dvm_ref gc4_ref_o=(self); if(!gc_operation_admit(v,gc4_ref_o))return true;
+ if(!dvm__obj(v,gc4_ref_o)){dvm__throw(v,"java/lang/NullPointerException","CRC32 receiver");return true;}
+ if(ctor){if(nargs)return false;if(dvm__obj(v,gc4_ref_o)->data){dvm__throw(v,"java/lang/IllegalStateException","CRC32 initialized");return true;}uint32_t *state=malloc(sizeof *state);if(!state){dvm__throw(v,"java/lang/OutOfMemoryError","CRC32 state");return true;}*state=UINT32_MAX;dvm__obj(v,gc4_ref_o)->data=state;dvm__obj(v,gc4_ref_o)->data_destroy=boxed_destroy;return true;}
+ uint32_t *state=dvm__obj(v,gc4_ref_o)->data;if(!state){dvm__throw(v,"java/lang/IllegalStateException","CRC32 uninitialized");return true;}
  if(reset){*state=UINT32_MAX;return true;}if(get){out->j=(uint32_t)(*state^UINT32_MAX);return true;}
  const uint8_t *bytes=NULL;uint8_t byte;size_t count=0;
  if(one){byte=(uint8_t)a[0].i;bytes=&byte;count=1;}
  else{
   if(!a[0].l){dvm__throw(v,"java/lang/NullPointerException","CRC32 bytes");return true;}
-  struct dvm_object *arr=dvm__obj(v,a[0].l);
-  if(!arr||arr->kind!=DVM_OBJ_ARRAY||arr->elem_kind!='B'){dvm__throw(v,"java/lang/IllegalArgumentException","CRC32 byte array");return true;}
-  int64_t offset=slice?a[1].i:0,length=slice?a[2].i:arr->length;
-  if(offset<0||length<0||offset+length>arr->length){dvm__throw(v,"java/lang/ArrayIndexOutOfBoundsException","CRC32 range");return true;}
+  const dvm_ref gc4_ref_arr=(a[0].l); if(!gc_operation_admit(v,gc4_ref_arr))return true;
+  if(!dvm__obj(v,gc4_ref_arr)||dvm__obj(v,gc4_ref_arr)->kind!=DVM_OBJ_ARRAY||dvm__obj(v,gc4_ref_arr)->elem_kind!='B'){dvm__throw(v,"java/lang/IllegalArgumentException","CRC32 byte array");return true;}
+  int64_t offset=slice?a[1].i:0,length=slice?a[2].i:dvm__obj(v,gc4_ref_arr)->length;
+  if(offset<0||length<0||offset+length>dvm__obj(v,gc4_ref_arr)->length){dvm__throw(v,"java/lang/ArrayIndexOutOfBoundsException","CRC32 range");return true;}
   count=(size_t)length;bytes=(const uint8_t*)dvm_array_data(v,a[0].l);if(count)bytes+=offset;
  }
  uint32_t crc=*state;for(size_t i=0;i<count;i++){crc^=bytes[i];for(int bit=0;bit<8;bit++)crc=(crc>>1)^((crc&1)?UINT32_C(0xedb88320):0);}*state=crc;return true;
 }
-bool java_basics_call(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int nargs,union dvm_value *out){
+static bool java_basics_call_gc4_operation(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int nargs,union dvm_value *out){
  (void)nargs;memset(out,0,sizeof *out);
  /* Number's base constructor has no fields or side effects. */
  if(!strcmp(c,"java/lang/Number")&&IS("<init>","()V")&&nargs==0){
-  struct dvm_object *receiver=dvm__obj(v,self);
-  if(!receiver)dvm__throw(v,"java/lang/NullPointerException","Number constructor receiver");
-  else if(!dvm__class_assignable(v,receiver->cls,dvm_find_class_or_external(v,"java/lang/Number")))dvm__throw(v,"java/lang/IllegalArgumentException","Number constructor receiver type");
+  const dvm_ref gc4_ref_receiver=(self); if(!gc_operation_admit(v,gc4_ref_receiver))return true;
+  if(!dvm__obj(v,gc4_ref_receiver))dvm__throw(v,"java/lang/NullPointerException","Number constructor receiver");
+  else if(!dvm__class_assignable(v,dvm__obj(v,gc4_ref_receiver)->cls,dvm_find_class_or_external(v,"java/lang/Number")))dvm__throw(v,"java/lang/IllegalArgumentException","Number constructor receiver type");
   return true;
  }
  if(!strcmp(c,"java/util/zip/Inflater"))return inflater_call(v,m,sig,self,a,nargs,out);
@@ -867,8 +910,8 @@ bool java_basics_call(struct dvm *v,const char *c,const char *m,const char *sig,
   * subclasses, so Number.intValue()/longValue()/doubleValue() declared calls
   * reach the concrete implementation only through this re-dispatch. */
  if(self&&(!strcmp(c,"java/lang/Number")||!strcmp(c,"java/lang/Object")||!strcmp(c,"java/lang/Comparable"))&&strcmp(m,"<init>")&&strcmp(m,"valueOf")){
-  struct dvm_object *receiver=dvm__obj(v,self);
-  const char *actual=receiver&&receiver->cls?receiver->cls->name:NULL;
+  const dvm_ref gc4_ref_receiver=(self); if(!gc_operation_admit(v,gc4_ref_receiver))return true;
+  const char *actual=dvm__obj(v,gc4_ref_receiver)&&dvm__obj(v,gc4_ref_receiver)->cls?dvm__obj(v,gc4_ref_receiver)->cls->name:NULL;
   if(actual&&(!strcmp(actual,"java/lang/Integer")||!strcmp(actual,"java/lang/Long")||
               !strcmp(actual,"java/lang/Float")||!strcmp(actual,"java/lang/Double")||
               !strcmp(actual,"java/lang/Character")||!strcmp(actual,"java/lang/Boolean")||
@@ -884,7 +927,7 @@ bool java_basics_call(struct dvm *v,const char *c,const char *m,const char *sig,
   * is left to platform_runtime_call (which runs earlier in strict_runtime.c);
   * this branch returns false for it rather than guessing a locale. */
  if(!strcmp(c,"java/util/Locale")&&(IS("getLanguage","()Ljava/lang/String;")||IS("getCountry","()Ljava/lang/String;")||IS("toString","()Ljava/lang/String;"))){
-  struct locale_value *value=locale_of(v,self);
+  struct locale_value value_snapshot;struct locale_value *value=locale_copy(v,self,&value_snapshot)?&value_snapshot:NULL;
   if(value){
    if(IS("getLanguage","()Ljava/lang/String;"))out->l=dvm_new_string(v,value->language);
    else if(IS("getCountry","()Ljava/lang/String;"))out->l=dvm_new_string(v,value->country);
@@ -995,11 +1038,11 @@ bool java_basics_call(struct dvm *v,const char *c,const char *m,const char *sig,
   /* 静态调用 self==0，必须在这里返回，不能落入下面的 boxed_integer_of(self)。 */
   if(tostring_i){if(nargs!=1)return false;return signed_to_string_radix(v,a[0].i,10,out);}
   if(tostring_ii){if(nargs!=2)return false;return signed_to_string_radix(v,a[0].i,a[1].i,out);}
-  if(ctor){struct dvm_object *o=dvm__obj(v,self);if(!o){dvm__throw(v,"java/lang/NullPointerException","Integer receiver");return true;}struct boxed_integer *box=calloc(1,sizeof *box);if(!box){dvm__throw(v,"java/lang/OutOfMemoryError","Integer payload");return true;}box->value=a[0].i;free(o->data);o->data=box;o->data_destroy=boxed_destroy;return true;}
-  struct boxed_integer *box=boxed_integer_of(v,self);if(!box){dvm__throw(v,"java/lang/IllegalStateException","Integer not initialized");return true;}
+  if(ctor){const dvm_ref gc4_ref_o=(self); if(!gc_operation_admit(v,gc4_ref_o))return true;if(!dvm__obj(v,gc4_ref_o)){dvm__throw(v,"java/lang/NullPointerException","Integer receiver");return true;}struct boxed_integer *box=calloc(1,sizeof *box);if(!box){dvm__throw(v,"java/lang/OutOfMemoryError","Integer payload");return true;}box->value=a[0].i;free(dvm__obj(v,gc4_ref_o)->data);dvm__obj(v,gc4_ref_o)->data=box;dvm__obj(v,gc4_ref_o)->data_destroy=boxed_destroy;return true;}
+  struct boxed_integer box_snapshot;struct boxed_integer *box=boxed_integer_copy(v,self,&box_snapshot)?&box_snapshot:NULL;if(!box){dvm__throw(v,"java/lang/IllegalStateException","Integer not initialized");return true;}
   if(value){if(IS("intValue","()I")||IS("hashCode","()I"))out->i=box->value;else if(IS("byteValue","()B"))out->i=(int8_t)box->value;else if(IS("shortValue","()S"))out->i=(int16_t)box->value;else if(IS("longValue","()J"))out->j=box->value;else if(IS("floatValue","()F"))out->f=(float)box->value;else out->d=(double)box->value;return true;}
-  if(equals){struct boxed_integer *other=boxed_integer_of(v,a[0].l);out->i=other&&other->value==box->value;return true;}
-  if(compare){struct boxed_integer *other=boxed_integer_of(v,a[0].l);if(!other){dvm__throw(v,"java/lang/NullPointerException","Integer.compareTo");return true;}out->i=box->value<other->value?-1:box->value>other->value?1:0;return true;}
+  if(equals){struct boxed_integer other_snapshot;struct boxed_integer *other=boxed_integer_copy(v,a[0].l,&other_snapshot)?&other_snapshot:NULL;out->i=other&&other->value==box->value;return true;}
+  if(compare){struct boxed_integer other_snapshot;struct boxed_integer *other=boxed_integer_copy(v,a[0].l,&other_snapshot)?&other_snapshot:NULL;if(!other){dvm__throw(v,"java/lang/NullPointerException","Integer.compareTo");return true;}out->i=box->value<other->value?-1:box->value>other->value?1:0;return true;}
   char text[32];int n=snprintf(text,sizeof text,"%d",box->value);out->l=dvm_new_string_n(v,text,(size_t)n);return true;
  }
  if(!strcmp(c,"java/lang/Long")){
@@ -1030,10 +1073,10 @@ bool java_basics_call(struct dvm *v,const char *c,const char *m,const char *sig,
    if(slot){*slot=ref;dvm_pin(v,ref);}out->l=ref;return true;
   }
   if(ctor){
-   struct dvm_object *o=dvm__obj(v,self);if(!o){dvm__throw(v,"java/lang/NullPointerException","Long receiver");return true;}
-   free(o->data);struct boxed_long *box=calloc(1,sizeof *box);if(!box){dvm__throw(v,"java/lang/OutOfMemoryError","Long payload");return true;}box->value=a[0].j;o->data=box;o->data_destroy=boxed_destroy;return true;
+   const dvm_ref gc4_ref_o=(self); if(!gc_operation_admit(v,gc4_ref_o))return true;if(!dvm__obj(v,gc4_ref_o)){dvm__throw(v,"java/lang/NullPointerException","Long receiver");return true;}
+   free(dvm__obj(v,gc4_ref_o)->data);struct boxed_long *box=calloc(1,sizeof *box);if(!box){dvm__throw(v,"java/lang/OutOfMemoryError","Long payload");return true;}box->value=a[0].j;dvm__obj(v,gc4_ref_o)->data=box;dvm__obj(v,gc4_ref_o)->data_destroy=boxed_destroy;return true;
   }
-  struct boxed_long *box=boxed_long_of(v,self);if(!box){dvm__throw(v,"java/lang/IllegalStateException","Long not initialized");return true;}
+  struct boxed_long box_snapshot;struct boxed_long *box=boxed_long_copy(v,self,&box_snapshot)?&box_snapshot:NULL;if(!box){dvm__throw(v,"java/lang/IllegalStateException","Long not initialized");return true;}
   if(value){
    if(IS("longValue","()J"))out->j=box->value;
    else if(IS("intValue","()I"))out->i=(int32_t)box->value;
@@ -1044,8 +1087,8 @@ bool java_basics_call(struct dvm *v,const char *c,const char *m,const char *sig,
    else out->d=(double)box->value;
    return true;
   }
-  if(equals){struct boxed_long *other=boxed_long_of(v,a[0].l);out->i=other&&other->value==box->value;return true;}
-  if(compare){struct boxed_long *other=boxed_long_of(v,a[0].l);if(!other){dvm__throw(v,"java/lang/NullPointerException","Long.compareTo");return true;}out->i=box->value<other->value?-1:box->value>other->value?1:0;return true;}
+  if(equals){struct boxed_long other_snapshot;struct boxed_long *other=boxed_long_copy(v,a[0].l,&other_snapshot)?&other_snapshot:NULL;out->i=other&&other->value==box->value;return true;}
+  if(compare){struct boxed_long other_snapshot;struct boxed_long *other=boxed_long_copy(v,a[0].l,&other_snapshot)?&other_snapshot:NULL;if(!other){dvm__throw(v,"java/lang/NullPointerException","Long.compareTo");return true;}out->i=box->value<other->value?-1:box->value>other->value?1:0;return true;}
   char text[32];int n=snprintf(text,sizeof text,"%" PRId64,box->value);out->l=dvm_new_string_n(v,text,(size_t)n);return true;
  }
  if(!strcmp(c,"java/lang/Float")){
@@ -1062,13 +1105,13 @@ bool java_basics_call(struct dvm *v,const char *c,const char *m,const char *sig,
    if(!box){dvm__throw(v,"java/lang/OutOfMemoryError","Float payload");return true;}
    box->kind=PAY_FLOAT;box->value=a[0].f;install_boxed(v,self,"java/lang/Float","Float",box);return true;
   }
-  struct boxed_float *box=require_boxed_float(v,self,"Float");if(!box)return true;
+  struct boxed_float box_snapshot;struct boxed_float *box=require_boxed_float_copy(v,self,"Float",&box_snapshot)?&box_snapshot:NULL;if(!box)return true;
   if(IS("floatValue","()F")){out->f=box->value;return true;}
   if(IS("doubleValue","()D")){out->d=(double)box->value;return true;}
   if(IS("intValue","()I")){out->i=java_float_to_int(box->value);return true;}
   if(IS("longValue","()J")){out->j=java_float_to_long(box->value);return true;}
   if(hash){out->i=(int32_t)float_to_int_bits(box->value);return true;}
-  if(equals){struct boxed_float *other=boxed_float_of(v,a[0].l);out->i=other&&float_to_int_bits(other->value)==float_to_int_bits(box->value);return true;}
+  if(equals){struct boxed_float other_snapshot;struct boxed_float *other=boxed_float_copy(v,a[0].l,&other_snapshot)?&other_snapshot:NULL;out->i=other&&float_to_int_bits(other->value)==float_to_int_bits(box->value);return true;}
   char text[64];int n=java_float_text(box->value,text,sizeof text);out->l=dvm_new_string_n(v,text,(size_t)n);return true;
  }
  if(!strcmp(c,"java/lang/Double")){
@@ -1085,13 +1128,13 @@ bool java_basics_call(struct dvm *v,const char *c,const char *m,const char *sig,
    if(!box){dvm__throw(v,"java/lang/OutOfMemoryError","Double payload");return true;}
    box->kind=PAY_DOUBLE;box->value=a[0].d;install_boxed(v,self,"java/lang/Double","Double",box);return true;
   }
-  struct boxed_double *box=require_boxed_double(v,self,"Double");if(!box)return true;
+  struct boxed_double box_snapshot;struct boxed_double *box=require_boxed_double_copy(v,self,"Double",&box_snapshot)?&box_snapshot:NULL;if(!box)return true;
   if(IS("doubleValue","()D")){out->d=box->value;return true;}
   if(IS("floatValue","()F")){out->f=(float)box->value;return true;}
   if(IS("intValue","()I")){out->i=java_double_to_int(box->value);return true;}
   if(IS("longValue","()J")){out->j=java_double_to_long(box->value);return true;}
   if(hash){uint64_t bits=double_to_long_bits(box->value);out->i=(int32_t)(uint32_t)(bits^(bits>>32));return true;}
-  if(equals){struct boxed_double *other=boxed_double_of(v,a[0].l);out->i=other&&double_to_long_bits(other->value)==double_to_long_bits(box->value);return true;}
+  if(equals){struct boxed_double other_snapshot;struct boxed_double *other=boxed_double_copy(v,a[0].l,&other_snapshot)?&other_snapshot:NULL;out->i=other&&double_to_long_bits(other->value)==double_to_long_bits(box->value);return true;}
   char text[64];int n=java_double_text(box->value,text,sizeof text);out->l=dvm_new_string_n(v,text,(size_t)n);return true;
  }
  if(!strcmp(c,"java/lang/Character")){
@@ -1146,19 +1189,19 @@ bool java_basics_call(struct dvm *v,const char *c,const char *m,const char *sig,
    if(!box){dvm__throw(v,"java/lang/OutOfMemoryError","Character payload");return true;}
    box->kind=PAY_CHARACTER;box->value=(uint32_t)(uint16_t)a[0].i;install_boxed(v,self,"java/lang/Character","Character",box);return true;
   }
-  struct boxed_character *box=require_boxed_character(v,self,"Character");if(!box)return true;
+  struct boxed_character box_snapshot;struct boxed_character *box=require_boxed_character_copy(v,self,"Character",&box_snapshot)?&box_snapshot:NULL;if(!box)return true;
   if(IS("charValue","()C")||IS("intValue","()I")){out->i=(int32_t)box->value;return true;}
   if(IS("longValue","()J")){out->j=(int64_t)box->value;return true;}
   if(IS("floatValue","()F")){out->f=(float)box->value;return true;}
   if(IS("doubleValue","()D")){out->d=(double)box->value;return true;}
   if(hash){out->i=(int32_t)box->value;return true;}
-  if(equals){struct boxed_character *other=boxed_character_of(v,a[0].l);out->i=other&&other->value==box->value;return true;}
+  if(equals){struct boxed_character other_snapshot;struct boxed_character *other=boxed_character_copy(v,a[0].l,&other_snapshot)?&other_snapshot:NULL;out->i=other&&other->value==box->value;return true;}
   char text[8];int n=java_character_text(box->value,text,sizeof text);out->l=dvm_new_string_n(v,text,(size_t)n);return true;
  }
  if(!strcmp(c,"java/lang/String")&&IS("equals","(Ljava/lang/Object;)Z")){
-  struct dvm_object *left=dvm__obj(v,self),*right=dvm__obj(v,a[0].l);
-  out->i=left&&right&&left->kind==DVM_OBJ_STRING&&right->kind==DVM_OBJ_STRING&&
-         left->utf8_len==right->utf8_len&&!memcmp(left->utf8,right->utf8,left->utf8_len);
+  const dvm_ref gc4_ref_left=(self); if(!gc_operation_admit(v,gc4_ref_left))return true;const dvm_ref gc4_ref_right=(a[0].l); if(!gc_operation_admit(v,gc4_ref_right))return true;
+  out->i=dvm__obj(v,gc4_ref_left)&&dvm__obj(v,gc4_ref_right)&&dvm__obj(v,gc4_ref_left)->kind==DVM_OBJ_STRING&&dvm__obj(v,gc4_ref_right)->kind==DVM_OBJ_STRING&&
+         dvm__obj(v,gc4_ref_left)->utf8_len==dvm__obj(v,gc4_ref_right)->utf8_len&&!memcmp(dvm__obj(v,gc4_ref_left)->utf8,dvm__obj(v,gc4_ref_right)->utf8,dvm__obj(v,gc4_ref_left)->utf8_len);
   return true;
  }
  if(!strcmp(c,"java/util/concurrent/atomic/AtomicBoolean")){
@@ -1183,18 +1226,18 @@ bool java_basics_call(struct dvm *v,const char *c,const char *m,const char *sig,
   while(*slot&&!pthread_equal((*slot)->thread,pthread_self()))slot=&(*slot)->next;
   if(IS("remove","()V")){if(*slot){struct tls_entry *e=*slot;*slot=e->next;free(e);}return true;}
   if(!*slot){*slot=calloc(1,sizeof **slot);if(!*slot){dvm__throw(v,"java/lang/OutOfMemoryError","ThreadLocal");return true;}(*slot)->thread=pthread_self();
-   if(IS("get","()Ljava/lang/Object;")){struct dvm_object *o=dvm__obj(v,self);struct dvm_method *init=dvm_find_method(v,o->cls,"initialValue","()Ljava/lang/Object;");if(init&&(init->has_code||init->builtin)){union dvm_value r={0};if(dvm_call(v,init,self,NULL,0,&r))(*slot)->value=r.l;}}}
+   if(IS("get","()Ljava/lang/Object;")){const dvm_ref gc4_ref_o=(self); if(!gc_operation_admit(v,gc4_ref_o))return true;struct dvm_method *init=dvm_find_method(v,dvm__obj(v,gc4_ref_o)->cls,"initialValue","()Ljava/lang/Object;");if(init&&(init->has_code||init->builtin)){union dvm_value r={0};if(dvm_call(v,init,self,NULL,0,&r))(*slot)->value=r.l;}}}
   if(IS("set","(Ljava/lang/Object;)V"))(*slot)->value=a[0].l;else out->l=(*slot)->value;
   return true;
  }
- struct dvm_object *receiver=self?dvm__obj(v,self):NULL;
- bool list=!strcmp(c,"java/util/concurrent/CopyOnWriteArrayList")||(receiver&&receiver->cls&&!strcmp(receiver->cls->name,"java/util/concurrent/CopyOnWriteArrayList"));
- bool iterator=receiver&&receiver->cls&&!strcmp(receiver->cls->name,"java/util/concurrent/CopyOnWriteArrayList$COWIterator");
+ const dvm_ref gc4_ref_receiver=(self?(self):0); if(!gc_operation_admit(v,gc4_ref_receiver))return true;
+ bool list=!strcmp(c,"java/util/concurrent/CopyOnWriteArrayList")||(dvm__obj(v,gc4_ref_receiver)&&dvm__obj(v,gc4_ref_receiver)->cls&&!strcmp(dvm__obj(v,gc4_ref_receiver)->cls->name,"java/util/concurrent/CopyOnWriteArrayList"));
+ bool iterator=dvm__obj(v,gc4_ref_receiver)&&dvm__obj(v,gc4_ref_receiver)->cls&&!strcmp(dvm__obj(v,gc4_ref_receiver)->cls->name,"java/util/concurrent/CopyOnWriteArrayList$COWIterator");
  /* CopyOnWriteArraySet is the Set facade over the same copy-on-write array:
   * add() appends only when java_basics_equal() says the element is absent,
   * and every mutation replaces the snapshot so live iterators keep the old
   * one (Laser TaskManager's <clinit> reached this gap in 72bq/72br). */
- bool cow_set=!strcmp(c,"java/util/concurrent/CopyOnWriteArraySet")||(receiver&&receiver->cls&&!strcmp(receiver->cls->name,"java/util/concurrent/CopyOnWriteArraySet"));
+ bool cow_set=!strcmp(c,"java/util/concurrent/CopyOnWriteArraySet")||(dvm__obj(v,gc4_ref_receiver)&&dvm__obj(v,gc4_ref_receiver)->cls&&!strcmp(dvm__obj(v,gc4_ref_receiver)->cls->name,"java/util/concurrent/CopyOnWriteArraySet"));
  if(cow_set){
   bool ctor=IS("<init>","()V");
   if(!ctor&&!IS("size","()I")&&!IS("isEmpty","()Z")&&!IS("add","(Ljava/lang/Object;)Z")&&!IS("contains","(Ljava/lang/Object;)Z")&&!IS("remove","(Ljava/lang/Object;)Z")&&!IS("clear","()V")&&!IS("iterator","()Ljava/util/Iterator;")&&!IS("toArray","()[Ljava/lang/Object;"))return false;
@@ -1256,6 +1299,15 @@ bool java_basics_call(struct dvm *v,const char *c,const char *m,const char *sig,
 bounds:dvm__throw(v,"java/lang/IndexOutOfBoundsException","list index");return true;
 oom:dvm__throw(v,"java/lang/OutOfMemoryError","base class payload");return true;
 }
+bool java_basics_call(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int nargs,union dvm_value *out){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return true;
+ bool ok=java_basics_call_gc4_operation(v,c,m,sig,self,a,nargs,out);
+ const char *ret=sig?strchr(sig,')'):NULL;
+ gc_operation_result(&operation,sig,ok&&out&&ret&&(ret[1]=='L'||ret[1]=='[')?out->l:0);
+ return ok;
+}
+
 static bool wrapper_exception_is(struct dvm *v,const char *name){
  struct dvm_object *e=dvm__obj(v,dvm_exception(v));
  return e&&e->cls&&e->cls->name&&!strcmp(e->cls->name,name);
@@ -1612,6 +1664,10 @@ bool java_basics_global_roots_selftest(struct dvm *v){
 }
 
 int java_basics_gc_payload(struct dvm *v,struct dvm_object *o,dvm_gc_visit_fn visit,void *user){
+ struct gc_operation_pin gc4_pin __attribute__((cleanup(gc_operation_pin_end)));
+ if(!gc_operation_pin_begin(v,&gc4_pin,o))return DVM_GC_PAYLOAD_INVALID;
+ o=dvm__obj(v,gc4_pin.ref);
+
  (void)v;
  if(o->data_destroy==boxed_destroy||o->data_destroy==locale_destroy||o->data_destroy==java_random_destroy)return DVM_GC_PAYLOAD_ATOMIC;
  if(o->data_destroy==inflater_destroy){struct java_inflater *p=o->data;if(visit)visit(&p->input,user);return DVM_GC_PAYLOAD_REFS;}

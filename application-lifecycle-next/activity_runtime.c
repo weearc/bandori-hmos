@@ -1,4 +1,5 @@
 #include "activity_runtime.h"
+#include "gc_operation.h"
 #include "gc_runtime.h"
 #include "view_state_runtime.h"
 #include "layout_params_runtime.h"
@@ -453,6 +454,13 @@ bool activity_runtime_launch_guest(struct dvm *v,dvm_ref caller,struct dvm_class
  }
  return true;
 }
+static bool guest_params_assignable(struct dvm *v,dvm_ref ref){
+ struct gc_operation gc7 __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&gc7)||!gc_operation_admit(v,ref))return false;
+ struct dvm_class *expected=dvm_find_class_or_external(v,"android/view/WindowManager$LayoutParams");
+ struct dvm_object *params=gc_operation_object(v,ref);
+ return params&&dvm__class_assignable(v,params->cls,expected);
+}
 static bool guest_call(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int n,union dvm_value *out){
  if(state.vm!=v)return false;
  struct guest_activity *g=guest_find(self);
@@ -460,8 +468,7 @@ static bool guest_call(struct dvm *v,const char *c,const char *m,const char *sig
   g=&guests[i];
   if(!strcmp(m,"getAttributes")&&!strcmp(sig,"()Landroid/view/WindowManager$LayoutParams;")){if(!g->params)g->params=window_attributes_get(v,self);out->l=g->params;return true;}
   if(!strcmp(m,"setAttributes")&&!strcmp(sig,"(Landroid/view/WindowManager$LayoutParams;)V")&&n==1){
-   struct dvm_object *params=dvm__obj(v,a[0].l);struct dvm_class *expected=dvm_find_class_or_external(v,"android/view/WindowManager$LayoutParams");
-   if(!params||!dvm__class_assignable(v,params->cls,expected)){dvm__throw(v,"java/lang/IllegalArgumentException","Window LayoutParams");return true;}
+   if(!guest_params_assignable(v,a[0].l)){dvm__throw(v,"java/lang/IllegalArgumentException","Window LayoutParams");return true;}
    g->params=a[0].l;engine_probe_log("TASK5_WINDOW_ATTRIBUTES window=%u params=%u guest_only=1 host_applied=0",self,g->params);return true;
   }
   if(!strcmp(m,"getDecorView")&&!strcmp(sig,"()Landroid/view/View;")){out->l=view_state_runtime_create_activity_decor(v,g->ref);return true;}

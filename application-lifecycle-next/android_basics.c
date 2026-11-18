@@ -1,3 +1,5 @@
+#include "dvm/dvm_internal.h"
+#include "gc_operation.h"
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE 1 /* bionic declares gettid() only under _GNU_SOURCE */
 #endif
@@ -413,10 +415,10 @@ static uint16_t *units(struct dvm *v,dvm_ref ref,int *length){
  *length=(int)n;return u;
 }
 static bool length(struct dvm *v,dvm_ref ref,int *out){
- struct dvm_object *o=dvm__obj(v,ref);if(!o){dvm__throw(v,"java/lang/NullPointerException","CharSequence");return false;}
- if(o->kind==DVM_OBJ_STRING){uint16_t *u=units(v,ref,out);if(!u)return false;free(u);return true;}
- struct dvm_method *method=dvm_find_method(v,o->cls,"length","()I");
- if(!method){sdk_trace_missing_api(o->cls->name,"length","()I");dvm__throw(v,"java/lang/NoSuchMethodError","%s.length()I",o->cls->name);return false;}
+ const dvm_ref gc5_ref_o=(ref); if(!gc_operation_admit(v,gc5_ref_o))return false;if(!dvm__obj(v,gc5_ref_o)){dvm__throw(v,"java/lang/NullPointerException","CharSequence");return false;}
+ if(dvm__obj(v,gc5_ref_o)->kind==DVM_OBJ_STRING){uint16_t *u=units(v,ref,out);if(!u)return false;free(u);return true;}
+ struct dvm_method *method=dvm_find_method(v,dvm__obj(v,gc5_ref_o)->cls,"length","()I");
+ if(!method){sdk_trace_missing_api(dvm__obj(v,gc5_ref_o)->cls->name,"length","()I");dvm__throw(v,"java/lang/NoSuchMethodError","%s.length()I",dvm__obj(v,gc5_ref_o)->cls->name);return false;}
  union dvm_value result={0};if(!dvm_call(v,method,ref,NULL,0,&result))return false;
  if(result.i<0){dvm__throw(v,"java/lang/IllegalStateException","CharSequence.length returned negative");return false;}
  *out=result.i;return true;
@@ -425,10 +427,10 @@ static bool length(struct dvm *v,dvm_ref ref,int *out){
  * TextUtils.equals must compare contents rather than object identity; non-String
  * receivers go through their own charAt(I)C implementation, exactly like Java. */
 static bool char_at(struct dvm *v,dvm_ref ref,int index,uint16_t *out){
- struct dvm_object *o=dvm__obj(v,ref);if(!o){dvm__throw(v,"java/lang/NullPointerException","CharSequence");return false;}
- if(o->kind==DVM_OBJ_STRING){int n=0;uint16_t *u=units(v,ref,&n);if(!u)return false;if(index<0||index>=n){free(u);dvm__throw(v,"java/lang/StringIndexOutOfBoundsException","charAt index");return false;}*out=u[index];free(u);return true;}
- struct dvm_method *method=dvm_find_method(v,o->cls,"charAt","(I)C");
- if(!method){sdk_trace_missing_api(o->cls->name,"charAt","(I)C");dvm__throw(v,"java/lang/NoSuchMethodError","%s.charAt(I)C",o->cls->name);return false;}
+ const dvm_ref gc5_ref_o=(ref); if(!gc_operation_admit(v,gc5_ref_o))return false;if(!dvm__obj(v,gc5_ref_o)){dvm__throw(v,"java/lang/NullPointerException","CharSequence");return false;}
+ if(dvm__obj(v,gc5_ref_o)->kind==DVM_OBJ_STRING){int n=0;uint16_t *u=units(v,ref,&n);if(!u)return false;if(index<0||index>=n){free(u);dvm__throw(v,"java/lang/StringIndexOutOfBoundsException","charAt index");return false;}*out=u[index];free(u);return true;}
+ struct dvm_method *method=dvm_find_method(v,dvm__obj(v,gc5_ref_o)->cls,"charAt","(I)C");
+ if(!method){sdk_trace_missing_api(dvm__obj(v,gc5_ref_o)->cls->name,"charAt","(I)C");dvm__throw(v,"java/lang/NoSuchMethodError","%s.charAt(I)C",dvm__obj(v,gc5_ref_o)->cls->name);return false;}
  union dvm_value arg={.i=index},result={0};
  if(!dvm_call(v,method,ref,&arg,1,&result))return false;
  *out=(uint16_t)result.i;return true;
@@ -488,18 +490,18 @@ static dvm_ref make_dialog(struct dvm *v,dvm_ref builder){
  struct builder_state *b=builder_of(v,builder);
  struct dvm_class *dc=dvm_find_class_or_external(v,"android/app/AlertDialog");
  dvm_ref d=dc?dvm_new_object(v,dc):0;
- struct dvm_object *o=d?dvm__obj(v,d):NULL;
- if(!o)return 0;
+ const dvm_ref gc5_ref_o=(d?(d):0); if(!gc_operation_admit(v,gc5_ref_o))return 0;
+ if(!dvm__obj(v,gc5_ref_o))return 0;
  struct dialog_state *st=calloc(1,sizeof *st);
  if(!st)return 0;
  st->positive=b?b->positive:0;
- o->data=st;o->data_destroy=dialog_state_free;
+ dvm__obj(v,gc5_ref_o)->data=st;dvm__obj(v,gc5_ref_o)->data_destroy=dialog_state_free;
  if(b)b->dialog=d;
  return d;
 }
 static void dialog_show(struct dvm *v,dvm_ref dialog){
- struct dvm_object *o=dvm__obj(v,dialog);
- struct dialog_state *st=o&&o->data?o->data:NULL;
+ const dvm_ref gc5_ref_o=(dialog); if(!gc_operation_admit(v,gc5_ref_o))return ;
+ struct dialog_state *st=dvm__obj(v,gc5_ref_o)&&dvm__obj(v,gc5_ref_o)->data?dvm__obj(v,gc5_ref_o)->data:NULL;
  if(!st)return;
  st->shown=1;
  dvm_ref listener=st->positive;
@@ -544,7 +546,7 @@ static bool task5_component_call(struct dvm *v,const char *c,const char *m,const
   * virtually and may delegate here via invoke-super. */
  if(!strcmp(c,"android/webkit/WebViewClient")&&((!strcmp(m,"onPageFinished")&&!strcmp(sig,"(Landroid/webkit/WebView;Ljava/lang/String;)V"))||(!strcmp(m,"onReceivedError")&&!strcmp(sig,"(Landroid/webkit/WebView;ILjava/lang/String;Ljava/lang/String;)V"))))return true;
  if(!strcmp(c,"android/webkit/WebSettings")){
-  struct dvm_object *o=dvm__obj(v,self);struct shadow_settings *s=o&&o->data_destroy==shadow_settings_free?o->data:NULL;
+  const dvm_ref gc5_ref_o=(self); if(!gc_operation_admit(v,gc5_ref_o))return true;struct shadow_settings *s=dvm__obj(v,gc5_ref_o)&&dvm__obj(v,gc5_ref_o)->data_destroy==shadow_settings_free?dvm__obj(v,gc5_ref_o)->data:NULL;
   if(!s)return false;
   if(!strncmp(m,"set",3)&&n==1){int i;for(i=0;i<s->count;i++)if(!strcmp(s->names[i],m+3))break;if(i==32){dvm__throw(v,"java/lang/IllegalStateException","settings capacity");return true;}if(i==s->count){snprintf(s->names[i],64,"%s",m+3);s->count++;}if(s->refs[i]&&s->values[i].l)dvm_unpin(v,s->values[i].l);s->refs[i]=sig[1]=='L'||sig[1]=='[';s->values[i]=a[0];if(s->refs[i]&&a[0].l)dvm_pin(v,a[0].l);return true;}
   if(!strncmp(m,"get",3)&&!n){for(int i=0;i<s->count;i++)if(!strcmp(s->names[i],m+3)){*out=s->values[i];return true;}memset(out,0,sizeof *out);return true;}return false;
@@ -552,16 +554,16 @@ static bool task5_component_call(struct dvm *v,const char *c,const char *m,const
  bool web=!strcmp(c,"android/webkit/WebView"),fragment=!strcmp(c,"android/app/DialogFragment")||!strcmp(c,"android/app/Fragment");
  if(!web&&!fragment)return false;
  if(web&&!strcmp(m,"setWebContentsDebuggingEnabled")&&!strcmp(sig,"(Z)V"))return true;
- struct dvm_object *o=dvm__obj(v,self);if(!o){dvm__throw(v,"java/lang/NullPointerException","component receiver");return true;}
+ const dvm_ref gc5_ref_o=(self); if(!gc_operation_admit(v,gc5_ref_o))return true;if(!dvm__obj(v,gc5_ref_o)){dvm__throw(v,"java/lang/NullPointerException","component receiver");return true;}
  if(!strcmp(m,"<init>")&&((web&&(!strcmp(sig,"(Landroid/content/Context;)V")||!strcmp(sig,"(Landroid/content/Context;Landroid/util/AttributeSet;)V")||!strcmp(sig,"(Landroid/content/Context;Landroid/util/AttributeSet;I)V"))&&n>=1)||(fragment&&!strcmp(sig,"()V")&&n==0))){
-  if(o->data){dvm__throw(v,"java/lang/IllegalStateException","component already constructed");return true;}
+  if(dvm__obj(v,gc5_ref_o)->data){dvm__throw(v,"java/lang/IllegalStateException","component already constructed");return true;}
   if(web){union dvm_value ignored={0};if(!view_state_runtime_call(v,"android/view/View","<init>","(Landroid/content/Context;)V",self,a,1,&ignored)||dvm_exception(v))return true;}
   struct task5_component *p=calloc(1,sizeof *p);if(!p){dvm__throw(v,"java/lang/OutOfMemoryError","component state");return true;}
   p->vm=v;p->context=web?a[0].l:0;p->fragment=fragment;p->shows_dialog=fragment;p->cancelable=1;if(p->context)dvm_pin(v,p->context);
-  o->data=p;o->data_destroy=task5_component_free;
+  dvm__obj(v,gc5_ref_o)->data=p;dvm__obj(v,gc5_ref_o)->data_destroy=task5_component_free;
   sdk_trace_fprintf(stderr,"TASK5_COMPONENT_CONSTRUCT class=%s ref=%u context=%u rendered=0\n",c,self,p->context);return true;
  }
- struct task5_component *p=o->data_destroy==task5_component_free?o->data:NULL;if(!p)return false;
+ struct task5_component *p=dvm__obj(v,gc5_ref_o)->data_destroy==task5_component_free?dvm__obj(v,gc5_ref_o)->data:NULL;if(!p)return false;
  if(fragment&&!strcmp(m,"setArguments")&&!strcmp(sig,"(Landroid/os/Bundle;)V")){if(a[0].l)dvm_pin(v,a[0].l);if(p->arguments)dvm_unpin(v,p->arguments);p->arguments=a[0].l;return true;}
  if(fragment&&!strcmp(m,"getArguments")&&!strcmp(sig,"()Landroid/os/Bundle;")){out->l=p->arguments;return true;}
  if(web&&(!strcmp(m,"setHorizontalScrollBarEnabled")||!strcmp(m,"setVerticalScrollBarEnabled"))&&n==1){if(!strcmp(m,"setHorizontalScrollBarEnabled"))p->horizontal=a[0].i;else p->vertical=a[0].i;return true;}
@@ -581,7 +583,7 @@ static bool task5_component_call(struct dvm *v,const char *c,const char *m,const
  }
  if(web&&!strcmp(m,"removeJavascriptInterface")&&n==1){const char *name=dvm_string_utf8(v,a[0].l);for(int i=0;i<16;i++)if(p->interface_names[i]&&name&&!strcmp(name,dvm_string_utf8(v,p->interface_names[i]))){if(login_panel_web_interface)login_panel_web_interface(v,self,0,name);if(p->interfaces[i])dvm_unpin(v,p->interfaces[i]);dvm_unpin(v,p->interface_names[i]);p->interfaces[i]=p->interface_names[i]=0;}return true;}
  if(web&&!strcmp(m,"getSettings")&&!strcmp(sig,"()Landroid/webkit/WebSettings;")){
-  if(!p->settings){p->settings=dvm_new_object(v,dvm_find_class_or_external(v,"android/webkit/WebSettings"));struct dvm_object *s=dvm__obj(v,p->settings);if(!s)return true;s->data=calloc(1,sizeof(struct shadow_settings));s->data_destroy=shadow_settings_free;if(s->data){((struct shadow_settings*)s->data)->vm=v;((struct shadow_settings*)s->data)->owner=self;}else{dvm__throw(v,"java/lang/OutOfMemoryError","WebSettings state");return true;}dvm_pin(v,p->settings);}out->l=p->settings;return true;
+  if(!p->settings){p->settings=dvm_new_object(v,dvm_find_class_or_external(v,"android/webkit/WebSettings"));const dvm_ref gc5_ref_s=(p->settings); if(!gc_operation_admit(v,gc5_ref_s))return true;if(!dvm__obj(v,gc5_ref_s))return true;dvm__obj(v,gc5_ref_s)->data=calloc(1,sizeof(struct shadow_settings));dvm__obj(v,gc5_ref_s)->data_destroy=shadow_settings_free;if(dvm__obj(v,gc5_ref_s)->data){((struct shadow_settings*)dvm__obj(v,gc5_ref_s)->data)->vm=v;((struct shadow_settings*)dvm__obj(v,gc5_ref_s)->data)->owner=self;}else{dvm__throw(v,"java/lang/OutOfMemoryError","WebSettings state");return true;}dvm_pin(v,p->settings);}out->l=p->settings;return true;
  }
  if(web&&!strcmp(m,"addJavascriptInterface")&&n==2){
   const char *name=dvm_string_utf8(v,a[1].l);if(!name){dvm__throw(v,"java/lang/NullPointerException","JS interface name");return true;}
@@ -598,7 +600,7 @@ static bool task5_component_call(struct dvm *v,const char *c,const char *m,const
   if(!strncmp(url,"javascript:",11)){if(webview_panel_open)webview_panel_open(v,self,p->context,url,0,NULL);else dvm__throw(v,"java/lang/UnsupportedOperationException","Web script backend unavailable");return true;}
   dvm_pin(v,a[0].l);if(p->url)dvm_unpin(v,p->url);p->url=a[0].l;
   int captcha=login_panel_web_url&&login_panel_web_url(v,self,url);
-  if(!captcha&&webview_panel_open){const char *ua=NULL;struct dvm_object *so=dvm__obj(v,p->settings);struct shadow_settings *s=so&&so->data_destroy==shadow_settings_free?so->data:NULL;if(s)for(int i=0;i<s->count;i++)if(!strcmp(s->names[i],"UserAgentString"))ua=dvm_string_utf8(v,s->values[i].l);webview_panel_open(v,self,p->context,url,n==2?a[1].l:0,ua);}
+  if(!captcha&&webview_panel_open){const char *ua=NULL;const dvm_ref gc5_ref_so=(p->settings); if(!gc_operation_admit(v,gc5_ref_so))return true;struct shadow_settings *s=dvm__obj(v,gc5_ref_so)&&dvm__obj(v,gc5_ref_so)->data_destroy==shadow_settings_free?dvm__obj(v,gc5_ref_so)->data:NULL;if(s)for(int i=0;i<s->count;i++)if(!strcmp(s->names[i],"UserAgentString"))ua=dvm_string_utf8(v,s->values[i].l);webview_panel_open(v,self,p->context,url,n==2?a[1].l:0,ua);}
   sdk_trace_fprintf(stderr,"TASK5_WEBVIEW_URL ref=%u url_length=%zu network_started=0 rendered=0\n",self,strlen(url));
   FILE *log=fopen("/data/storage/el2/base/haps/entry/files/sdkdex/engine-probe.txt","a");
   if(log){fprintf(log,"TASK5_WEBVIEW_URL ref=%u url_length=%zu network_started=0 rendered=0\n",self,strlen(url));fclose(log);}return true;
@@ -613,8 +615,8 @@ static bool task5_component_call(struct dvm *v,const char *c,const char *m,const
 }
 /* ArkWeb lifecycle notifications are delivered on the VM owner, through the
  * original virtual WebViewClient methods, never from the ArkTS UI thread. */
-bool android_shadow_web_event(struct dvm *v,dvm_ref web,int success,const char *address){
- struct dvm_object *o=dvm__obj(v,web);struct task5_component *p=o&&o->data_destroy==task5_component_free?o->data:NULL;
+static bool android_shadow_web_event_gc5_operation(struct dvm *v,dvm_ref web,int success,const char *address){
+ const dvm_ref gc5_ref_o=(web); if(!gc_operation_admit(v,gc5_ref_o))return false;struct task5_component *p=dvm__obj(v,gc5_ref_o)&&dvm__obj(v,gc5_ref_o)->data_destroy==task5_component_free?dvm__obj(v,gc5_ref_o)->data:NULL;
  if(!p||p->destroyed)return false;
  if(success&&address&&(!strncmp(address,"https://",8)||!strncmp(address,"http://",7))){dvm_ref url=dvm_new_string(v,address);if(!url)return false;dvm_pin(v,url);if(p->url)dvm_unpin(v,p->url);p->url=url;}
  if(!p->client)return true;
@@ -623,7 +625,21 @@ bool android_shadow_web_event(struct dvm *v,dvm_ref web,int success,const char *
  union dvm_value args[4]={{.l=web},{0},{0},{0}},q={0};if(success)args[1].l=p->url;else{char *end=NULL;long code=address?strtol(address,&end,10):0;char detail[96];int known=address&&*address&&end&&!*end&&code>=INT32_MIN&&code<=INT32_MAX;snprintf(detail,sizeof detail,"ArkWeb load error (backend code %ld)",known?code:0);args[1].i=-1;/* Android ERROR_UNKNOWN: backend enum is not assumed equivalent. */args[2].l=dvm_new_string(v,detail);args[3].l=p->url;sdk_trace_fprintf(stderr,"SHADOW_WEB_ERROR backend=ArkWeb code_known=%d code=%ld android_code=-1\n",known,known?code:0);}
  return dvm_call(v,m,p->client,args,success?2:4,&q)&&!dvm_exception(v);
 }
-bool android_shadow_web_destroy(struct dvm *v,dvm_ref web){union dvm_value q={0};return task5_component_call(v,"android/webkit/WebView","destroy","()V",web,NULL,0,&q);}
+bool android_shadow_web_event(struct dvm *v,dvm_ref web,int success,const char *address){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return false;
+ bool ok=android_shadow_web_event_gc5_operation(v,web,success,address);
+ return ok;
+}
+
+static bool android_shadow_web_destroy_gc5_operation(struct dvm *v,dvm_ref web){union dvm_value q={0};return task5_component_call(v,"android/webkit/WebView","destroy","()V",web,NULL,0,&q);}
+bool android_shadow_web_destroy(struct dvm *v,dvm_ref web){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return false;
+ bool ok=android_shadow_web_destroy_gc5_operation(v,web);
+ return ok;
+}
+
 #include "math_interpolator_runtime.inc"
 /* In-memory notification values; delivery remains unsupported. All retained
  * references are ordinary VM fields and participate in the existing GC scan. */
@@ -649,9 +665,9 @@ static bool notification_value_call(struct dvm *v,const char *c,const char *m,co
   if(dvm_set_field(v,self,"style","Landroid/app/Notification$Style;",a[0]))out->l=self;return true;
  }
  if(builder&&!strcmp(m,"build")&&!strcmp(sig,"()Landroid/app/Notification;")){
-  struct dvm_object *o=dvm__obj(v,self);dvm_ref value=dvm_new_object(v,dvm_find_class_or_external(v,"android/app/Notification"));
-  if(!value||!o)return true;
-  for(unsigned i=0;i<o->cls->nifields;i++){struct dvm_field *f=&o->cls->ifields[i];union dvm_value q={0};if(!dvm_get_field(v,self,f->name,f->type,&q))return true;
+  const dvm_ref gc5_ref_o=(self); if(!gc_operation_admit(v,gc5_ref_o))return true;dvm_ref value=dvm_new_object(v,dvm_find_class_or_external(v,"android/app/Notification"));
+  if(!value||!dvm__obj(v,gc5_ref_o))return true;
+  for(unsigned i=0;i<dvm__obj(v,gc5_ref_o)->cls->nifields;i++){struct dvm_field *f=&dvm__obj(v,gc5_ref_o)->cls->ifields[i];union dvm_value q={0};if(!dvm_get_field(v,self,f->name,f->type,&q))return true;
    if(!strcmp(f->name,"extras")&&q.l){struct dvm_class *bk=dvm_find_class_or_external(v,"android/os/Bundle");dvm_ref copy=dvm_new_object(v,bk);struct dvm_method *copy_ctor=dvm_find_method(v,bk,"<init>","(Landroid/os/Bundle;)V");union dvm_value ignored={0};if(!copy||!copy_ctor){if(!dvm_exception(v))dvm__throw(v,"java/lang/IllegalStateException","Notification Bundle copy constructor");return true;}if(!dvm_call(v,copy_ctor,copy,&q,1,&ignored))return true;q.l=copy;}
    if(!dvm_set_field(v,value,f->name,f->type,q))return true;}
   out->l=value;return true;
@@ -685,7 +701,7 @@ static bool notification_value_call(struct dvm *v,const char *c,const char *m,co
  }
  return false;
 }
-bool android_basics_call(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int nargs,union dvm_value *out){
+static bool android_basics_call_gc5_operation(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int nargs,union dvm_value *out){
  if(!android_basics_gc_ensure(v))return false;
  if(notification_value_call(v,c,m,sig,self,a,nargs,out))return true;
  if(!strcmp(c,"android/util/TypedValue")&&!strcmp(m,"applyDimension")&&!strcmp(sig,"(IFLandroid/util/DisplayMetrics;)F")&&nargs==3){
@@ -701,14 +717,14 @@ bool android_basics_call(struct dvm *v,const char *c,const char *m,const char *s
  /* AOSP android-14.0.0_r1 PhoneStateListener(): this(null, Looper.myLooper()).
   * This records only listener/Looper identity; it registers no telephony callbacks. */
  if(!strcmp(c,"android/telephony/PhoneStateListener")&&IS("<init>","()V")){
-  struct dvm_object *o=self?dvm__obj(v,self):NULL;
+  const dvm_ref gc5_ref_o=(self?(self):0); if(!gc_operation_admit(v,gc5_ref_o))return true;
   struct dvm_class *base=dvm__class_by_desc(v,"Landroid/telephony/PhoneStateListener;");
-  if(!o||!o->cls||!base||!dvm__class_assignable(v,o->cls,base)){dvm__throw(v,"java/lang/IllegalArgumentException","invalid PhoneStateListener receiver");return true;}
+  if(!dvm__obj(v,gc5_ref_o)||!dvm__obj(v,gc5_ref_o)->cls||!base||!dvm__class_assignable(v,dvm__obj(v,gc5_ref_o)->cls,base)){dvm__throw(v,"java/lang/IllegalArgumentException","invalid PhoneStateListener receiver");return true;}
   if(state.vm!=v){dvm__throw(v,"java/lang/IllegalStateException","PhoneStateListener belongs to another VM");return true;}
   for(unsigned i=0;i<128;i++)if(phone_listener_identity(v,i)&&state.phone_listeners[i].listener==self){dvm__throw(v,"java/lang/IllegalStateException","PhoneStateListener already constructed");return true;}
   dvm_ref looper=owner(v)?main_looper(v):0;
   if(!looper){if(!dvm_exception(v))dvm__throw(v,"java/lang/RuntimeException","PhoneStateListener requires a prepared Looper");return true;}
-  for(unsigned i=0;i<128;i++)if(!state.phone_listeners[i].listener){state.phone_listeners[i].listener=self;state.phone_listeners[i].identity=o->identity_generation;state.phone_listeners[i].looper=looper;return true;}
+  for(unsigned i=0;i<128;i++)if(!state.phone_listeners[i].listener){state.phone_listeners[i].listener=self;state.phone_listeners[i].identity=dvm__obj(v,gc5_ref_o)->identity_generation;state.phone_listeners[i].looper=looper;return true;}
   dvm__throw(v,"java/lang/OutOfMemoryError","PhoneStateListener state capacity exhausted");return true;
  }
 
@@ -722,8 +738,8 @@ bool android_basics_call(struct dvm *v,const char *c,const char *m,const char *s
  }
  if(context_name(c)){
   if(!strcmp(c,"android/content/ContextWrapper")&&IS("<init>","(Landroid/content/Context;)V")){
-   struct dvm_object *o=dvm__obj(v,self);if(!o){dvm__throw(v,"java/lang/NullPointerException","ContextWrapper receiver");return true;}
-   struct context_wrapper *w=calloc(1,sizeof *w);if(!w){dvm__throw(v,"java/lang/OutOfMemoryError","ContextWrapper base");return true;}w->base=a[0].l;free(o->data);o->data=w;o->data_destroy=android_wrapper_free;return true;
+   const dvm_ref gc5_ref_o=(self); if(!gc_operation_admit(v,gc5_ref_o))return true;if(!dvm__obj(v,gc5_ref_o)){dvm__throw(v,"java/lang/NullPointerException","ContextWrapper receiver");return true;}
+   struct context_wrapper *w=calloc(1,sizeof *w);if(!w){dvm__throw(v,"java/lang/OutOfMemoryError","ContextWrapper base");return true;}w->base=a[0].l;free(dvm__obj(v,gc5_ref_o)->data);dvm__obj(v,gc5_ref_o)->data=w;dvm__obj(v,gc5_ref_o)->data_destroy=android_wrapper_free;return true;
   }
   if(!strcmp(c,"android/app/Application")&&IS("<init>","()V")){
    if(self!=state.application){dvm__throw(v,"java/lang/IllegalStateException","Application constructor requires the bound original instance");return true;}
@@ -731,9 +747,9 @@ bool android_basics_call(struct dvm *v,const char *c,const char *m,const char *s
   }
   if(!strcmp(c,"android/app/Application")&&IS("attachBaseContext","(Landroid/content/Context;)V")){
    if(!a||!a[0].l||self!=state.application||a[0].l!=state.base){dvm__throw(v,"java/lang/IllegalStateException","Application.attachBaseContext requires the host base Context");return true;}
-   struct dvm_object *o=dvm__obj(v,self);if(!o){dvm__throw(v,"java/lang/NullPointerException","Application receiver");return true;}
+   const dvm_ref gc5_ref_o=(self); if(!gc_operation_admit(v,gc5_ref_o))return true;if(!dvm__obj(v,gc5_ref_o)){dvm__throw(v,"java/lang/NullPointerException","Application receiver");return true;}
    struct context_wrapper *w=calloc(1,sizeof *w);if(!w){dvm__throw(v,"java/lang/OutOfMemoryError","Application base Context");return true;}
-   w->base=a[0].l;free(o->data);o->data=w;o->data_destroy=android_wrapper_free;state.attached=true;return true;
+   w->base=a[0].l;free(dvm__obj(v,gc5_ref_o)->data);dvm__obj(v,gc5_ref_o)->data=w;dvm__obj(v,gc5_ref_o)->data_destroy=android_wrapper_free;state.attached=true;return true;
   }
   if(!strcmp(c,"android/app/Application")&&IS("onCreate","()V")){
    if(self!=state.application||!state.attached){dvm__throw(v,"java/lang/IllegalStateException","Application.onCreate requires attachBaseContext");return true;}
@@ -786,8 +802,8 @@ bool android_basics_call(struct dvm *v,const char *c,const char *m,const char *s
    if(!context)return true;
    for(int i=0;i<state.receiver_count;++i){
     dvm_ref receiver=state.receivers[i];
-    struct dvm_object *ro=dvm__obj(v,receiver);if(!ro)continue;
-    struct dvm_method *m=dvm_find_method(v,ro->cls,"onReceive","(Landroid/content/Context;Landroid/content/Intent;)V");
+    const dvm_ref gc5_ref_ro=(receiver); if(!gc_operation_admit(v,gc5_ref_ro))return true;if(!dvm__obj(v,gc5_ref_ro))continue;
+    struct dvm_method *m=dvm_find_method(v,dvm__obj(v,gc5_ref_ro)->cls,"onReceive","(Landroid/content/Context;Landroid/content/Intent;)V");
     if(!m||(!m->has_code&&!m->builtin)){dvm__throw(v,"java/lang/AbstractMethodError","BroadcastReceiver.onReceive");return true;}
     union dvm_value ra[2]={{.l=context},{.l=a[0].l}},rr={0};
     if(!dvm_call(v,m,receiver,ra,2,&rr)||dvm_exception(v))return true;
@@ -795,7 +811,7 @@ bool android_basics_call(struct dvm *v,const char *c,const char *m,const char *s
    return true;
   }
   if((!strcmp(c,"android/content/ContextWrapper")||!strcmp(c,"android/app/Application"))&&IS("getBaseContext","()Landroid/content/Context;")){
-   struct dvm_object *o=dvm__obj(v,self);if(!o){dvm__throw(v,"java/lang/NullPointerException","ContextWrapper receiver");return true;}struct context_wrapper *w=o->data;out->l=w?w->base:0;return true;
+   const dvm_ref gc5_ref_o=(self); if(!gc_operation_admit(v,gc5_ref_o))return true;if(!dvm__obj(v,gc5_ref_o)){dvm__throw(v,"java/lang/NullPointerException","ContextWrapper receiver");return true;}struct context_wrapper *w=dvm__obj(v,gc5_ref_o)->data;out->l=w?w->base:0;return true;
   }
   /* Android normal (install-granted) permissions that this HAP really
    * declares: INTERNET -> ohos.permission.INTERNET and ACCESS_NETWORK_STATE
@@ -949,11 +965,11 @@ bool android_basics_call(struct dvm *v,const char *c,const char *m,const char *s
  }
  if(!strcmp(c,"android/app/AlertDialog$Builder")){
   if(IS("<init>","(Landroid/content/Context;)V")){
-   struct dvm_object *o=dvm__obj(v,self);
-   if(!o)return false;
+   const dvm_ref gc5_ref_o=(self); if(!gc_operation_admit(v,gc5_ref_o))return true;
+   if(!dvm__obj(v,gc5_ref_o))return false;
    struct builder_state *b=calloc(1,sizeof *b);
    if(!b){dvm__throw(v,"java/lang/OutOfMemoryError","builder");return true;}
-   o->data=b;o->data_destroy=builder_state_free;return true;
+   dvm__obj(v,gc5_ref_o)->data=b;dvm__obj(v,gc5_ref_o)->data_destroy=builder_state_free;return true;
   }
   struct builder_state *b=builder_of(v,self);
   if(!b)return false;
@@ -975,13 +991,13 @@ bool android_basics_call(struct dvm *v,const char *c,const char *m,const char *s
   return false;
  }
  if(!strcmp(c,"android/app/AlertDialog")||!strcmp(c,"android/app/Dialog")){
-  struct dvm_object *o=dvm__obj(v,self);
-  struct dialog_state *st=o&&o->data?o->data:NULL;
+  const dvm_ref gc5_ref_o=(self); if(!gc_operation_admit(v,gc5_ref_o))return true;
+  struct dialog_state *st=dvm__obj(v,gc5_ref_o)&&dvm__obj(v,gc5_ref_o)->data?dvm__obj(v,gc5_ref_o)->data:NULL;
   if(IS("<init>","(Landroid/content/Context;)V")||IS("<init>","(Landroid/content/Context;I)V")){
-   if(!o||!a||!a[0].l){dvm__throw(v,"java/lang/NullPointerException","Dialog context/receiver");return true;}
-   if(o->data){dvm__throw(v,"java/lang/IllegalStateException","Dialog already constructed");return true;}
+   if(!dvm__obj(v,gc5_ref_o)||!a||!a[0].l){dvm__throw(v,"java/lang/NullPointerException","Dialog context/receiver");return true;}
+   if(dvm__obj(v,gc5_ref_o)->data){dvm__throw(v,"java/lang/IllegalStateException","Dialog already constructed");return true;}
    st=calloc(1,sizeof *st);if(!st){dvm__throw(v,"java/lang/OutOfMemoryError","Dialog");return true;}
-   st->cancelable=1;st->context=a[0].l;st->theme=nargs==2?a[1].i:0;o->data=st;o->data_destroy=dialog_state_free;
+   st->cancelable=1;st->context=a[0].l;st->theme=nargs==2?a[1].i:0;dvm__obj(v,gc5_ref_o)->data=st;dvm__obj(v,gc5_ref_o)->data_destroy=dialog_state_free;
    sdk_trace_fprintf(stderr,"TASK5_DIALOG_CONSTRUCT context=%u theme=%d shown=0\n",st->context,st->theme);return true;
   }
   if(st&&IS("setCancelable","(Z)V")&&nargs==1){st->cancelable=a[0].i!=0;return true;}
@@ -1005,8 +1021,8 @@ bool android_basics_call(struct dvm *v,const char *c,const char *m,const char *s
   if(ln!=rn){out->i=0;return true;}
   /* Decode String operands once; only foreign CharSequences pay a charAt()
    * call per code unit. Both paths compare UTF-16 units, like Java. */
-  struct dvm_object *lo=dvm__obj(v,left),*ro=dvm__obj(v,right);
-  bool ls=lo&&lo->kind==DVM_OBJ_STRING,rs=ro&&ro->kind==DVM_OBJ_STRING;
+  const dvm_ref gc5_ref_lo=(left); if(!gc_operation_admit(v,gc5_ref_lo))return true;const dvm_ref gc5_ref_ro=(right); if(!gc_operation_admit(v,gc5_ref_ro))return true;
+  bool ls=dvm__obj(v,gc5_ref_lo)&&dvm__obj(v,gc5_ref_lo)->kind==DVM_OBJ_STRING,rs=dvm__obj(v,gc5_ref_ro)&&dvm__obj(v,gc5_ref_ro)->kind==DVM_OBJ_STRING;
   uint16_t *lu=ls?units(v,left,&ln):NULL;if(ls&&!lu)return true;
   uint16_t *ru=rs?units(v,right,&rn):NULL;if(rs&&!ru){free(lu);return true;}
   out->i=1;
@@ -1022,9 +1038,9 @@ bool android_basics_call(struct dvm *v,const char *c,const char *m,const char *s
   dvm__throw(v,"java/lang/IllegalArgumentException","Unknown color");return true;
  }
  if(!strcmp(c,"java/lang/CharSequence")&&(IS("length","()I")||IS("isEmpty","()Z"))){
-  struct dvm_object *o=dvm__obj(v,self);
-  if(o&&o->kind==DVM_OBJ_STRING){int n=0;uint16_t *u=units(v,self,&n);if(!u)return true;free(u);out->i=IS("length","()I")?n:n==0;return true;}
-  if(o&&o->cls){struct dvm_method *method=dvm_find_method(v,o->cls,"length","()I");if(method&&(method->has_code||method->builtin)){union dvm_value r={0};if(dvm_call(v,method,self,NULL,0,&r)){out->i=IS("length","()I")?r.i:r.i==0;return true;}}}
+  const dvm_ref gc5_ref_o=(self); if(!gc_operation_admit(v,gc5_ref_o))return true;
+  if(dvm__obj(v,gc5_ref_o)&&dvm__obj(v,gc5_ref_o)->kind==DVM_OBJ_STRING){int n=0;uint16_t *u=units(v,self,&n);if(!u)return true;free(u);out->i=IS("length","()I")?n:n==0;return true;}
+  if(dvm__obj(v,gc5_ref_o)&&dvm__obj(v,gc5_ref_o)->cls){struct dvm_method *method=dvm_find_method(v,dvm__obj(v,gc5_ref_o)->cls,"length","()I");if(method&&(method->has_code||method->builtin)){union dvm_value r={0};if(dvm_call(v,method,self,NULL,0,&r)){out->i=IS("length","()I")?r.i:r.i==0;return true;}}}
   dvm__throw(v,"java/lang/UnsupportedOperationException","CharSequence.length");return true;
  }
  if(!strcmp(c,"java/lang/String")&&(IS("length","()I")||IS("isEmpty","()Z")||IS("charAt","(I)C")||IS("indexOf","(I)I")||IS("indexOf","(II)I"))){
@@ -1059,7 +1075,7 @@ bool android_basics_call(struct dvm *v,const char *c,const char *m,const char *s
   bool remove_callbacks_token=IS("removeCallbacks","(Ljava/lang/Runnable;Ljava/lang/Object;)V");
   bool remove_all=IS("removeCallbacksAndMessages","(Ljava/lang/Object;)V");
   if(!explicit_looper&&!implicit_looper&&!IS("getLooper","()Landroid/os/Looper;")&&!post&&!post_delayed&&!front&&!remove_callbacks&&!remove_callbacks_token&&!remove_all)return false;
-  struct dvm_object *o=dvm__obj(v,self);if(!o){dvm__throw(v,"java/lang/NullPointerException","Handler receiver");return true;}
+  const dvm_ref gc5_ref_o=(self); if(!gc_operation_admit(v,gc5_ref_o))return true;if(!dvm__obj(v,gc5_ref_o)){dvm__throw(v,"java/lang/NullPointerException","Handler receiver");return true;}
   if(explicit_looper||implicit_looper){
    dvm_ref l=explicit_looper?a[0].l:(owner(v)?main_looper(v):0);
    if(implicit_looper&&!l){union dvm_value current={0};if(thread_runtime_call(v,"android/os/Looper","myLooper","()Landroid/os/Looper;",0,NULL,0,&current))l=current.l;}
@@ -1069,9 +1085,9 @@ bool android_basics_call(struct dvm *v,const char *c,const char *m,const char *s
    h->looper=l;if(explicit_looper&&strcmp(sig,"(Landroid/os/Looper;)V"))h->callback=a[1].l;
    if(implicit_looper&&!IS("<init>","()V"))h->callback=a[0].l;
    if(IS("<init>","(Landroid/os/Looper;Landroid/os/Handler$Callback;Z)V"))h->async=!!a[2].i;
-   free(o->data);o->data=h;o->data_destroy=android_handler_free;return true;
+   free(dvm__obj(v,gc5_ref_o)->data);dvm__obj(v,gc5_ref_o)->data=h;dvm__obj(v,gc5_ref_o)->data_destroy=android_handler_free;return true;
   }
-  struct handler *h=o->data;if(!h){dvm__throw(v,"java/lang/IllegalStateException","Handler constructor not called");return true;}
+  struct handler *h=dvm__obj(v,gc5_ref_o)->data;if(!h){dvm__throw(v,"java/lang/IllegalStateException","Handler constructor not called");return true;}
   if(IS("getLooper","()Landroid/os/Looper;")){out->l=h->looper;return true;}
   /* Worker-Looper post/postDelayed were already consumed by thread_runtime.
    * Main-Looper execution belongs to dvm.c's pending-queue drain; worker
@@ -1087,6 +1103,15 @@ bool android_basics_call(struct dvm *v,const char *c,const char *m,const char *s
 
  return false;
 }
+bool android_basics_call(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int nargs,union dvm_value *out){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return true;
+ bool ok=android_basics_call_gc5_operation(v,c,m,sig,self,a,nargs,out);
+ const char *ret=sig?strchr(sig,')'):NULL;
+ gc_operation_result(&operation,sig,ok&&out&&ret&&(ret[1]=='L'||ret[1]=='[')?out->l:0);
+ return ok;
+}
+
 struct handler_selftest_probe{struct dvm *vm;int runs,wrong_thread,wrong_gil;};
 static struct handler_selftest_probe *handler_selftest_probe;
 static bool handler_selftest_run(struct dvm *v,dvm_ref self,const union dvm_value *a,int n,union dvm_value *out){
@@ -1189,6 +1214,9 @@ bool android_basics_phone_listener_selftest(struct dvm *v,unsigned *checks){
 bool android_basics_gc_visit_owner(struct dvm *v,dvm_ref owner_ref,dvm_gc_visit_fn visit,void *u){
  if(state.vm!=v||!dvm_gil_held(v)||!visit)return false;
  struct dvm_object *o=dvm__obj(v,owner_ref);if(!o)return true;
+ struct gc_operation_pin gc5_owner __attribute__((cleanup(gc_operation_pin_end)));
+ if(!gc_operation_pin_begin(v,&gc5_owner,o))return false;
+ o=dvm__obj(v,owner_ref);
  for(unsigned i=0;i<128;i++)if(state.phone_listeners[i].listener==owner_ref&&phone_listener_identity(v,i)&&state.phone_listeners[i].looper)visit(&state.phone_listeners[i].looper,u);
  if(o->data_destroy==android_handler_free){struct handler *p=o->data;if(p){if(p->looper)visit(&p->looper,u);if(p->callback)visit(&p->callback,u);}return true;}
  if(o->data_destroy==android_wrapper_free){struct context_wrapper *p=o->data;if(p&&p->base)visit(&p->base,u);return true;}
@@ -1210,6 +1238,10 @@ bool android_basics_gc_identity_selftest(struct dvm *v){
 }
 
 int android_basics_gc_payload(struct dvm *v,struct dvm_object *o,dvm_gc_visit_fn visit,void *u){
+ struct gc_operation_pin gc5_pin __attribute__((cleanup(gc_operation_pin_end)));
+ if(!gc_operation_pin_begin(v,&gc5_pin,o))return DVM_GC_PAYLOAD_INVALID;
+ o=dvm__obj(v,gc5_pin.ref);
+
  if(o->data_destroy==math_interpolator_free)return DVM_GC_PAYLOAD_ATOMIC;
  if(o->data_destroy!=android_handler_free&&o->data_destroy!=android_wrapper_free&&o->data_destroy!=dialog_state_free&&o->data_destroy!=builder_state_free&&o->data_destroy!=shadow_settings_free&&o->data_destroy!=task5_component_free)return DVM_GC_PAYLOAD_UNKNOWN;
  if(visit){dvm_ref owner=dvm_gc_ref_of(v,o);if(!owner||!android_basics_gc_visit_owner(v,owner,visit,u))return DVM_GC_PAYLOAD_INVALID;}

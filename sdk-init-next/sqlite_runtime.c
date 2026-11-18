@@ -1,3 +1,5 @@
+#include "dvm/dvm_internal.h"
+#include "gc_operation.h"
 #include "sqlite_runtime.h"
 #include "java_basics.h"
 #include "small_boxes.h"
@@ -132,12 +134,12 @@ static void bind_arg(struct dvm *v,sqlite3_stmt *st,int index,dvm_ref ref) {
   if(rc!=SQLITE_OK)bind_sqlite_error(v,index,rc);
   return;
  }
- struct dvm_object *item=dvm__obj(v,ref);
- if(!item||!item->cls) {
+ const dvm_ref gc5_ref_item=(ref); if(!gc_operation_admit(v,gc5_ref_item))return ;
+ if(!dvm__obj(v,gc5_ref_item)||!dvm__obj(v,gc5_ref_item)->cls) {
   dvm__throw(v,"android/database/sqlite/SQLiteException","invalid bind argument at index %d",index);
   return;
  }
- if(item->kind==DVM_OBJ_STRING) {
+ if(dvm__obj(v,gc5_ref_item)->kind==DVM_OBJ_STRING) {
   const char *s=dvm_string_utf8(v,ref);
   uint32_t len=dvm_string_utf8_length(v,ref);
   if(!s) {
@@ -153,9 +155,9 @@ static void bind_arg(struct dvm *v,sqlite3_stmt *st,int index,dvm_ref ref) {
   if(rc!=SQLITE_OK)bind_sqlite_error(v,index,rc);
   return;
  }
- if(item->kind==DVM_OBJ_ARRAY) {
-  if(item->elem_kind!='B') {
-   dvm__throw(v,"android/database/sqlite/SQLiteException","unsupported bind argument type at index %d: %s (only byte[] arrays are supported)",index,item->cls->name?item->cls->name:"array");
+ if(dvm__obj(v,gc5_ref_item)->kind==DVM_OBJ_ARRAY) {
+  if(dvm__obj(v,gc5_ref_item)->elem_kind!='B') {
+   dvm__throw(v,"android/database/sqlite/SQLiteException","unsupported bind argument type at index %d: %s (only byte[] arrays are supported)",index,dvm__obj(v,gc5_ref_item)->cls->name?dvm__obj(v,gc5_ref_item)->cls->name:"array");
    return;
   }
   uint32_t len=dvm_array_length(v,ref);
@@ -174,7 +176,7 @@ static void bind_arg(struct dvm *v,sqlite3_stmt *st,int index,dvm_ref ref) {
   if(rc!=SQLITE_OK)bind_sqlite_error(v,index,rc);
   return;
  }
- const char *name=item->cls->name?item->cls->name:"";
+ const char *name=dvm__obj(v,gc5_ref_item)->cls->name?dvm__obj(v,gc5_ref_item)->cls->name:"";
  union dvm_value num={0};
  if(!strcmp(name,"java/lang/Integer")||!strcmp(name,"java/lang/Long")) {
   if(!java_basics_call(v,name,"longValue","()J",ref,NULL,0,&num)) {
@@ -215,8 +217,8 @@ static void bind_arg(struct dvm *v,sqlite3_stmt *st,int index,dvm_ref ref) {
 static bool query_text(struct dvm *v,dvm_ref ref,const char *what,const char **out,size_t *len) {
  *out=NULL;*len=0;
  if(!ref)return true;
- struct dvm_object *o=dvm__obj(v,ref);
- if(!o||o->kind!=DVM_OBJ_STRING) {
+ const dvm_ref gc5_ref_o=(ref); if(!gc_operation_admit(v,gc5_ref_o))return false;
+ if(!dvm__obj(v,gc5_ref_o)||dvm__obj(v,gc5_ref_o)->kind!=DVM_OBJ_STRING) {
   dvm__throw(v,"java/lang/IllegalArgumentException","%s must be a String",what);
   return false;
  }
@@ -253,20 +255,20 @@ static char *query_build_sql(struct dvm *v,int distinct,dvm_ref table_ref,dvm_re
  if(!query_put(v,buf,&used,"SELECT ",7))goto fail;
  if(distinct&&!query_put(v,buf,&used,"DISTINCT ",9))goto fail;
  if(columns_ref) {
-  struct dvm_object *cols=dvm__obj(v,columns_ref);
-  if(!cols||cols->kind!=DVM_OBJ_ARRAY||cols->elem_kind!='L'||(cols->length&&!cols->data)) {
+  const dvm_ref gc5_ref_cols=(columns_ref); if(!gc_operation_admit(v,gc5_ref_cols))goto fail;
+  if(!dvm__obj(v,gc5_ref_cols)||dvm__obj(v,gc5_ref_cols)->kind!=DVM_OBJ_ARRAY||dvm__obj(v,gc5_ref_cols)->elem_kind!='L'||(dvm__obj(v,gc5_ref_cols)->length&&!dvm__obj(v,gc5_ref_cols)->data)) {
    dvm__throw(v,"java/lang/IllegalArgumentException","columns must be a String array");
    goto fail;
   }
-  if(cols->length>1000000u) {
+  if(dvm__obj(v,gc5_ref_cols)->length>1000000u) {
    dvm__throw(v,"java/lang/IllegalArgumentException","columns array is too large");
    goto fail;
   }
-  if(!cols->length) {
+  if(!dvm__obj(v,gc5_ref_cols)->length) {
    if(!query_put(v,buf,&used,"*",1))goto fail;
-  } else for(uint32_t i=0;i<cols->length;i++) {
+  } else for(uint32_t i=0;i<dvm__obj(v,gc5_ref_cols)->length;i++) {
    if(i&&!query_put(v,buf,&used,",",1))goto fail;
-   dvm_ref item=((dvm_ref*)cols->data)[i];
+   dvm_ref item=((dvm_ref*)dvm__obj(v,gc5_ref_cols)->data)[i];
    if(!item) {
     dvm__throw(v,"java/lang/IllegalArgumentException","columns contains null");
     goto fail;
@@ -322,12 +324,12 @@ static bool replace_sql_exception(struct dvm *v){
  * so dvm_find_method()/dvm_call() cannot reach them from here.  Dispatch the
  * unboxing call through the same hooks the interpreter uses. */
 static bool replace_boxed(struct dvm *v,dvm_ref ref,const char *method,const char *sig,union dvm_value *out){
- struct dvm_object *o=dvm__obj(v,ref);
- if(!o||!o->cls||!o->cls->name)return false;
- if(!strcmp(o->cls->name,"java/lang/Byte")||!strcmp(o->cls->name,"java/lang/Short"))
-  return small_boxes_call(v,o->cls->name,method,sig,ref,NULL,0,out);
- if(!strcmp(o->cls->name,"java/lang/Float")||!strcmp(o->cls->name,"java/lang/Double"))
-  return java_basics_call(v,o->cls->name,method,sig,ref,NULL,0,out);
+ const dvm_ref gc5_ref_o=(ref); if(!gc_operation_admit(v,gc5_ref_o))return false;
+ if(!dvm__obj(v,gc5_ref_o)||!dvm__obj(v,gc5_ref_o)->cls||!dvm__obj(v,gc5_ref_o)->cls->name)return false;
+ if(!strcmp(dvm__obj(v,gc5_ref_o)->cls->name,"java/lang/Byte")||!strcmp(dvm__obj(v,gc5_ref_o)->cls->name,"java/lang/Short"))
+  return small_boxes_call(v,dvm__obj(v,gc5_ref_o)->cls->name,method,sig,ref,NULL,0,out);
+ if(!strcmp(dvm__obj(v,gc5_ref_o)->cls->name,"java/lang/Float")||!strcmp(dvm__obj(v,gc5_ref_o)->cls->name,"java/lang/Double"))
+  return java_basics_call(v,dvm__obj(v,gc5_ref_o)->cls->name,method,sig,ref,NULL,0,out);
  return false;
 }
 /* AOSP DatabaseUtils.bindObjectToProgram binds Byte/Short/Integer/Long as
@@ -340,8 +342,8 @@ static bool bind_content_value(struct dvm *v,sqlite3_stmt *st,int index,dvm_ref 
   if(rc!=SQLITE_OK)bind_sqlite_error(v,index,rc);
   return !dvm_exception(v);
  }
- struct dvm_object *item=dvm__obj(v,ref);
- const char *name=item&&item->cls&&item->cls->name?item->cls->name:"";
+ const dvm_ref gc5_ref_item=(ref); if(!gc_operation_admit(v,gc5_ref_item))return false;
+ const char *name=dvm__obj(v,gc5_ref_item)&&dvm__obj(v,gc5_ref_item)->cls&&dvm__obj(v,gc5_ref_item)->cls->name?dvm__obj(v,gc5_ref_item)->cls->name:"";
  union dvm_value num={0};
  int rc=SQLITE_OK;
  if(!strcmp(name,"java/lang/Byte")||!strcmp(name,"java/lang/Short")){
@@ -400,8 +402,8 @@ static bool content_values_collect(struct dvm *v,dvm_ref values,int *count,dvm_r
    if(!has.i)break;
    if(got>=size){dvm__throw(v,"android/database/sqlite/SQLiteException","ContentValues size changed while iterating");return false;}
    if(!collections_call(v,"java/util/Iterator","next","()Ljava/lang/Object;",iter.l,NULL,0,&key)){if(!dvm_exception(v))dvm__throw(v,"android/database/sqlite/SQLiteException","ContentValues key iterator failed");return false;}
-   struct dvm_object *ko=key.l?dvm__obj(v,key.l):NULL;
-   if(!ko||ko->kind!=DVM_OBJ_STRING){dvm__throw(v,"android/database/sqlite/SQLiteException","ContentValues key is not a String");return false;}
+   const dvm_ref gc5_ref_ko=(key.l?(key.l):0); if(!gc_operation_admit(v,gc5_ref_ko))return false;
+   if(!dvm__obj(v,gc5_ref_ko)||dvm__obj(v,gc5_ref_ko)->kind!=DVM_OBJ_STRING){dvm__throw(v,"android/database/sqlite/SQLiteException","ContentValues key is not a String");return false;}
    const char *k=dvm_string_utf8(v,key.l);
    uint32_t klen=dvm_string_utf8_length(v,key.l);
    if(!k||memchr(k,0,klen)){dvm__throw(v,"android/database/sqlite/SQLiteException","ContentValues key contains an embedded NUL");return false;}
@@ -420,14 +422,14 @@ static bool sqlite_replace(struct dvm *v,database *d,const union dvm_value *a,un
  const char *table=NULL,*hack=NULL;
  size_t table_len=0,hack_len=0;
  dvm_ref values=a[2].l;
- struct dvm_object *to=a[0].l?dvm__obj(v,a[0].l):NULL;
- if(!to||to->kind!=DVM_OBJ_STRING)return true;
+ const dvm_ref gc5_ref_to=(a[0].l?(a[0].l):0); if(!gc_operation_admit(v,gc5_ref_to))return true;
+ if(!dvm__obj(v,gc5_ref_to)||dvm__obj(v,gc5_ref_to)->kind!=DVM_OBJ_STRING)return true;
  table=dvm_string_utf8(v,a[0].l);
  table_len=dvm_string_utf8_length(v,a[0].l);
  if(!table||memchr(table,0,table_len))return true;
  if(a[1].l){
-  struct dvm_object *ho=dvm__obj(v,a[1].l);
-  if(!ho||ho->kind!=DVM_OBJ_STRING)return true;
+  const dvm_ref gc5_ref_ho=(a[1].l); if(!gc_operation_admit(v,gc5_ref_ho))return true;
+  if(!dvm__obj(v,gc5_ref_ho)||dvm__obj(v,gc5_ref_ho)->kind!=DVM_OBJ_STRING)return true;
   hack=dvm_string_utf8(v,a[1].l);
   hack_len=dvm_string_utf8_length(v,a[1].l);
   if(!hack||memchr(hack,0,hack_len))return true;
@@ -493,10 +495,10 @@ static bool sqlite_update(struct dvm *v,database *d,const union dvm_value *a,uni
     !query_text(v,a[2].l,"whereClause",&where,&where_len))goto fail;
  if(!content_values_collect(v,a[1].l,&size,&keys,&vals))goto fail;
  if(!size){dvm__throw(v,"java/lang/IllegalArgumentException","Empty values");goto fail;}
- struct dvm_object *args=a[3].l?dvm__obj(v,a[3].l):NULL;
- if(a[3].l&&(!args||args->kind!=DVM_OBJ_ARRAY||args->elem_kind!='L'||(args->length&&!args->data))){dvm__throw(v,"java/lang/IllegalArgumentException","whereArgs must be a String array");goto fail;}
- if(args&&args->length>1000000u){dvm__throw(v,"java/lang/IllegalArgumentException","too many whereArgs");goto fail;}
- nwhere=args?(int)args->length:0;
+ const dvm_ref gc5_ref_args=(a[3].l?(a[3].l):0); if(!gc_operation_admit(v,gc5_ref_args))goto fail;
+ if(a[3].l&&(!dvm__obj(v,gc5_ref_args)||dvm__obj(v,gc5_ref_args)->kind!=DVM_OBJ_ARRAY||dvm__obj(v,gc5_ref_args)->elem_kind!='L'||(dvm__obj(v,gc5_ref_args)->length&&!dvm__obj(v,gc5_ref_args)->data))){dvm__throw(v,"java/lang/IllegalArgumentException","whereArgs must be a String array");goto fail;}
+ if(dvm__obj(v,gc5_ref_args)&&dvm__obj(v,gc5_ref_args)->length>1000000u){dvm__throw(v,"java/lang/IllegalArgumentException","too many whereArgs");goto fail;}
+ nwhere=dvm__obj(v,gc5_ref_args)?(int)dvm__obj(v,gc5_ref_args)->length:0;
  sql=malloc(SQLITE_QUERY_SQL_LIMIT);
  if(!sql){dvm__throw(v,"java/lang/OutOfMemoryError","update SQL buffer");goto fail;}
  if(!query_put(v,sql,&used,"UPDATE ",7)||!query_put(v,sql,&used,table,table_len)||!query_put(v,sql,&used," SET ",5))goto fail;
@@ -510,8 +512,8 @@ static bool sqlite_update(struct dvm *v,database *d,const union dvm_value *a,uni
  if(!st||sqlite3_bind_parameter_count(st)!=size+nwhere){dvm__throw(v,"android/database/sqlite/SQLiteException","update bind argument count mismatch");goto fail;}
  for(int i=0;i<size;i++)if(!bind_content_value(v,st,i+1,vals[i]))goto fail;
  for(int i=0;i<nwhere;i++){
-  dvm_ref ref=((dvm_ref*)args->data)[i];struct dvm_object *item=ref?dvm__obj(v,ref):NULL;
-  if(ref&&(!item||item->kind!=DVM_OBJ_STRING)){dvm__throw(v,"java/lang/IllegalArgumentException","whereArgs element must be a String or null");goto fail;}
+  dvm_ref ref=((dvm_ref*)dvm__obj(v,gc5_ref_args)->data)[i];const dvm_ref gc5_ref_item=(ref?(ref):0); if(!gc_operation_admit(v,gc5_ref_item))goto fail;
+  if(ref&&(!dvm__obj(v,gc5_ref_item)||dvm__obj(v,gc5_ref_item)->kind!=DVM_OBJ_STRING)){dvm__throw(v,"java/lang/IllegalArgumentException","whereArgs element must be a String or null");goto fail;}
   bind_arg(v,st,size+i+1,ref);if(dvm_exception(v))goto fail;
  }
  if(sqlite3_step(st)!=SQLITE_DONE){error(v,d->s);goto fail;}
@@ -524,9 +526,9 @@ fail:
  sqlite3_finalize(st);free(sql);free(keys);free(vals);return true;
 }
 
-bool sqlite_runtime_call(struct dvm *v,const char *cl,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,union dvm_value *out) {
- struct dvm_object *o=dvm__obj(v,self);
- bool context=false;for(struct dvm_class *k=o?o->cls:NULL;k;k=k->super)if(!strcmp(k->name,"android/content/Context")){context=true;break;}
+static bool sqlite_runtime_call_gc5_operation(struct dvm *v,const char *cl,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,union dvm_value *out) {
+ const dvm_ref gc5_ref_o=(self); if(!gc_operation_admit(v,gc5_ref_o))return true;
+ bool context=false;for(struct dvm_class *k=dvm__obj(v,gc5_ref_o)?dvm__obj(v,gc5_ref_o)->cls:NULL;k;k=k->super)if(!strcmp(k->name,"android/content/Context")){context=true;break;}
  if(context&&(IS("openOrCreateDatabase","(Ljava/lang/String;ILandroid/database/sqlite/SQLiteDatabase$CursorFactory;)Landroid/database/sqlite/SQLiteDatabase;")||IS("openOrCreateDatabase","(Ljava/lang/String;ILandroid/database/sqlite/SQLiteDatabase$CursorFactory;Landroid/database/DatabaseErrorHandler;)Landroid/database/sqlite/SQLiteDatabase;"))){
   if(a[1].i||a[2].l||(strstr(sig,"DatabaseErrorHandler;")&&a[3].l)){dvm__throw(v,"java/lang/UnsupportedOperationException","SQLite mode/factory/error handler not supported");return true;}
   if(!a[0].l){dvm__throw(v,"java/lang/NullPointerException","database name");return true;}
@@ -534,16 +536,16 @@ bool sqlite_runtime_call(struct dvm *v,const char *cl,const char *m,const char *
  }
  if(!strcmp(cl,"android/database/sqlite/SQLiteOpenHelper")) {
   if(IS("<init>","(Landroid/content/Context;Ljava/lang/String;Landroid/database/sqlite/SQLiteDatabase$CursorFactory;I)V")) {
-   if(!o||!a[0].l){dvm__throw(v,"java/lang/NullPointerException","helper context");return true;}
+   if(!dvm__obj(v,gc5_ref_o)||!a[0].l){dvm__throw(v,"java/lang/NullPointerException","helper context");return true;}
    if(a[2].l){dvm__throw(v,"java/lang/UnsupportedOperationException","CursorFactory unsupported");return true;}
    if(a[3].i<1){dvm__throw(v,"java/lang/IllegalArgumentException","version must be positive");return true;}
-   helper *h=calloc(1,sizeof *h);if(!h){dvm__throw(v,"java/lang/OutOfMemoryError","helper");return true;}h->vm=v;h->version=a[3].i;h->context=a[0].l;dvm_pin(v,h->context);h->name=a[1].l;if(h->name)dvm_pin(v,h->name);o->data=h;o->data_destroy=helper_destroy;return true;
+   helper *h=calloc(1,sizeof *h);if(!h){dvm__throw(v,"java/lang/OutOfMemoryError","helper");return true;}h->vm=v;h->version=a[3].i;h->context=a[0].l;dvm_pin(v,h->context);h->name=a[1].l;if(h->name)dvm_pin(v,h->name);dvm__obj(v,gc5_ref_o)->data=h;dvm__obj(v,gc5_ref_o)->data_destroy=helper_destroy;return true;
   }
-  helper *h=o?o->data:NULL;if(!h){dvm__throw(v,"java/lang/IllegalStateException","helper uninitialized");return true;}
+  helper *h=dvm__obj(v,gc5_ref_o)?dvm__obj(v,gc5_ref_o)->data:NULL;if(!h){dvm__throw(v,"java/lang/IllegalStateException","helper uninitialized");return true;}
   if(IS("getDatabaseName","()Ljava/lang/String;")){out->l=h->name;return true;}
-  if(IS("close","()V")){if(h->db){struct dvm_object *dbo=dvm__obj(v,h->db);database *d=dbo?dbo->data:NULL;database_close(d);dvm_unpin(v,h->db);h->db=0;}return true;}
+  if(IS("close","()V")){if(h->db){const dvm_ref gc5_ref_dbo=(h->db); if(!gc_operation_admit(v,gc5_ref_dbo))return true;database *d=dvm__obj(v,gc5_ref_dbo)?dvm__obj(v,gc5_ref_dbo)->data:NULL;database_close(d);dvm_unpin(v,h->db);h->db=0;}return true;}
   if(IS("getWritableDatabase","()Landroid/database/sqlite/SQLiteDatabase;")||IS("getReadableDatabase","()Landroid/database/sqlite/SQLiteDatabase;")) {
-   if(h->db){struct dvm_object *existing=dvm__obj(v,h->db);database *ed=existing?existing->data:NULL;if(!ed||ed->closed){dvm_unpin(v,h->db);h->db=0;}}
+   if(h->db){const dvm_ref gc5_ref_existing=(h->db); if(!gc_operation_admit(v,gc5_ref_existing))return true;database *ed=dvm__obj(v,gc5_ref_existing)?dvm__obj(v,gc5_ref_existing)->data:NULL;if(!ed||ed->closed){dvm_unpin(v,h->db);h->db=0;}}
    if(!h->db){dvm_ref ref=sqlite_open_context(v,h->context,h->name);if(!ref)return true;dvm_pin(v,ref);h->db=ref;database *d=dvm__obj(v,ref)->data;sqlite3_stmt *st=NULL;int old=0;
     if(sqlite3_prepare_v2(d->s->db,"PRAGMA user_version",-1,&st,NULL)!=SQLITE_OK||sqlite3_step(st)!=SQLITE_ROW){sqlite3_finalize(st);error(v,d->s);goto helper_fail;}old=sqlite3_column_int(st,0);sqlite3_finalize(st);
     if(sqlite3_exec(d->s->db,"BEGIN",NULL,NULL,NULL)!=SQLITE_OK){error(v,d->s);goto helper_fail;}
@@ -551,7 +553,7 @@ bool sqlite_runtime_call(struct dvm *v,const char *cl,const char *m,const char *
     if(method){const char *msig=old==0?"(Landroid/database/sqlite/SQLiteDatabase;)V":"(Landroid/database/sqlite/SQLiteDatabase;II)V";struct dvm_method *fn=dvm_find_method(v,dvm_object_class(v,self),method,msig);union dvm_value args[3]={{.l=ref},{.i=old},{.i=h->version}}, ignored={0};if(!fn||(!fn->has_code&&!fn->builtin)){dvm__throw(v,"java/lang/UnsupportedOperationException","missing %s",method);sqlite3_exec(d->s->db,"ROLLBACK",NULL,NULL,NULL);goto helper_fail;}dvm_pin(v,ref);bool callback_ok=dvm_call(v,fn,self,args,old==0?1:3,&ignored);dvm_unpin(v,ref);if(!callback_ok){if(!d->closed&&d->s)sqlite3_exec(d->s->db,"ROLLBACK",NULL,NULL,NULL);goto helper_fail;}if(d->closed||!d->s){dvm__throw(v,"java/lang/IllegalStateException","database closed during helper callback");goto helper_fail;}}
     char pragma[64];snprintf(pragma,sizeof pragma,"PRAGMA user_version=%d",h->version);if(sqlite3_exec(d->s->db,pragma,NULL,NULL,NULL)!=SQLITE_OK||sqlite3_exec(d->s->db,"COMMIT",NULL,NULL,NULL)!=SQLITE_OK){error(v,d->s);sqlite3_exec(d->s->db,"ROLLBACK",NULL,NULL,NULL);goto helper_fail;}
    }out->l=h->db;return true;
-helper_fail: {struct dvm_object *bad=dvm__obj(v,h->db);database_close(bad?bad->data:NULL);}dvm_unpin(v,h->db);h->db=0;return true;
+helper_fail: {const dvm_ref gc5_ref_bad=(h->db); if(!gc_operation_admit(v,gc5_ref_bad))return true;database_close(dvm__obj(v,gc5_ref_bad)?dvm__obj(v,gc5_ref_bad)->data:NULL);}dvm_unpin(v,h->db);h->db=0;return true;
   }
   return false;
  }
@@ -563,7 +565,7 @@ helper_fail: {struct dvm_object *bad=dvm__obj(v,h->db);database_close(bad?bad->d
    const char *value=dvm_string_utf8(v,path);if(!value||strlen(value)!=dvm_string_utf8_length(v,path)){dvm__throw(v,"java/lang/IllegalArgumentException","invalid database path");return true;}
    out->l=sqlite_open_path(v,value);return true;
   }
-  database *d=o?o->data:NULL;
+  database *d=dvm__obj(v,gc5_ref_o)?dvm__obj(v,gc5_ref_o)->data:NULL;
   if(IS("close","()V")){database_close(d);return true;}
   if(IS("isOpen","()Z")){out->i=d&&!d->closed;return true;}
   if(!d||d->closed){dvm__throw(v,"java/lang/IllegalStateException","database closed");return true;}
@@ -577,10 +579,10 @@ helper_fail: {struct dvm_object *bad=dvm__obj(v,h->db);database_close(bad?bad->d
    if(!a[1].l){dvm__throw(v,"java/lang/IllegalArgumentException","Empty bindArgs");return true;}
    const char *sql=dvm_string_utf8(v,a[0].l);if(!sql){dvm__throw(v,"java/lang/NullPointerException","sql");return true;}
    sqlite3_stmt *st=NULL;if(sqlite3_prepare_v2(d->s->db,sql,-1,&st,NULL)!=SQLITE_OK){error(v,d->s);return true;}
-   struct dvm_object *ar=dvm__obj(v,a[1].l);
-   if(!ar||ar->kind!=DVM_OBJ_ARRAY||ar->elem_kind!='L'||(ar->length&&!ar->data)){sqlite3_finalize(st);dvm__throw(v,"java/lang/IllegalArgumentException","bindArgs must be an object array");return true;}
-   if(ar->length>(uint32_t)INT_MAX){sqlite3_finalize(st);dvm__throw(v,"java/lang/IllegalArgumentException","bindArgs array is too large");return true;}
-   int n=(int)ar->length;
+   const dvm_ref gc5_ref_ar=(a[1].l); if(!gc_operation_admit(v,gc5_ref_ar)){sqlite3_finalize(st);return true;}
+   if(!dvm__obj(v,gc5_ref_ar)||dvm__obj(v,gc5_ref_ar)->kind!=DVM_OBJ_ARRAY||dvm__obj(v,gc5_ref_ar)->elem_kind!='L'||(dvm__obj(v,gc5_ref_ar)->length&&!dvm__obj(v,gc5_ref_ar)->data)){sqlite3_finalize(st);dvm__throw(v,"java/lang/IllegalArgumentException","bindArgs must be an object array");return true;}
+   if(dvm__obj(v,gc5_ref_ar)->length>(uint32_t)INT_MAX){sqlite3_finalize(st);dvm__throw(v,"java/lang/IllegalArgumentException","bindArgs array is too large");return true;}
+   int n=(int)dvm__obj(v,gc5_ref_ar)->length;
    int expected=sqlite3_bind_parameter_count(st);
    if(n!=expected){sqlite3_finalize(st);dvm__throw(v,"android/database/sqlite/SQLiteException","bind argument count mismatch: expected %d, got %d",expected,n);return true;}
    /* Empty or comment-only SQL prepares to a NULL statement. Android reports
@@ -588,7 +590,7 @@ helper_fail: {struct dvm_object *bad=dvm__obj(v,h->db);database_close(bad?bad->d
     * success. */
    if(!st){sqlite3_finalize(st);dvm__throw(v,"android/database/sqlite/SQLiteException","execSQL requires a SQL statement");return true;}
    for(int i=0;i<n;i++){
-    bind_arg(v,st,i+1,((dvm_ref*)ar->data)[i]);
+    bind_arg(v,st,i+1,((dvm_ref*)dvm__obj(v,gc5_ref_ar)->data)[i]);
     if(dvm_exception(v)){sqlite3_finalize(st);return true;}
    }
    /* execSQL is not a query API.  Android throws when the statement returns
@@ -603,13 +605,13 @@ helper_fail: {struct dvm_object *bad=dvm__obj(v,h->db);database_close(bad?bad->d
   }
   if(IS("rawQuery","(Ljava/lang/String;[Ljava/lang/String;)Landroid/database/Cursor;")){
    const char *sql=dvm_string_utf8(v,a[0].l);sqlite3_stmt *st=NULL;if(!sql){dvm__throw(v,"java/lang/NullPointerException","sql");return true;}if(sqlite3_prepare_v2(d->s->db,sql,-1,&st,NULL)!=SQLITE_OK){error(v,d->s);return true;}
-   struct dvm_object *ar=a[1].l?dvm__obj(v,a[1].l):NULL;if(a[1].l&&(!ar||ar->kind!=DVM_OBJ_ARRAY||ar->elem_kind!='L'||(ar->length&&!ar->data))){sqlite3_finalize(st);dvm__throw(v,"java/lang/IllegalArgumentException","selectionArgs must be an object array");return true;}if(ar&&ar->length>1000000u){sqlite3_finalize(st);dvm__throw(v,"java/lang/IllegalArgumentException","too many selectionArgs");return true;}int n=ar?(int)ar->length:0;if(n!=sqlite3_bind_parameter_count(st)){sqlite3_finalize(st);dvm__throw(v,"android/database/sqlite/SQLiteException","selection argument count mismatch");return true;}
-   for(int i=0;i<n;i++){dvm_ref ref=((dvm_ref*)ar->data)[i];if(!ref){int brc=sqlite3_bind_null(st,i+1);if(brc!=SQLITE_OK){error(v,d->s);sqlite3_finalize(st);return true;}continue;}struct dvm_object *item=dvm__obj(v,ref);if(!item||item->kind!=DVM_OBJ_STRING){sqlite3_finalize(st);dvm__throw(v,"java/lang/IllegalArgumentException","selectionArgs element must be a string or null");return true;}const char *s=dvm_string_utf8(v,ref);uint32_t len=dvm_string_utf8_length(v,ref);if(!s){sqlite3_finalize(st);dvm__throw(v,"java/lang/OutOfMemoryError","selectionArgs string");return true;}if(len>(uint32_t)INT_MAX){sqlite3_finalize(st);dvm__throw(v,"java/lang/IllegalArgumentException","selectionArgs string exceeds INT_MAX UTF-8 bytes");return true;}int rc=sqlite3_bind_text(st,i+1,s,(int)len,SQLITE_TRANSIENT);if(rc!=SQLITE_OK){error(v,d->s);sqlite3_finalize(st);return true;}}
+   const dvm_ref gc5_ref_ar=(a[1].l?(a[1].l):0); if(!gc_operation_admit(v,gc5_ref_ar)){sqlite3_finalize(st);return true;}if(a[1].l&&(!dvm__obj(v,gc5_ref_ar)||dvm__obj(v,gc5_ref_ar)->kind!=DVM_OBJ_ARRAY||dvm__obj(v,gc5_ref_ar)->elem_kind!='L'||(dvm__obj(v,gc5_ref_ar)->length&&!dvm__obj(v,gc5_ref_ar)->data))){sqlite3_finalize(st);dvm__throw(v,"java/lang/IllegalArgumentException","selectionArgs must be an object array");return true;}if(dvm__obj(v,gc5_ref_ar)&&dvm__obj(v,gc5_ref_ar)->length>1000000u){sqlite3_finalize(st);dvm__throw(v,"java/lang/IllegalArgumentException","too many selectionArgs");return true;}int n=dvm__obj(v,gc5_ref_ar)?(int)dvm__obj(v,gc5_ref_ar)->length:0;if(n!=sqlite3_bind_parameter_count(st)){sqlite3_finalize(st);dvm__throw(v,"android/database/sqlite/SQLiteException","selection argument count mismatch");return true;}
+   for(int i=0;i<n;i++){dvm_ref ref=((dvm_ref*)dvm__obj(v,gc5_ref_ar)->data)[i];if(!ref){int brc=sqlite3_bind_null(st,i+1);if(brc!=SQLITE_OK){error(v,d->s);sqlite3_finalize(st);return true;}continue;}const dvm_ref gc5_ref_item=(ref); if(!gc_operation_admit(v,gc5_ref_item)){sqlite3_finalize(st);return true;}if(!dvm__obj(v,gc5_ref_item)||dvm__obj(v,gc5_ref_item)->kind!=DVM_OBJ_STRING){sqlite3_finalize(st);dvm__throw(v,"java/lang/IllegalArgumentException","selectionArgs element must be a string or null");return true;}const char *s=dvm_string_utf8(v,ref);uint32_t len=dvm_string_utf8_length(v,ref);if(!s){sqlite3_finalize(st);dvm__throw(v,"java/lang/OutOfMemoryError","selectionArgs string");return true;}if(len>(uint32_t)INT_MAX){sqlite3_finalize(st);dvm__throw(v,"java/lang/IllegalArgumentException","selectionArgs string exceeds INT_MAX UTF-8 bytes");return true;}int rc=sqlite3_bind_text(st,i+1,s,(int)len,SQLITE_TRANSIENT);if(rc!=SQLITE_OK){error(v,d->s);sqlite3_finalize(st);return true;}}
    cursor *c=calloc(1,sizeof *c);if(!c){sqlite3_finalize(st);dvm__throw(v,"java/lang/OutOfMemoryError","cursor");return true;}c->s=d->s;c->s->refs++;c->stmt=st;c->pos=-1;c->cols=sqlite3_column_count(st);c->names=calloc((size_t)c->cols,sizeof *c->names);
    if(c->cols&&!c->names){cur_destroy(c);dvm__throw(v,"java/lang/OutOfMemoryError","columns");return true;}
    for(int i=0;i<c->cols;i++){const char *name=sqlite3_column_name(st,i);if(!name){cur_destroy(c);dvm__throw(v,"java/lang/OutOfMemoryError","column name");return true;}size_t len=strlen(name)+1;c->names[i]=malloc(len);if(!c->names[i]){cur_destroy(c);dvm__throw(v,"java/lang/OutOfMemoryError","column name");return true;}memcpy(c->names[i],name,len);}
    int rc;while((rc=sqlite3_step(st))==SQLITE_ROW){size_t old=(size_t)c->count*(size_t)c->cols;if(c->count>=1000000 || (size_t)c->cols>1000000u-old || (size_t)c->cols>(SIZE_MAX/sizeof *c->cells)-old){cur_destroy(c);dvm__throw(v,"android/database/sqlite/SQLiteException","cursor materialization limit exceeded");return true;}size_t total=old+(size_t)c->cols;sqlite3_value **cells=realloc(c->cells,total*sizeof *cells);if(total&&!cells){cur_destroy(c);dvm__throw(v,"java/lang/OutOfMemoryError","rows");return true;}c->cells=cells;for(int i=0;i<c->cols;i++){c->cells[old+i]=sqlite3_value_dup(sqlite3_column_value(st,i));if(!c->cells[old+i]){for(int j=0;j<i;j++)sqlite3_value_free(c->cells[old+j]);cur_destroy(c);dvm__throw(v,"java/lang/OutOfMemoryError","value");return true;}}c->count++;}if(rc!=SQLITE_DONE){error(v,d->s);cur_destroy(c);return true;}sqlite3_finalize(st);c->stmt=NULL;
-   struct dvm_class *cls=dvm_find_class_or_external(v,"android/database/Cursor");dvm_ref ref=cls?dvm_new_object(v,cls):0;struct dvm_object *co=ref?dvm__obj(v,ref):NULL;if(!co){cur_destroy(c);dvm__throw(v,"java/lang/OutOfMemoryError","cursor object");return true;}co->data=c;co->data_destroy=cur_destroy;out->l=ref;return true;
+   struct dvm_class *cls=dvm_find_class_or_external(v,"android/database/Cursor");dvm_ref ref=cls?dvm_new_object(v,cls):0;const dvm_ref gc5_ref_co=(ref?(ref):0); if(!gc_operation_admit(v,gc5_ref_co)){cur_destroy(c);return true;}if(!dvm__obj(v,gc5_ref_co)){cur_destroy(c);dvm__throw(v,"java/lang/OutOfMemoryError","cursor object");return true;}dvm__obj(v,gc5_ref_co)->data=c;dvm__obj(v,gc5_ref_co)->data_destroy=cur_destroy;out->l=ref;return true;
   }
   if(IS("query","(ZLjava/lang/String;[Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Landroid/database/Cursor;")){
    char *sql=query_build_sql(v,a[0].i,a[1].l,a[2].l,a[3].l,a[5].l,a[6].l,a[7].l,a[8].l);
@@ -622,7 +624,7 @@ helper_fail: {struct dvm_object *bad=dvm__obj(v,h->db);database_close(bad?bad->d
   }
  }
  if(!strcmp(cl,"android/database/Cursor")){
-  cursor *c=o?o->data:NULL;if(!c){dvm__throw(v,"java/lang/IllegalStateException","cursor uninitialized");return true;}
+  cursor *c=dvm__obj(v,gc5_ref_o)?dvm__obj(v,gc5_ref_o)->data:NULL;if(!c){dvm__throw(v,"java/lang/IllegalStateException","cursor uninitialized");return true;}
   if(IS("close","()V")){if(!c->closed){sqlite3_finalize(c->stmt);c->stmt=NULL;c->closed=1;release(c->s);c->s=NULL;}return true;}
   if(IS("isClosed","()Z")){out->i=c->closed;return true;}
   if(c->closed){dvm__throw(v,"java/lang/IllegalStateException","cursor closed");return true;}
@@ -642,6 +644,15 @@ helper_fail: {struct dvm_object *bad=dvm__obj(v,h->db);database_close(bad?bad->d
  }
  return false;
 }
+bool sqlite_runtime_call(struct dvm *v,const char *cl,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,union dvm_value *out){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return true;
+ bool ok=sqlite_runtime_call_gc5_operation(v,cl,m,sig,self,a,out);
+ const char *ret=sig?strchr(sig,')'):NULL;
+ gc_operation_result(&operation,sig,ok&&out&&ret&&(ret[1]=='L'||ret[1]=='[')?out->l:0);
+ return ok;
+}
+
 dvm_ref sqlite_runtime_open_memory(struct dvm *v) {
  return sqlite_open_path(v,":memory:");
 }
@@ -858,6 +869,14 @@ static void sqlite_selftest_fail(struct dvm *v,const char *stage,
  } \
 } while(0)
 
+/* Test-only metadata restoration: no loan is kept across the tested call.
+ * A reused slot must never receive the previous fixture's saved metadata. */
+static bool st_restore_fixture_metadata(struct dvm *v,dvm_ref ref,uint64_t identity,bool utf8,uint32_t saved){
+ struct dvm_object *o=dvm__obj(v,ref);
+ if(!o||o->identity_generation!=identity)return false;
+ if(utf8)o->utf8_len=saved;else o->length=saved;
+ return true;
+}
 bool sqlite_runtime_selftest(struct dvm *v) {
  static const char nul_text[]={'a',0,'b'};
  static const unsigned char blob_bytes[]={0x00,0x7f,0x80,0xff};
@@ -1041,10 +1060,10 @@ bool sqlite_runtime_selftest(struct dvm *v) {
  struct dvm_object *huge_obj=huge?dvm__obj(v,huge):NULL;
  SQLITE_ST_CHECK("huge_args_fixtures","huge_args_non_null",
   huge_items[0]&&huge_obj);
- uint32_t saved_length=huge_obj->length;
+ uint64_t huge_obj_identity=huge_obj->identity_generation;uint32_t saved_length=huge_obj->length;
  huge_obj->length=UINT32_MAX;
  bool huge_rejected=st_exec_rejected(v,db,"INSERT INTO r6_probe(k) VALUES(?)",huge,"java/lang/IllegalArgumentException","too large");
- huge_obj->length=saved_length;
+ SQLITE_ST_CHECK("huge_metadata_restore","original_identity_current_body",st_restore_fixture_metadata(v,huge,huge_obj_identity,false,saved_length));
  SQLITE_ST_CHECK("huge_args_reject","IllegalArgumentException_too_large",
   huge_rejected);
  /* String byte-length conversion guard: synthesize a >INT_MAX UTF-8 length
@@ -1055,10 +1074,10 @@ bool sqlite_runtime_selftest(struct dvm *v) {
  struct dvm_object *oversize_obj=oversize?dvm__obj(v,oversize):NULL;
  SQLITE_ST_CHECK("oversize_string_fixtures","oversize_string_args_non_null",
   oversize_obj&&oargs);
- uint32_t saved_utf8_len=oversize_obj->utf8_len;
+ uint64_t oversize_obj_identity=oversize_obj->identity_generation;uint32_t saved_utf8_len=oversize_obj->utf8_len;
  oversize_obj->utf8_len=UINT32_MAX;
  bool oversize_rejected=st_exec_rejected(v,db,"INSERT INTO r6_probe(k) VALUES(?)",oargs,"java/lang/IllegalArgumentException","exceeds INT_MAX UTF-8 bytes");
- oversize_obj->utf8_len=saved_utf8_len;
+ SQLITE_ST_CHECK("oversize_metadata_restore","original_identity_current_body",st_restore_fixture_metadata(v,oversize,oversize_obj_identity,true,saved_utf8_len));
  SQLITE_ST_CHECK("oversize_string_reject","IllegalArgumentException_exceeds_INT_MAX",
   oversize_rejected);
  /* byte[] length conversion guard: the binder must reject before it can pass
@@ -1069,10 +1088,10 @@ bool sqlite_runtime_selftest(struct dvm *v) {
  struct dvm_object *big_obj=big_blob?dvm__obj(v,big_blob):NULL;
  SQLITE_ST_CHECK("big_blob_fixtures","big_blob_args_non_null",
   big_obj&&big_args);
- uint32_t saved_blob_len=big_obj->length;
+ uint64_t big_obj_identity=big_obj->identity_generation;uint32_t saved_blob_len=big_obj->length;
  big_obj->length=UINT32_MAX;
  bool blob_rejected=st_exec_rejected(v,db,"INSERT INTO r6_probe(k) VALUES(?)",big_args,"java/lang/IllegalArgumentException","byte[] bind argument 1 exceeds INT_MAX bytes");
- big_obj->length=saved_blob_len;
+ SQLITE_ST_CHECK("blob_metadata_restore","original_identity_current_body",st_restore_fixture_metadata(v,big_blob,big_obj_identity,false,saved_blob_len));
  SQLITE_ST_CHECK("big_blob_reject","IllegalArgumentException_exceeds_INT_MAX",
   blob_rejected);
  SQLITE_ST_CHECK("final_count_query","query_ok_and_first_row",
@@ -1265,8 +1284,8 @@ bool sqlite_runtime_selftest(struct dvm *v) {
  SQLITE_ST_CHECK("update_arg_element","IllegalArgumentException",st_update_rejected(v,db,up_table,up_all,up_where,up_args,"java/lang/IllegalArgumentException","element"));
  ((dvm_ref*)dvm_array_data(v,up_args))[0]=0;
  SQLITE_ST_CHECK("update_null_where_arg","changed_0",st_update(v,db,up_table,up_all,up_where,up_args,&ival)&&ival==0);
- struct dvm_object *up_array=dvm__obj(v,up_args);uint32_t up_saved_length=up_array->length;up_array->length=UINT32_MAX;
- bool up_bounds=st_update_rejected(v,db,up_table,up_all,up_where,up_args,"java/lang/IllegalArgumentException","too many");up_array->length=up_saved_length;
+ struct dvm_object *up_array=dvm__obj(v,up_args);uint64_t up_array_identity=up_array->identity_generation;uint32_t up_saved_length=up_array->length;up_array->length=UINT32_MAX;
+ bool up_bounds=st_update_rejected(v,db,up_table,up_all,up_where,up_args,"java/lang/IllegalArgumentException","too many");SQLITE_ST_CHECK("update_metadata_restore","original_identity_current_body",st_restore_fixture_metadata(v,up_args,up_array_identity,false,up_saved_length));
  SQLITE_ST_CHECK("update_array_bounds","IllegalArgumentException_before_access",up_bounds);
  SQLITE_ST_CHECK("update_sql_bound","IllegalArgumentException",st_update_rejected(v,db,up_table,up_all,q9_huge,0,"java/lang/IllegalArgumentException","exceeds"));
  SQLITE_ST_CHECK("final_pending_exception","no_pending_exception",
@@ -1394,6 +1413,10 @@ void sqlite_runtime_column_name_selftest(struct dvm *v){
 /* Explicit native payload ownership descriptor; unknown never implies atomic. */
 
 int sqlite_gc_payload(struct dvm *v,struct dvm_object *o,dvm_gc_visit_fn visit,void *user){
+ struct gc_operation_pin gc5_pin __attribute__((cleanup(gc_operation_pin_end)));
+ if(!gc_operation_pin_begin(v,&gc5_pin,o))return DVM_GC_PAYLOAD_INVALID;
+ o=dvm__obj(v,gc5_pin.ref);
+
  (void)v;if(o->data_destroy==db_destroy||o->data_destroy==cur_destroy)return DVM_GC_PAYLOAD_ATOMIC;
  if(o->data_destroy==helper_destroy){helper *p=o->data;if(visit){visit(&p->db,user);visit(&p->context,user);visit(&p->name,user);}return DVM_GC_PAYLOAD_REFS;}return DVM_GC_PAYLOAD_UNKNOWN;
 }

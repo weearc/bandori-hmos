@@ -17,6 +17,7 @@
 #include "dvm/dvm_internal.h"
 #include "perf_attr.h"
 #include "leak_scope.h"
+#include "gc_metrics.h"
 #include "page_geometry.h"
 int sdk_trace_fprintf(FILE *,const char *,...);
 void *vm_gc_scratch_alloc(size_t bytes){return malloc(bytes);}
@@ -72,6 +73,7 @@ static void *heap_observer(void *unused){
  for(;;){
   struct timespec delay={1,0};nanosleep(&delay,NULL);
   leak_scope_status();
+  dvm_gc_metrics_worker();
   FILE *control=fopen(HEAP_DIR "mem-escape-observe","r");int escape_on=0;
   if(control){(void)fscanf(control,"%d",&escape_on);fclose(control);}
   extern void dvm_mem_idle_configure(int) __attribute__((weak));if(dvm_mem_idle_configure)dvm_mem_idle_configure(escape_on==1);
@@ -91,7 +93,12 @@ static void *heap_observer(void *unused){
   s.free_bytes=used-s.metadata_bytes-live_bytes;x=external;
   clock_gettime(CLOCK_MONOTONIC,&end);pthread_mutex_unlock(&lock);
   uint64_t pause_ns=(uint64_t)(end.tv_sec-begin.tv_sec)*1000000000ull+end.tv_nsec-begin.tv_nsec;
-  int fd=open(HEAP_DIR "mem-leak-curve.csv",O_WRONLY|O_CREAT|O_APPEND,0666);
+  /* Observer-owned metadata: repair legacy modes through the app-owned fd.
+   * No rotation policy is introduced; also repair an existing backup. */
+  int old_fd=open(HEAP_DIR "mem-leak-curve.csv.1",O_WRONLY|O_CLOEXEC|O_NOFOLLOW);
+  if(old_fd>=0){(void)fchmod(old_fd,0644);close(old_fd);}
+  int fd=open(HEAP_DIR "mem-leak-curve.csv",O_WRONLY|O_CREAT|O_APPEND,0644);
+  if(fd>=0&&fchmod(fd,0644)){close(fd);fd=-1;}
   if(fd>=0){if(lseek(fd,0,SEEK_END)==0)dprintf(fd,"pid,mono_ms,limit,committed,live_charge,live_requested,free,metadata,allocations,reuse,denied,external,external_denied,observer_lock_ns\n");
    dprintf(fd,"%d,%llu,%zu,%zu,%zu,%zu,%zu,%zu,%zu,%zu,%zu,%zu,%zu,%llu\n",getpid(),(unsigned long long)heap_mono_ms(),s.limit_bytes,s.committed_bytes,s.live_bytes,s.live_requested_bytes,s.free_bytes,s.metadata_bytes,s.live_allocations,s.reuse_hits,s.denied,x.bytes,x.denied,(unsigned long long)pause_ns);close(fd);}
   extern void dvm_mem_idle_export(void) __attribute__((weak));if(dvm_mem_idle_export)dvm_mem_idle_export();
@@ -273,7 +280,8 @@ bool vm_arena_begin(size_t maximum){
  FILE *reclaim_control=fopen(HEAP_DIR "leak-proxy-reclaim","r");int reclaim=0;
  if(reclaim_control){if(fscanf(reclaim_control,"%d",&reclaim)!=1)reclaim=0;fclose(reclaim_control);}
  perf_leak_proxy_reclaim_configure(reclaim);
- (void)generation;if(ok&&(observe||reclaim==1))pthread_once(&heap_observer_once,heap_observer_start);
+ /* GC storage counters remain available with both observation/reclaim off. */
+ (void)generation;(void)observe;if(ok)pthread_once(&heap_observer_once,heap_observer_start);
  return ok;
 }
 void vm_arena_emergency_enter(void){++emergency;}

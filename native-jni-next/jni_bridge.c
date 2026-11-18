@@ -24,6 +24,7 @@
 #include "dvm/dex.h"
 #include "dvm/dvm_internal.h"
 #include "gc_runtime.h"
+#include "gc_operation.h"
 #include "network_runtime.h"
 #include "perf_attr.h"
 #include "leak_scope.h"
@@ -398,6 +399,8 @@ static void free_thread_caches(struct jni_thread_env *t)
     for (int i = 0; i < JNI_MAX_ARRAY_CACHE; ++i)
         clear_array_cache(&t->arrays[i]);
     while(t->critical){struct jni_critical_borrow *c=t->critical;t->critical=c->next;
+        dvm_gc_contract_note(GC_CONTRACT_LOAN); /* unmatched acquisition at detach */
+        (void)dvm_gc_unpin_checked(t->bridge->vm,c->ref);
         dvm_gc_handle_drop(t->bridge->vm,c->retention);free(c);}
 }
 
@@ -432,12 +435,16 @@ static struct jni_utf_cache *utf_cache_find(struct jni_thread_env *t,
 static struct jni_utf_cache *utf_cache_create(struct jni_thread_env *t,
                                               jstring str)
 {
+ /* GC-STEP6: this operation owns all raw diagnostic/fixture borrows. */
+ struct gc_operation gc6_operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(t?t->bridge->vm:NULL,&gc6_operation))return NULL;
+
     dvm_ref ref=0;
     if(!t||!resolve_object_any(t->bridge,str,&ref)||!ref){
         if(t)bridge_set_pending_new(t->bridge,"java/lang/IllegalArgumentException","invalid JNI string identity");
         return NULL;
     }
-    struct dvm_object *object=dvm__obj(t->bridge->vm,ref);
+    if(!gc_operation_admit(t->bridge->vm,ref))return NULL;
     struct jni_utf_cache *found = utf_cache_find(t, str);
     if (found) return found;
     /* Reuse only nodes with no outstanding Get*Chars loans. A fixed number
@@ -447,7 +454,7 @@ static struct jni_utf_cache *utf_cache_create(struct jni_thread_env *t,
             clear_utf_cache(c);
             c->used = true;
             c->str = str;
-            c->vm=t->bridge->vm;c->ref=ref;c->identity=object->identity_generation;
+            c->vm=t->bridge->vm;c->ref=ref;c->identity=dvm__obj(t->bridge->vm,ref)->identity_generation;
             c->retention=jni_gc_retain(t,ref,DVM_GC_HANDLE_STRONG);
             if(!c->retention){clear_utf_cache(c);return NULL;}
             return c;
@@ -463,7 +470,7 @@ static struct jni_utf_cache *utf_cache_create(struct jni_thread_env *t,
     t->strings = c;
     c->used = true;
     c->str = str;
-    c->vm=t->bridge->vm;c->ref=ref;c->identity=object->identity_generation;
+    c->vm=t->bridge->vm;c->ref=ref;c->identity=dvm__obj(t->bridge->vm,ref)->identity_generation;
     c->retention=jni_gc_retain(t,ref,DVM_GC_HANDLE_STRONG);
     if(!c->retention){clear_utf_cache(c);return NULL;}
     return c;
@@ -487,9 +494,13 @@ static struct jni_array_cache *array_cache_store(struct jni_thread_env *t,
                                                  jarray array, jni_kind kind,
                                                  void *elems, size_t bytes)
 {
+ /* GC-STEP6: this operation owns all raw diagnostic/fixture borrows. */
+ struct gc_operation gc6_operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(t?t->bridge->vm:NULL,&gc6_operation))return NULL;
+
     if (!t) return NULL;
     dvm_ref ref=0;if(!resolve_object_any(t->bridge,array,&ref)||!ref)return NULL;
-    struct dvm_object *object=dvm__obj(t->bridge->vm,ref);
+    if(!gc_operation_admit(t->bridge->vm,ref))return NULL;
     for (int i = 0; i < JNI_MAX_ARRAY_CACHE; ++i) {
         struct jni_array_cache *c = &t->arrays[i];
         if (!c->used) {
@@ -500,7 +511,7 @@ static struct jni_array_cache *array_cache_store(struct jni_thread_env *t,
             c->kind = kind;
             c->elems = elems;
             c->bytes = bytes;
-            c->vm=t->bridge->vm;c->ref=ref;c->identity=object->identity_generation;c->retention=retention;
+            c->vm=t->bridge->vm;c->ref=ref;c->identity=dvm__obj(t->bridge->vm,ref)->identity_generation;c->retention=retention;
             return c;
         }
     }
@@ -1456,8 +1467,7 @@ static bool bridge_pin_cb(void *ctx, uint32_t object_ref)
 {
     struct jni_bridge *b = (struct jni_bridge *)ctx;
     if (!b || b->magic != JNI_BRIDGE_MAGIC || object_ref == 0) return false;
-    dvm_pin(b->vm, object_ref);
-    return true;
+    return dvm_gc_pin_checked(b->vm, object_ref);
 }
 
 static uint64_t bridge_identity_cb(void *ctx,uint32_t object_ref)
@@ -2238,9 +2248,9 @@ static jint JNICALL bridge_Throw(JNIEnv *env, jthrowable obj)
                                "Throw null or invalid throwable");
         goto done;
     }
-    struct dvm_object *o = dvm__obj(t->bridge->vm, ref);
     struct dvm_class *throwable = dvm_find_class(t->bridge->vm,
                                                  "java/lang/Throwable");
+    struct dvm_object *o = dvm__obj(t->bridge->vm, ref);
     if (!o || (throwable && !dvm__class_assignable(t->bridge->vm, o->cls,
                                                    throwable))) {
         bridge_set_pending_new(t->bridge, "java/lang/IllegalArgumentException",
@@ -4741,6 +4751,8 @@ static void JNICALL bridge_SetObjectArrayElement(JNIEnv *env,
     struct jni_thread_env *t = NULL;
     bool owned = false;
     if (!enter_slot(env, &t, &owned)) return;
+    struct gc_operation gc6_store;
+    if(!gc_operation_begin(t->bridge->vm,&gc6_store)){gc_operation_end(&gc6_store);leave_slot(t,owned);return;}
     uint32_t ref = 0;
     void *cls = NULL;
     jni_ref_kind kind = JNI_REF_NONE;
@@ -4785,6 +4797,7 @@ static void JNICALL bridge_SetObjectArrayElement(JNIEnv *env,
     }
     if (data) GC_STORE_REF(t->bridge->vm,&((dvm_ref *)data)[index],vref,"JNI_SetObjectArrayElement");
 done:
+    gc_operation_end(&gc6_store);
     leave_slot(t, owned);
 }
 
@@ -4946,6 +4959,12 @@ static void *JNICALL bridge_GetPrimitiveArrayCritical(JNIEnv *env,jarray array,j
     if(!loan){bridge_set_pending_new(t->bridge,"java/lang/OutOfMemoryError","critical borrow allocation");goto done;}
     loan->retention=jni_gc_retain(t,ref,DVM_GC_HANDLE_STRONG|DVM_GC_HANDLE_BORROW_PAYLOAD);
     if(!loan->retention){free(loan);goto done;}
+    if(!dvm_gc_pin_checked(t->bridge->vm,ref)){
+        dvm_gc_handle_drop(t->bridge->vm,loan->retention);free(loan);goto done;
+    }
+    /* Retention/pin helpers may enter the VM; acquire the pinned body anew. */
+    o=dvm__obj(t->bridge->vm,ref);
+    if(!o){(void)dvm_gc_unpin_checked(t->bridge->vm,ref);(void)dvm_gc_handle_drop(t->bridge->vm,loan->retention);free(loan);goto invalid;}
     loan->array=array;loan->ref=ref;loan->identity=o->identity_generation;loan->pointer=o->data;
     loan->next=t->critical;t->critical=loan;data=loan->pointer;
     if(isCopy)*isCopy=JNI_FALSE;
@@ -4971,6 +4990,7 @@ static void JNICALL bridge_ReleasePrimitiveArrayCritical(JNIEnv *env,jarray arra
         /* Direct payload: COMMIT keeps this exact acquisition alive. ABORT
          * cannot undo writes to direct storage, but releases one acquisition. */
         if(mode!=JNI_COMMIT){
+            if(!dvm_gc_unpin_checked(t->bridge->vm,ref))goto invalid;
             if(!dvm_gc_handle_drop(t->bridge->vm,loan->retention))goto invalid;
             *slot=loan->next;free(loan);
         }
@@ -4978,6 +4998,9 @@ static void JNICALL bridge_ReleasePrimitiveArrayCritical(JNIEnv *env,jarray arra
     }
 invalid:
     bridge_set_pending_new(t->bridge,"java/lang/IllegalArgumentException","ReleasePrimitiveArrayCritical invalid mode/pointer/array");
+    /* JNI already has the original IllegalArgumentException in t->pending.
+     * Do not create a second VM exception that leave_slot could substitute. */
+    dvm_gc_contract_note(GC_CONTRACT_LOAN);
     leave_slot(t,owned);
 }
 
@@ -5473,7 +5496,10 @@ bool jni_bridge_call_native(void *user, struct dvm *vm,
     bool trace_native = !strcmp(class_name,"com/unity3d/player/UnityPlayer") || strstr(class_name,"NativeLoader")!=NULL;
 #ifdef LUNARIA_UNITY_PLAYER_PROBE
     if(!strcmp(class_name,"com/unity3d/player/UnityPlayer")&&!strcmp(method,"nativeUnitySendMessage")&&args&&nargs==3){
-        struct dvm *vm=b->vm;const char *object=dvm_string_utf8(vm,args[0].l),*callback=dvm_string_utf8(vm,args[1].l);
+        struct dvm *vm=b->vm;
+        struct gc_operation gc6_message __attribute__((cleanup(gc_operation_end)));
+        if(!gc_operation_begin(vm,&gc6_message))goto done;
+        const char *object=dvm_string_utf8(vm,args[0].l),*callback=dvm_string_utf8(vm,args[1].l);
         struct dvm_object *payload=dvm__obj(vm,args[2].l);uint32_t bytes=0;const unsigned char *data=NULL;
         if(payload&&payload->kind==DVM_OBJ_ARRAY&&payload->elem_kind=='B'){bytes=dvm_array_length(vm,args[2].l);data=dvm_array_data(vm,args[2].l);}
         const char expected[]="{\"sendType\":\"Sdk_Inited\",\"sendCode\":0,\"sendData\":\"\"}";

@@ -5,33 +5,17 @@
 #include <strings.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <unistd.h>
+#include <sys/stat.h>
+extern int sdk_apk_open_asset(const char*);
+extern int sdk_apk_asset_source_ready(void);
 int sdk_trace_fprintf(FILE*,const char*,...);
 typedef struct {const char* name;const unsigned char* bytes;size_t size;} asset;
 #include "assets.inc"
-typedef struct {struct dvm* vm;dvm_ref child;const asset* a;size_t pos;int closed;bool whole_input;} io;
-/* Hot-path rule: no per-call fopen/fwrite/fclose.
- * OFF unless files/sdkdex/engine-probe-observe contains '1' (checked once);
- * when enabled the stream stays open and VM teardown closes it. */
-static int asset_probe_enabled=-1;
-static FILE *asset_probe_file;
-static int asset_probe_ready(void){
- if(asset_probe_enabled<0){
-  asset_probe_enabled=0;
-  FILE *flag=fopen("/data/storage/el2/base/haps/entry/files/sdkdex/engine-probe-observe","r");
-  if(flag){char b=0;if(fread(&b,1,1,flag)==1&&b=='1')asset_probe_enabled=1;fclose(flag);}
- }
- return asset_probe_enabled==1;
-}
+typedef struct {struct dvm* vm;dvm_ref child;const asset* a;size_t pos;int closed;bool whole_input;asset owned_asset;unsigned char* owned_bytes;} io;
 static void asset_probe_log(const char *fmt,...){
- if(!asset_probe_ready())return;
- if(!asset_probe_file){
-  asset_probe_file=fopen("/data/storage/el2/base/haps/entry/files/sdkdex/engine-probe.txt","a");
-  if(!asset_probe_file){asset_probe_enabled=0;return;}
- }
- va_list a;va_start(a,fmt);vfprintf(asset_probe_file,fmt,a);va_end(a);fputc('\n',asset_probe_file);
-}
-static void asset_probe_close(void){
- if(asset_probe_file){fflush(asset_probe_file);fclose(asset_probe_file);asset_probe_file=NULL;}
+ FILE *f=fopen("/data/storage/el2/base/haps/entry/files/sdkdex/engine-probe.txt","a");if(!f)return;
+ va_list a;va_start(a,fmt);vfprintf(f,fmt,a);va_end(a);fputc('\n',f);fclose(f);
 }
 static struct dvm* active;static dvm_ref resources,manager,charset;
 static dvm_ref named_charsets[8];
@@ -40,9 +24,9 @@ static bool asset_gc_roots(struct dvm *v,dvm_gc_visit_fn visit,void *user,void *
  dvm_ref *slots[]={&resources,&manager,&charset};for(unsigned i=0;i<3;i++)if(*slots[i])visit(slots[i],user);
  for(unsigned i=0;i<8;i++)if(named_charsets[i])visit(&named_charsets[i],user);return true;
 }
-void asset_reader_vm_end(struct dvm *v){if(active!=v)return;asset_probe_close();dvm_gc_root_provider_remove(v,"asset-reader/cache",&active);resources=manager=charset=0;memset(named_charsets,0,sizeof named_charsets);active=NULL;}
+void asset_reader_vm_end(struct dvm *v){if(active!=v)return;dvm_gc_root_provider_remove(v,"asset-reader/cache",&active);resources=manager=charset=0;memset(named_charsets,0,sizeof named_charsets);active=NULL;}
 static const char* charset_names[]={"UTF-8","UTF-16BE","UTF-16LE","UTF-16","US-ASCII","ISO-8859-1","UTF-32BE","UTF-32LE"};
-static void release(void* q){io* p=q;if(p){if(p->child)dvm_unpin(p->vm,p->child);free(p);}}
+static void release(void* q){io* p=q;if(p){if(p->child)dvm_unpin(p->vm,p->child);free(p->owned_bytes);free(p);}}
 static bool error(struct dvm* v,const char* c){dvm__throw(v,c,"asset reader");return true;}
 static dvm_ref object(struct dvm* v,const char* c){return dvm_new_object(v,dvm_find_class_or_external(v,c));}
 bool asset_reader_is_manager(struct dvm *v,dvm_ref ref){return v==active&&ref&&ref==manager;}
@@ -100,6 +84,16 @@ bool asset_reader_call(struct dvm* v,const char* c,const char* m,const char* sig
   return false;
  }
  if(self==manager&&manager&&IS("open","(Ljava/lang/String;)Ljava/io/InputStream;")&&n==1){
+ if(sdk_apk_asset_source_ready()){
+  const char* name=dvm_string_utf8(v,a[0].l);if(!name)return error(v,"java/lang/NullPointerException");
+  int fd=sdk_apk_open_asset(name);if(fd<0)return error(v,"java/io/FileNotFoundException");
+  struct stat st={0};if(fstat(fd,&st)||st.st_size<0||st.st_size>64*1024*1024){close(fd);return error(v,"java/io/IOException");}
+  io*p=calloc(1,sizeof *p);if(!p){close(fd);return error(v,"java/lang/OutOfMemoryError");}
+  p->owned_bytes=malloc(st.st_size?st.st_size:1);if(!p->owned_bytes){close(fd);free(p);return error(v,"java/lang/OutOfMemoryError");}
+  size_t at=0;while(at<(size_t)st.st_size){ssize_t k=read(fd,p->owned_bytes+at,st.st_size-at);if(k<=0){close(fd);release(p);return error(v,"java/io/IOException");}at+=k;}close(fd);
+  out->l=object(v,"java/io/InputStream");struct dvm_object*o=dvm__obj(v,out->l);if(!o){release(p);return error(v,"java/lang/OutOfMemoryError");}
+  p->vm=v;p->owned_asset=(asset){"runtime-apk",p->owned_bytes,at};p->a=&p->owned_asset;o->data=p;o->data_destroy=release;return true;
+ }
  const char* name=dvm_string_utf8(v,a[0].l);if(!name)return error(v,"java/lang/NullPointerException");const asset* found=NULL;for(size_t i=0;i<sizeof assets/sizeof assets[0];i++)if(!strcmp(name,assets[i].name)){found=&assets[i];break;}
  asset_probe_log("ASSET_READER open name=%s found=%d",name?name:"(null)",found?1:0);
  if(!found)return error(v,"java/io/FileNotFoundException");if(!found->bytes)return error(v,"java/lang/UnsupportedOperationException");

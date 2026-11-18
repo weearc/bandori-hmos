@@ -34,6 +34,14 @@ struct gcs_evac_stats {
 gcs_heap *gcs_create_evacuating(size_t bytes,size_t object_capacity);
 uint64_t gcs_borrow(gcs_heap *,gcs_object *);
 int gcs_release(gcs_heap *,uint64_t);
+/* Isolated verification only: unlike a forwarding borrow, a pin guarantees
+ * address stability until unpin. These do not certify real DVM pin coverage. */
+int gcs_pin(gcs_heap *,gcs_object *);
+int gcs_unpin(gcs_heap *,gcs_object *);
+typedef bool (*gcs_root_writable_fn)(void *,const void *,size_t);
+/* Validator must establish ownership, writable extent and lifetime before
+ * roots are read. Caller keeps mappings fixed until return. No fault probe. */
+int gcs_evacuate_checked(gcs_heap *,gcs_object **,size_t,gcs_root_writable_fn,void *);
 gcs_object *gcs_resolve(gcs_heap *,gcs_object *);
 int gcs_evacuate(gcs_heap *,gcs_object **roots,size_t count);
 void gcs_evac_stats(gcs_heap *,struct gcs_evac_stats *);

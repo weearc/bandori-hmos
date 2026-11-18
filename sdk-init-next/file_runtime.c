@@ -1,4 +1,5 @@
 #include "file_runtime.h"
+#include "gc_operation.h"
 #include "java_basics.h"
 #include <stdlib.h>
 #include <string.h>
@@ -74,7 +75,16 @@ static bool statfs_install_declarations(struct dvm *v){
 static bool file_install_declarations(struct dvm *);
 void file_runtime_vm_start(struct dvm *v){active=v;snprintf(private_base,sizeof private_base,"%s",root);char *last=strrchr(private_base,'/');if(last)*last=0;statfs_install_declarations(v);file_install_declarations(v);}
 #define IS(x,y) (!strcmp(m,x)&&!strcmp(sig,y))
-static dvm_ref make(struct dvm *v,const char *p){dvm_ref r=dvm_new_object(v,dvm_find_class_or_external(v,"java/io/File"));struct dvm_object *o=dvm__obj(v,r);if(!o)return 0;o->data=strdup(p);o->data_destroy=release;return o->data?r:0;}
+static dvm_ref make(struct dvm *v,const char *p){
+ struct gc_operation gc7 __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&gc7))return 0;
+ /* p can alias a guest path: copy before class lookup/object allocation. */
+ char *path=strdup(p);if(!path){dvm__throw(v,"java/lang/OutOfMemoryError","File path copy");return 0;}
+ dvm_ref r=dvm_new_object(v,dvm_find_class_or_external(v,"java/io/File"));
+ struct dvm_object *o=gc_operation_object(v,r);if(!o){free(path);return 0;}
+ o->data=path;o->data_destroy=release;
+ gc_operation_result(&gc7,"()Ljava/io/File;",r);return r;
+}
 #include "freeze180_file.inc"
 static bool canonical_path(const char *p,char result[PATH_MAX]){return file_canonical(p,result)&&allowed(result);}
 bool file_runtime_private_sqlite_path(struct dvm *v,const char *path,char *out,size_t cap){
@@ -83,7 +93,7 @@ bool file_runtime_private_sqlite_path(struct dvm *v,const char *path,char *out,s
  struct stat st;if(!lstat(path,&st)&&(!S_ISREG(st.st_mode)||S_ISLNK(st.st_mode)))return false;
  return true;
 }
-bool file_runtime_call(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int n,union dvm_value *out){if(v!=active||!root[0])return false;
+static bool file_runtime_call_gc7_body(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int n,union dvm_value *out){if(v!=active||!root[0])return false;
  if(!strcmp(c,"android/os/StatFs")){
   struct dvm_object *o=dvm__obj(v,self);if(!o)return err(v,"java/lang/NullPointerException");
   if(IS("<init>","(Ljava/lang/String;)V")||IS("restat","(Ljava/lang/String;)V")){
@@ -293,6 +303,15 @@ bool file_runtime_call(struct dvm *v,const char *c,const char *m,const char *sig
  if(IS("isDirectory","()Z")){out->i=ok&&S_ISDIR(st.st_mode);return true;}
  if(IS("isFile","()Z")){out->i=ok&&S_ISREG(st.st_mode);return true;}
  if(IS("length","()J")){out->j=ok?st.st_size:0;return true;}return false;}
+bool file_runtime_call(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int n,union dvm_value *out){
+ if(v!=active||!root[0])return false;
+ struct gc_operation gc7 __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&gc7)||!gc_operation_admit(v,self))return true;
+ bool handled=file_runtime_call_gc7_body(v,c,m,sig,self,a,n,out);
+ const char *ret=strchr(sig,')');
+ if(handled&&out&&ret&&(ret[1]=='L'||ret[1]=='['))gc_operation_result(&gc7,sig,out->l);
+ return handled;
+}
 static bool dir_rejected(struct dvm *v,dvm_ref ctx,dvm_ref name,int mode,const char *want){union dvm_value args[2]={{0}},out={0};args[0].l=name;args[1].i=mode;if(!file_runtime_call(v,"android/content/Context","getDir","(Ljava/lang/String;I)Ljava/io/File;",ctx,args,2,&out))return false;dvm_ref e=dvm_exception(v);if(!e)return false;struct dvm_class *c=dvm_object_class(v,e);bool match=c&&c->name&&!strcmp(c->name,want);dvm_clear_exception(v);return match;}
 static bool dir_not_taken(struct dvm *v,dvm_ref receiver,dvm_ref name,int mode){union dvm_value args[2]={{0}},out={0};args[0].l=name;args[1].i=mode;return !file_runtime_call(v,"android/content/Context","getDir","(Ljava/lang/String;I)Ljava/io/File;",receiver,args,2,&out)&&!dvm_exception(v);}
 static bool database_rejected(struct dvm *v,dvm_ref ctx,dvm_ref name,const char *want){union dvm_value args[1]={{0}},out={0};args[0].l=name;if(!file_runtime_call(v,"android/content/Context","getDatabasePath","(Ljava/lang/String;)Ljava/io/File;",ctx,args,1,&out))return false;dvm_ref e=dvm_exception(v);if(!e)return false;struct dvm_class *c=dvm_object_class(v,e);bool match=c&&c->name&&!strcmp(c->name,want);dvm_clear_exception(v);return match;}

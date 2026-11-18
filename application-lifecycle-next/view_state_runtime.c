@@ -2,6 +2,7 @@
 #include "gc_runtime.h"
 #include "layout_params_runtime.h"
 #include "dvm/dvm_internal.h"
+#include "gc_operation.h"
 #include <pthread.h>
 #include <string.h>
 #include <stdio.h>
@@ -313,6 +314,13 @@ bool view_state_runtime_set_attached(struct dvm *v,dvm_ref root,bool attached)
  if(n>=0)for(int i=0;i<n;i++)find(refs[i])->attached=attached?1:0;
  pthread_mutex_unlock(&mu);return n>=0;
 }
+static bool view_description_valid(struct dvm *v,dvm_ref ref){
+ struct gc_operation op __attribute__((cleanup(gc_operation_end)))={0};
+ if(!gc_operation_begin(v,&op)||!gc_operation_admit(v,ref))return false;
+ struct dvm_class *cs=dvm__class_by_desc(v,"Ljava/lang/CharSequence;");
+ struct dvm_object *o=dvm__obj(v,ref); /* Reparse after class lookup. */
+ return o&&o->cls&&(dvm__class_assignable(v,o->cls,cs)||!strcmp(o->cls->name,"java/lang/String")||!strcmp(o->cls->name,"java/lang/StringBuilder"));
+}
 bool view_state_runtime_call(struct dvm*v,const char*owner,const char*m,const char*sig,dvm_ref self,const union dvm_value*a,int n,union dvm_value*out)
 {
  if(!v||!owner||!m||!sig)return false;
@@ -394,8 +402,8 @@ bool view_state_runtime_call(struct dvm*v,const char*owner,const char*m,const ch
   if((setter&&(n!=1||!a))||(!setter&&(n!=0||!out))){pthread_mutex_unlock(&mu);dvm__throw(v,"java/lang/IllegalArgumentException","View property arguments");return true;}
   if(setdesc){
    dvm_ref desc=a[0].l;
-   if(desc){struct dvm_object *o=dvm__obj(v,desc);struct dvm_class *cs=dvm__class_by_desc(v,"Ljava/lang/CharSequence;");
-    if(!o||!o->cls||(!dvm__class_assignable(v,o->cls,cs)&&strcmp(o->cls->name,"java/lang/String")&&strcmp(o->cls->name,"java/lang/StringBuilder"))){pthread_mutex_unlock(&mu);dvm__throw(v,"java/lang/IllegalArgumentException","content description must implement CharSequence");return true;}
+   if(desc){
+    if(!view_description_valid(v,desc)){pthread_mutex_unlock(&mu);dvm__throw(v,"java/lang/IllegalArgumentException","content description must implement CharSequence");return true;}
     dvm_pin(v,desc);
    }
    if(e->description)dvm_unpin(v,e->description);e->description=desc;e->description_identity=view_ref_identity(desc);

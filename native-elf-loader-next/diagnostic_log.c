@@ -37,7 +37,10 @@ void perf_diag_pause(int yes){atomic_store(&paused,yes!=0);}
 static atomic_flag start_once=ATOMIC_FLAG_INIT;
 static char root[512];static size_t limit=1024*1024; /* worker-owned */
 static int connectivity_diag(const char *path){const char *base=strrchr(path,'/');return base&&!strcmp(base+1,"connectivity-status.txt");}
-static int shared_net_diag(const char *path){const char *base=strrchr(path,'/');return connectivity_diag(path)||(base&&(!strcmp(base+1,"net-room-network.txt")||!strcmp(base+1,"unity-player-constructor.txt")||!strcmp(base+1,"login-trace-roll.txt")||!strcmp(base+1,"vm-lifetime.txt")||!strcmp(base+1,"sdk-init-state.txt")||!strcmp(base+1,"unity-native-fault.txt")||!strcmp(base+1,"config-network.txt")||!strcmp(base+1,"strncpy-trace.txt")));}
+static int task6j_diag(const char *path){const char *base=strrchr(path,'/');return base&&!strcmp(base+1,"task6j-diagnosis.txt");}
+/* Heap accounting exports contain counters, not guest payloads. */
+static int heap_accounting_diag(const char *path){const char *base=strrchr(path,'/');base=base?base+1:path;return !strcmp(base,"vm-memory.txt")||!strcmp(base,"mem-leak-curve.csv");}
+static int shared_net_diag(const char *path){const char *base=strrchr(path,'/');return heap_accounting_diag(path)||task6j_diag(path)||connectivity_diag(path)||(base&&(!strcmp(base+1,"net-room-network.txt")||!strcmp(base+1,"unity-player-constructor.txt")||!strcmp(base+1,"login-trace-roll.txt")||!strcmp(base+1,"vm-lifetime.txt")||!strcmp(base+1,"sdk-init-state.txt")||!strcmp(base+1,"unity-native-fault.txt")||!strcmp(base+1,"config-network.txt")||!strcmp(base+1,"strncpy-trace.txt")));}
 struct diag_cookie {unsigned file;off_t position;FILE *stream;struct diag_cookie *next;unsigned closing,close_seen,quarantined;};
 static struct diag_cookie *cookies,*cookie_quarantine;
 /* Independent registry lock; never held across libc or queue callbacks. */
@@ -170,7 +173,11 @@ FILE *perf_diag_fopen(const char*path,const char*mode){FRAME_PROBE_SCOPE(path&&m
  }
  if(path&&mode&&mode[0]!='r'&&selected(path)&&noisy_diagnostic(path)&&!atomic_load_explicit(&noisy_enabled,memory_order_relaxed))return NULL;
  if(path&&mode&&mode[0]!='r'&&selected(path)&&atomic_load(&paused))return NULL;
- if(!atomic_load(&running)||!path||!mode||strchr(mode,'+')||(mode[0]!='a'&&mode[0]!='w')||!selected(path))return fopen(path,mode);
+ if(!atomic_load(&running)||!path||!mode||strchr(mode,'+')||(mode[0]!='a'&&mode[0]!='w')||!selected(path)){
+  FILE *f=fopen(path,mode);
+  if(f&&path&&mode&&mode[0]!='r'&&heap_accounting_diag(path)&&fchmod(fileno(f),0644)){int saved=errno;fclose(f);errno=saved;return NULL;}
+  return f;
+ }
  /* Bounded startup acceptance records must not be lossy cookies. HarmonyOS
   * can return -EBADF from fclose(cookie) despite successful writes/flush.
   * These files are written by explicit startup tests, not frame callbacks;
@@ -196,7 +203,7 @@ static void apply_row(const struct diag_row*r){FRAME_DIAG_SCOPE;
  if(!entry->header_length&&strstr(path,".csv")&&r->length&&((r->bytes[0]>='A'&&r->bytes[0]<='Z')||(r->bytes[0]>='a'&&r->bytes[0]<='z'))){const char*nl=memchr(r->bytes,'\n',r->length);size_t n=nl?(size_t)(nl-r->bytes)+1:0;if(n&&n<sizeof entry->header&&memchr(r->bytes,',',n)){memcpy(entry->header,r->bytes,n);entry->header_length=n;}}
  if((size_t)st.st_size+r->length>file_limit){char backup[544];snprintf(backup,sizeof backup,"%s.1",path);unlink(backup);rename(path,backup);if(shared_net_diag(path)){int saved=open(backup,O_WRONLY|O_CLOEXEC|O_NOFOLLOW);if(saved>=0){(void)fchmod(saved,0644);close(saved);}}st.st_size=0;rotated=1;}
  /* Oversized legacy diagnostics are removed, never retained as a huge .1. */
- char backup[544];snprintf(backup,sizeof backup,"%s.1",path);struct stat old;if(!stat(backup,&old)&&(size_t)old.st_size>file_limit)unlink(backup);
+ char backup[544];snprintf(backup,sizeof backup,"%s.1",path);struct stat old;if(!stat(backup,&old)){if((size_t)old.st_size>file_limit)unlink(backup);else if((task6j_diag(path)||heap_accounting_diag(path))&&(old.st_mode&0777)!=0644){int saved=open(backup,O_WRONLY|O_CLOEXEC|O_NOFOLLOW);if(saved<0)return;int error=fchmod(saved,0644);close(saved);if(error)return;}}
  int fd=open(path,O_WRONLY|O_CREAT|(r->truncate?O_TRUNC:O_APPEND)|O_CLOEXEC|O_NOFOLLOW,0600);if(fd<0)return;
  if(shared_net_diag(path)&&fchmod(fd,0644)){close(fd);return;}
  if(rotated&&entry->header_length)(void)write(fd,entry->header,entry->header_length);

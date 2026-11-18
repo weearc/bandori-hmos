@@ -11,6 +11,10 @@ export default class EntryAbility extends UIAbility {
   private destroyed: boolean = false;
   private heartbeatTimer: number = -1;
   private assetProgressTimer: number = -1;
+  private loadingTimer: number = -1;
+  private missingResourceOnce: boolean = false;
+  private audioLatencyObserve: boolean = false;
+  private audioLatencyTicks: number = 0;
   private refreshTimeZoneSnapshot(): void {
     // Official i18n API returns the device's configured zone when ID is omitted.
     try {
@@ -47,7 +51,8 @@ export default class EntryAbility extends UIAbility {
     this.assetProgressTimer = setInterval(() => { AppStorage.setOrCreate('vmBootStatus', probe.nativeAssetsStatus()); }, 250);
     let opened: boolean = false;
     try {
-      let raw = await this.context.resourceManager.getRawFd('sdkdex/base.apk');
+      // Explicit diagnostic Want only: exercises the real missing-resource error path.
+      let raw = await this.context.resourceManager.getRawFd(this.missingResourceOnce ? 'sdkdex/__loading_missing_once__.apk' : 'sdkdex/base.apk');
       opened = true;
       await probe.prepareNativeAssets(directory, raw.fd, raw.offset, raw.length, this.importSelftestReset);
       AppStorage.setOrCreate('vmBootStatus', probe.nativeAssetsStatus());
@@ -56,6 +61,7 @@ export default class EntryAbility extends UIAbility {
       if (opened) { await this.context.resourceManager.closeRawFd('sdkdex/base.apk'); }
     }
     AppStorage.setOrCreate('vmBootBlocking', false);
+    AppStorage.setOrCreate('loadingPrepared', true);
     if (this.destroyed) { return; }
     if (this.pageMapProbeOnly) {
       let report: string = probe.pageMapProbe(directory);
@@ -70,19 +76,35 @@ export default class EntryAbility extends UIAbility {
     }).catch((error: Error) => {
       AppStorage.setOrCreate('vmBootBlocking', true);
       AppStorage.setOrCreate('vmBootStatus', probe.nativeAssetsStatus() + '\n' + String(error));
+      AppStorage.setOrCreate('loadingError', '引擎启动失败，请查看日志。');
       hilog.error(0xFF00, 'NativeProbeLife', 'APP_VM start failed %{public}s', String(error));
     });
   }
   onCreate(want: Want): void {
+    this.audioLatencyObserve = want.parameters?.['audioLatencyObserve'] === true;
+    this.missingResourceOnce = want.parameters?.['loadingMissingResourceOnce'] === true;
+    AppStorage.setOrCreate('loadingSplashDisabled', want.parameters?.['loadingSplashDisabled'] === true);
+    AppStorage.setOrCreate('loadingPrepared', false);
+    AppStorage.setOrCreate('loadingError', '');
+    AppStorage.setOrCreate('loadingSnapshot', 'stage=0 submissions=0 mono_ms=0');
+    this.loadingTimer = setInterval(() => {
+      let snapshot: string = probe.loadingStatus();
+      AppStorage.setOrCreate('loadingSnapshot', snapshot);
+      if (snapshot.indexOf('submissions=0 ') < 0) { clearInterval(this.loadingTimer); this.loadingTimer = -1; }
+    }, 50);
     this.importSelftestReset = want.parameters?.['apkImportSelftestReset'] === true;
     let requestedPage = want.parameters?.['guestPageSize'];
     if (typeof requestedPage === 'string' && ['auto', '4096', '16384', '65536'].includes(requestedPage)) { this.pageSizeOverride = requestedPage; }
     this.pageMapProbeOnly = want.parameters?.['pageMapProbeOnly'] === true;
     this.heartbeatTimer = setInterval(() => {
+      if (this.audioLatencyObserve && this.audioLatencyTicks++ % 10 === 0) {
+        hilog.info(0xFF00, 'NativeProbeAudio', 'AUDIO_LATENCY %{public}s', probe.audioLatencyStatus());
+      }
       let bootFailure: string = probe.appVmHeartbeat();
       if (bootFailure.startsWith('E-GC1-SELFTEST-FAIL')) {
         AppStorage.setOrCreate('vmBootBlocking', true);
         AppStorage.setOrCreate('vmBootStatus', bootFailure);
+        AppStorage.setOrCreate('loadingError', '运行环境自检失败，请查看日志。');
       }
     }, 500);
     hilog.info(0xFF00, 'NativeProbeLife', 'HOST_LIFECYCLE onCreate wall=%{public}s', String(Date.now()));
@@ -90,16 +112,28 @@ export default class EntryAbility extends UIAbility {
     this.refreshTimeZoneSnapshot();
     this.createAppVm().catch((error: Error) => {
       AppStorage.setOrCreate('vmBootBlocking', true);
-      let detail: string = String(error);
+      let detail: string = error.message || String(error);
       if (detail.indexOf('E-EXTRACT-') < 0) { detail = 'E-EXTRACT-OPEN step=prepare_resource ' + detail; }
       AppStorage.setOrCreate('vmBootStatus', probe.nativeAssetsStatus() + '\n' + detail);
-      hilog.error(0xFF00, 'NativeProbeLife', 'APP_VM resource preparation failed %{public}s', String(error));
+      AppStorage.setOrCreate('loadingError', '安装包资源准备失败，请重试或查看日志。');
+      hilog.error(0xFF00, 'NativeProbeLife', 'APP_VM resource preparation failed %{public}s', detail);
     });
   }
   onForeground(): void {
     this.refreshTimeZoneSnapshot();
     hilog.info(0xFF00, 'NativeProbeLife', 'HOST_LIFECYCLE onForeground wall=%{public}s', String(Date.now()));
     probe.appVmForeground(true);
+  }
+  onNewWant(want: Want): void {
+    // Explicit capability probe only, after the real BGM collection. The
+    // existing probe opens a prepared FAST renderer and never starts it.
+    if (want.parameters?.['audioLatencyPreparedProbe'] === true) {
+      probe.audioBridge().then((report: string) => {
+        hilog.info(0xFF00, 'NativeProbeAudio', 'AUDIO_PREPARED_PROBE %{public}s', report.slice(0, 1536).replace(/\n/g, ' | '));
+      }).catch(() => {
+        hilog.error(0xFF00, 'NativeProbeAudio', 'AUDIO_PREPARED_PROBE failed');
+      });
+    }
   }
   onWindowStageCreate(stage: window.WindowStage): void {
     hilog.info(0xFF00, 'NativeProbeLife', 'HOST_LIFECYCLE onWindowStageCreate wall=%{public}s', String(Date.now()));
@@ -118,6 +152,7 @@ export default class EntryAbility extends UIAbility {
   }
   onDestroy(): void {
     this.destroyed = true;
+    if (this.loadingTimer !== -1) { clearInterval(this.loadingTimer); this.loadingTimer = -1; }
     if (this.assetProgressTimer !== -1) { clearInterval(this.assetProgressTimer); this.assetProgressTimer = -1; }
     if (this.heartbeatTimer !== -1) { clearInterval(this.heartbeatTimer); this.heartbeatTimer = -1; }
     probe.appVmDestroy();

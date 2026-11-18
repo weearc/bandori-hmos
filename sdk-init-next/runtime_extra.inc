@@ -1,5 +1,6 @@
 /* Standard-library adapter. Covered extracted bodies retain MPL-2.0 notices. */
 #include "runtime_extra.h"
+#include "gc_operation.h"
 #include "portable.h"
 #include <errno.h>
 #include <inttypes.h>
@@ -170,7 +171,7 @@ void runtime_extra_vm_start(struct dvm *v){
  for(int i=0;i<2;++i){c->ifields[i].cls=c;c->ifields[i].name=i?"lsb":"msb";c->ifields[i].type="J";c->ifields[i].kind='J';c->ifields[i].width=1;c->ifields[i].slot=(uint16_t)i;}
 }
 static bool extra_invoke(dvm_builtin_fn fn,struct dvm *v,dvm_ref self,const union dvm_value *a,int n,union dvm_value *out){bool ok=fn(v,self,a,n,out);if(!ok&&!dvm_exception(v))dvm__throw(v,"java/lang/UnsupportedOperationException","standard operation unavailable");return true;}
-bool runtime_extra_call(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int nargs,union dvm_value *out){
+static bool runtime_extra_call_gc11_operation(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int nargs,union dvm_value *out){
  memset(out,0,sizeof *out);
  if(!strcmp(c,"java/util/Random"))return java_random_call(v,m,sig,self,a,nargs,out);
  /* Both mutable string classes share this native UTF-16-aware backing.
@@ -297,4 +298,13 @@ bool runtime_extra_call(struct dvm *v,const char *c,const char *m,const char *si
   sb_append(v,self,bytes,n);out->l=self;return true;
  }
  return false;
+}
+
+bool runtime_extra_call(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int nargs,union dvm_value *out){
+ struct gc_operation op __attribute__((cleanup(gc_operation_end)))={0};
+ if(!gc_operation_begin(v,&op)||!gc_operation_admit(v,self))return true;
+ bool handled=runtime_extra_call_gc11_operation(v,c,m,sig,self,a,nargs,out);
+ const char *ret=sig?strchr(sig,')'):NULL;
+ if(handled&&out&&ret&&(ret[1]=='L'||ret[1]=='[')&&!dvm_exception(v))gc_operation_result(&op,sig,out->l);
+ return handled;
 }

@@ -49,6 +49,7 @@ static void *ed_worker(void *unused){
   struct timespec delay={1,0};nanosleep(&delay,NULL);
   uint64_t now=perf_now();if(previous&&now-previous<1000000000ull)continue;previous=now;
   multitouch_poll(); /* Control reads and trace exports: never under GIL. */
+  atomic_store_explicit(&touch_worker_enabled,ed_flag("touch-drain-worker"),memory_order_release);
   atomic_store(&ed_wake,ed_flag("enqueue-drain-wake"));
   atomic_store(&ed_observe,ed_flag("enqueue-drain-observe"));
   atomic_store(&input_obs_enabled,atomic_load(&ed_observe));

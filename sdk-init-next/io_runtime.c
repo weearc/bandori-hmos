@@ -1,3 +1,5 @@
+#include "dvm/dvm_internal.h"
+#include "gc_operation.h"
 #include "io_runtime.h"
 #include "java_basics.h"
 #include <stdio.h>
@@ -12,6 +14,21 @@
 #include "frame_io_probe.h"
 extern int sdk_trace_fprintf(FILE*,const char*,...);
 #define IS(a,b) (!strcmp(m,a)&&!strcmp(sig,b))
+/* All pointer-returning peers below require an operation-local native scope.
+ * Direct host callers receive one here; normal DVM dispatch reuses its scope.
+ * A result is transferred before an owned scope is left. */
+struct io_scope_guard {struct dvm_gc_native_scope scope;bool owned;};
+static bool io_scope_begin(struct dvm *v,struct io_scope_guard *g,dvm_ref self){
+ memset(g,0,sizeof *g);if(dvm_gc_payload_scope_active(v))return true;
+ g->owned=true;return dvm_gc_native_enter(v,&g->scope,self,"()V",NULL,0);
+}
+static void io_scope_cleanup(struct io_scope_guard *g){if(g->owned)dvm_gc_native_leave(&g->scope);}
+static void *io_payload_of(struct dvm *v,dvm_ref ref,void (*destroy)(void *)){
+ struct dvm_object *o=dvm__obj(v,ref);if(!o||o->data_destroy!=destroy)return NULL;
+ if(!dvm_gc_require_payload_borrow(v,ref))return NULL;
+ /* Re-resolve after admission: the only returned pointer is scope-borrowed. */
+ o=dvm__obj(v,ref);return o?o->data:NULL;
+}
 
 typedef struct {uint16_t *buf;size_t len,cap;} sw_data;
 typedef struct {struct dvm *vm;dvm_ref writer;bool output,auto_flush,trouble,closed;uint16_t high;} pw_data;
@@ -22,13 +39,14 @@ typedef struct {struct dvm *vm;dvm_ref writer;bool output,auto_flush,trouble,clo
  * native call scopes protect operation-local pointers across guest allocation. */
 typedef struct {struct dvm *vm;dvm_ref array;size_t len,cap;bool exposed;} baos_data;
 static void baos_free(void *p){baos_data *b=p;if(b){if(b->array){dvm_unpin(b->vm,b->array);if(!b->exposed)dvm__discard_temporary(b->vm,b->array);}free(b);}}
-static baos_data *baos_of(struct dvm *v,dvm_ref ref){struct dvm_object*o=dvm__obj(v,ref);return o&&o->data_destroy==baos_free?o->data:NULL;}
+static baos_data *baos_of(struct dvm *v,dvm_ref ref){return io_payload_of(v,ref,baos_free);}
 static unsigned char *baos_buffer(struct dvm *v,baos_data *b){
  struct dvm_object *array=b?dvm__obj(v,b->array):NULL;
  if(!array||array->kind!=DVM_OBJ_ARRAY||array->elem_kind!='B'||
     array->length!=b->cap||b->len>b->cap||!array->data){
   dvm__throw(v,"java/lang/IllegalStateException","ByteArrayOutputStream backing unavailable");return NULL;
  }
+ if(!dvm_gc_require_payload_borrow(v,b->array))return NULL;
  return dvm_array_data(v,b->array);
 }
 static bool baos_append(struct dvm *v,baos_data *b,const unsigned char *data,size_t n){
@@ -129,7 +147,10 @@ static bool sr_call(struct dvm *v,const char *m,const char *sig,dvm_ref self,con
   int32_t offset=whole?0:a[1].i,length=whole?(int32_t)array->length:a[2].i;
   if(offset<0||length<0||(uint64_t)(uint32_t)offset+(uint32_t)length>array->length){dvm__throw(v,"java/lang/IndexOutOfBoundsException","StringReader range");return true;}
   if(!length){out->i=0;return true;}if(r->position>=r->length){out->i=-1;return true;}if(length>r->length-r->position)length=r->length-r->position;
-  uint16_t *data=dvm_array_data(v,a[0].l);for(int32_t i=0;i<length;i++){union dvm_value index={.i=r->position+i},unit={0};if(!string_runtime_call(v,"java/lang/String","charAt","(I)C",r->text,&index,1,&unit)||dvm_exception(v))return true;data[offset+i]=(uint16_t)unit.i;}r->position+=length;out->i=length;return true;
+  for(int32_t i=0;i<length;i++){union dvm_value index={.i=r->position+i},unit={0};if(!string_runtime_call(v,"java/lang/String","charAt","(I)C",r->text,&index,1,&unit)||dvm_exception(v))return true;
+   /* charAt can reenter/yield. Never retain the destination payload over it. */
+   uint16_t *data=dvm_array_data(v,a[0].l);if(!data)return true;data[offset+i]=(uint16_t)unit.i;
+  }r->position+=length;out->i=length;return true;
  }
  return false;
 }
@@ -173,8 +194,8 @@ extern bool asset_reader_call(struct dvm *,const char *,const char *,const char 
 
 static void fr_free(void *p){fr_data*f=p;if(f){if(f->fd>=0)close(f->fd);free(f);}}
 static void br_free(void *p){br_data*b=p;if(b){if(b->reader)dvm_unpin(b->vm,b->reader);free(b);}}
-static fr_data *fr_of(struct dvm *v,dvm_ref ref){struct dvm_object*o=dvm__obj(v,ref);return o&&o->data_destroy==fr_free?o->data:NULL;}
-static br_data *br_of(struct dvm *v,dvm_ref ref){struct dvm_object*o=dvm__obj(v,ref);return o&&o->data_destroy==br_free?o->data:NULL;}
+static fr_data *fr_of(struct dvm *v,dvm_ref ref){return io_payload_of(v,ref,fr_free);}
+static br_data *br_of(struct dvm *v,dvm_ref ref){return io_payload_of(v,ref,br_free);}
 
 /* The sandbox base is the directory containing file_runtime's guest-files/
  * guest-cache roots.  FileReader may read beneath it; read-only system trees
@@ -374,7 +395,7 @@ static bool fr_construct(struct dvm *v,dvm_ref self,dvm_ref path_ref,union dvm_v
  * allowed.  O_NOFOLLOW keeps a final symlink from escaping the sandbox. */
 typedef struct {int fd;int closed;} fos_data;
 static void fos_free(void *p){fos_data*f=p;if(f){if(f->fd>=0)close(f->fd);free(f);}}
-static fos_data *fos_of(struct dvm *v,dvm_ref ref){struct dvm_object*o=dvm__obj(v,ref);return o&&o->data_destroy==fos_free?o->data:NULL;}
+static fos_data *fos_of(struct dvm *v,dvm_ref ref){return io_payload_of(v,ref,fos_free);}
 static bool fos_is_class(struct dvm_class *c){
  for(;c;c=c->super)if(c->name&&!strcmp(c->name,"java/io/FileOutputStream"))return true;
  return false;
@@ -746,10 +767,13 @@ static bool br_methods_install(struct dvm *v){
  return true;
 }
 static bool isr_builtin(struct dvm *v,dvm_ref self,const union dvm_value *a,int n,union dvm_value *out){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return false;
+
  struct dvm_method *m=dvm__builtin_method();
- struct dvm_object *o=dvm__obj(v,self);
+ const dvm_ref gc5_ref_o=(self); if(!gc_operation_admit(v,gc5_ref_o))return false;
  /* FileReader extends InputStreamReader but owns a different native peer. */
- if(m&&o&&o->data_destroy==fr_free)return io_runtime_call(v,"java/io/FileReader",m->name,m->sig,self,a,n,out);
+ if(m&&dvm__obj(v,gc5_ref_o)&&dvm__obj(v,gc5_ref_o)->data_destroy==fr_free)return io_runtime_call(v,"java/io/FileReader",m->name,m->sig,self,a,n,out);
  if(m&&isr_dispatch(v,m->name,m->sig,self,a,n,out))return true;
  dvm__throw(v,"java/lang/UnsupportedOperationException","InputStreamReader dispatch");return true;
 }
@@ -834,10 +858,10 @@ void io_runtime_vm_start(struct dvm *v){
   pw_methods_install(v);
 }
 static sw_data *sw_of(struct dvm *v,dvm_ref ref){
- struct dvm_object *o=dvm__obj(v,ref);return o&&o->data_destroy==sw_free?o->data:NULL;
+ return io_payload_of(v,ref,sw_free);
 }
 static pw_data *pw_of(struct dvm *v,dvm_ref ref){
- struct dvm_object *o=dvm__obj(v,ref);return o&&o->data_destroy==pw_free?o->data:NULL;
+ return io_payload_of(v,ref,pw_free);
 }
 /* UTF-16 storage preserves code units, including split surrogate writes. */
 static bool io_units_append(struct dvm *v,sw_data *s,const uint16_t *units,size_t n){
@@ -1052,44 +1076,52 @@ bool io_runtime_method_supported(const char *c,const char *m,const char *sig){
   * exists on these Java classes: inheriting Object.toString is correct. */
  return false;
 }
+static bool io_runtime_call_impl(struct dvm *,const char *,const char *,const char *,dvm_ref,const union dvm_value *,int,union dvm_value *);
 bool io_runtime_call(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int n,union dvm_value *out){
+ struct io_scope_guard guard __attribute__((cleanup(io_scope_cleanup)))={0};
+ if(!io_scope_begin(v,&guard,self))return false;
+ bool handled=io_runtime_call_impl(v,c,m,sig,self,a,n,out);
+ if(guard.owned){dvm_gc_native_leave_result(&guard.scope,sig,handled&&out?out->l:0);guard.owned=false;}
+ return handled;
+}
+static bool io_runtime_call_impl(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int n,union dvm_value *out){
  if(!strcmp(c,"java/io/CharArrayReader"))return car_call(v,m,sig,self,a,n,out);
- struct dvm_object *isr_object=self?dvm__obj(v,self):NULL;
- if((!strcmp(c,"java/io/InputStreamReader")&&(!isr_object||!isr_object->data||isr_object->data_destroy==isr_free))||(isr_object&&isr_object->data_destroy==isr_free&&strcmp(m,"<init>")))return isr_dispatch(v,m,sig,self,a,n,out);
- struct dvm_object *bais_object=self?dvm__obj(v,self):NULL;
- if(!strcmp(c,"java/io/ByteArrayInputStream")||(bais_object&&bais_object->data_destroy==bais_free&&strcmp(m,"<init>")))return bais_call(v,m,sig,self,a,n,out);
+ const dvm_ref gc5_ref_isr_object=(self?(self):0); if(!gc_operation_admit(v,gc5_ref_isr_object))return true;
+ if((!strcmp(c,"java/io/InputStreamReader")&&(!dvm__obj(v,gc5_ref_isr_object)||!dvm__obj(v,gc5_ref_isr_object)->data||dvm__obj(v,gc5_ref_isr_object)->data_destroy==isr_free))||(dvm__obj(v,gc5_ref_isr_object)&&dvm__obj(v,gc5_ref_isr_object)->data_destroy==isr_free&&strcmp(m,"<init>")))return isr_dispatch(v,m,sig,self,a,n,out);
+ const dvm_ref gc5_ref_bais_object=(self?(self):0); if(!gc_operation_admit(v,gc5_ref_bais_object))return true;
+ if(!strcmp(c,"java/io/ByteArrayInputStream")||(dvm__obj(v,gc5_ref_bais_object)&&dvm__obj(v,gc5_ref_bais_object)->data_destroy==bais_free&&strcmp(m,"<init>")))return bais_call(v,m,sig,self,a,n,out);
  if(!strcmp(c,"java/io/Reader")&&!strcmp(m,"<init>")&&((!strcmp(sig,"()V")&&n==0)||(!strcmp(sig,"(Ljava/lang/Object;)V")&&n==1))){
   dvm_ref lock=n?a[0].l:self;
   if(!self||!lock){dvm__throw(v,"java/lang/NullPointerException","Reader lock/receiver");return true;}
   union dvm_value value={.l=lock};dvm_set_field(v,self,"lock","Ljava/lang/Object;",value);return true;
  }
  if(!strcmp(c,"java/io/Writer")&&strcmp(m,"<init>")){
-  struct dvm_object *object=dvm__obj(v,self);
-  if(object&&(object->data_destroy==sw_free||object->data_destroy==pw_free)&&!strcmp(m,"append")){
-   bool string_writer=object->data_destroy==sw_free;
+  const dvm_ref gc5_ref_object=(self); if(!gc_operation_admit(v,gc5_ref_object))return true;
+  if(dvm__obj(v,gc5_ref_object)&&(dvm__obj(v,gc5_ref_object)->data_destroy==sw_free||dvm__obj(v,gc5_ref_object)->data_destroy==pw_free)&&!strcmp(m,"append")){
+   bool string_writer=dvm__obj(v,gc5_ref_object)->data_destroy==sw_free;
    const char *target_sig=NULL;
    if(!strcmp(sig,"(Ljava/lang/CharSequence;)Ljava/io/Writer;"))target_sig=string_writer?"(Ljava/lang/CharSequence;)Ljava/io/StringWriter;":"(Ljava/lang/CharSequence;)Ljava/io/PrintWriter;";
    if(!strcmp(sig,"(C)Ljava/io/Writer;"))target_sig=string_writer?"(C)Ljava/io/StringWriter;":"(C)Ljava/io/PrintWriter;";
    if(target_sig)return io_runtime_call(v,string_writer?"java/io/StringWriter":"java/io/PrintWriter",m,target_sig,self,a,n,out);
   }
-  if(object&&object->data_destroy==sw_free)return io_runtime_call(v,"java/io/StringWriter",m,sig,self,a,n,out);
-  if(object&&object->data_destroy==pw_free)return io_runtime_call(v,"java/io/PrintWriter",m,sig,self,a,n,out);
+  if(dvm__obj(v,gc5_ref_object)&&dvm__obj(v,gc5_ref_object)->data_destroy==sw_free)return io_runtime_call(v,"java/io/StringWriter",m,sig,self,a,n,out);
+  if(dvm__obj(v,gc5_ref_object)&&dvm__obj(v,gc5_ref_object)->data_destroy==pw_free)return io_runtime_call(v,"java/io/PrintWriter",m,sig,self,a,n,out);
  }
- struct dvm_object *sr_object=self?dvm__obj(v,self):NULL;
- if(!strcmp(c,"java/io/StringReader")||(sr_object&&sr_object->data_destroy==sr_free))return sr_call(v,m,sig,self,a,n,out);
+ const dvm_ref gc5_ref_sr_object=(self?(self):0); if(!gc_operation_admit(v,gc5_ref_sr_object))return true;
+ if(!strcmp(c,"java/io/StringReader")||(dvm__obj(v,gc5_ref_sr_object)&&dvm__obj(v,gc5_ref_sr_object)->data_destroy==sr_free))return sr_call(v,m,sig,self,a,n,out);
  if(v!=active)return false;
  if(!strcmp(c,"java/io/ObjectInputStream")){
   if(IS("<init>","(Ljava/io/InputStream;)V")){
    if(!a||!a[0].l){dvm__throw(v,"java/lang/NullPointerException","ObjectInputStream stream");return true;}
-   struct dvm_object *o=dvm__obj(v,self);if(!o){dvm__throw(v,"java/lang/NullPointerException","ObjectInputStream receiver");return true;}
+   const dvm_ref gc5_ref_o=(self); if(!gc_operation_admit(v,gc5_ref_o))return true;if(!dvm__obj(v,gc5_ref_o)){dvm__throw(v,"java/lang/NullPointerException","ObjectInputStream receiver");return true;}
    ois_data *d=calloc(1,sizeof *d);if(!d){dvm__throw(v,"java/lang/OutOfMemoryError","ObjectInputStream");return true;}
-   d->in=a[0].l;if(o->data_destroy==ois_free)free(o->data);o->data=d;o->data_destroy=ois_free;return true;
+   d->in=a[0].l;if(dvm__obj(v,gc5_ref_o)->data_destroy==ois_free)free(dvm__obj(v,gc5_ref_o)->data);dvm__obj(v,gc5_ref_o)->data=d;dvm__obj(v,gc5_ref_o)->data_destroy=ois_free;return true;
   }
   /* AOSP ObjectInputStream.close closes the underlying stream and is
    * idempotent; the reference is cleared so a second close does not call the
    * peer again.  A failure from the peer's close propagates unchanged. */
   if(IS("close","()V")){
-   struct dvm_object *o=dvm__obj(v,self);ois_data *d=o&&o->data_destroy==ois_free?o->data:NULL;
+   const dvm_ref gc5_ref_o=(self); if(!gc_operation_admit(v,gc5_ref_o))return true;ois_data *d=dvm__obj(v,gc5_ref_o)&&dvm__obj(v,gc5_ref_o)->data_destroy==ois_free?dvm__obj(v,gc5_ref_o)->data:NULL;
    if(!d){dvm__throw(v,"java/lang/IllegalStateException","ObjectInputStream not initialized");return true;}
    dvm_ref in=d->in;d->in=0;
    if(in){struct dvm_class *ic=dvm_object_class(v,in);struct dvm_method *m=ic?dvm_find_method(v,ic,"close","()V"):NULL;
@@ -1116,14 +1148,14 @@ bool io_runtime_call(struct dvm *v,const char *c,const char *m,const char *sig,d
   if(IS("read","()I")){return fis_read_one(v,f,out);}
   if(IS("read","([B)I")||IS("read","([BII)I")){
    if(!a||!a[0].l){dvm__throw(v,"java/lang/NullPointerException","byte array");return true;}
-   struct dvm_object *arr=dvm__obj(v,a[0].l);
-   if(!arr){dvm__throw(v,"java/lang/NullPointerException","byte array");return true;}
-   if(arr->kind!=DVM_OBJ_ARRAY||arr->elem_kind!='B'){dvm__throw(v,"java/lang/IllegalArgumentException","not a byte array");return true;}
+   const dvm_ref gc5_ref_arr=(a[0].l); if(!gc_operation_admit(v,gc5_ref_arr))return true;
+   if(!dvm__obj(v,gc5_ref_arr)){dvm__throw(v,"java/lang/NullPointerException","byte array");return true;}
+   if(dvm__obj(v,gc5_ref_arr)->kind!=DVM_OBJ_ARRAY||dvm__obj(v,gc5_ref_arr)->elem_kind!='B'){dvm__throw(v,"java/lang/IllegalArgumentException","not a byte array");return true;}
    int32_t off=IS("read","([BII)I")?a[1].i:0;
-   int32_t len=IS("read","([BII)I")?a[2].i:(int32_t)arr->length;
-   if(off<0||len<0||(uint64_t)(uint32_t)off+(uint32_t)len>arr->length){dvm__throw(v,"java/lang/IndexOutOfBoundsException","FileInputStream.read range");return true;}
+   int32_t len=IS("read","([BII)I")?a[2].i:(int32_t)dvm__obj(v,gc5_ref_arr)->length;
+   if(off<0||len<0||(uint64_t)(uint32_t)off+(uint32_t)len>dvm__obj(v,gc5_ref_arr)->length){dvm__throw(v,"java/lang/IndexOutOfBoundsException","FileInputStream.read range");return true;}
    if(!len){out->i=0;return true;}
-   unsigned char *dst=(unsigned char*)arr->data+(size_t)off;
+   unsigned char *dst=(unsigned char*)dvm__obj(v,gc5_ref_arr)->data+(size_t)off;
    ssize_t got;
    do{got=read(f->fd,dst,(size_t)len);}while(got<0&&errno==EINTR);
    if(got<0){dvm__throw(v,"java/io/IOException","FileInputStream read failed");return true;}
@@ -1161,10 +1193,10 @@ bool io_runtime_call(struct dvm *v,const char *c,const char *m,const char *sig,d
   if(IS("read","()I")){int unit=0;if(!fr_read_unit(v,f,&unit))return true;out->i=unit;return true;}
   if(IS("read","([C)I")){
    if(n<1||!a){dvm__throw(v,"java/lang/NullPointerException","char array is null");return true;}
-   struct dvm_object *arr=dvm__obj(v,a[0].l);
-   if(!arr){dvm__throw(v,"java/lang/NullPointerException","char array is null");return true;}
-   if(arr->kind!=DVM_OBJ_ARRAY||arr->elem_kind!='C'){dvm__throw(v,"java/lang/IllegalArgumentException","not a char array");return true;}
-   return fr_read_chars(v,f,a[0].l,0,(int)arr->length,out);
+   const dvm_ref gc5_ref_arr=(a[0].l); if(!gc_operation_admit(v,gc5_ref_arr))return true;
+   if(!dvm__obj(v,gc5_ref_arr)){dvm__throw(v,"java/lang/NullPointerException","char array is null");return true;}
+   if(dvm__obj(v,gc5_ref_arr)->kind!=DVM_OBJ_ARRAY||dvm__obj(v,gc5_ref_arr)->elem_kind!='C'){dvm__throw(v,"java/lang/IllegalArgumentException","not a char array");return true;}
+   return fr_read_chars(v,f,a[0].l,0,(int)dvm__obj(v,gc5_ref_arr)->length,out);
   }
   if(IS("read","([CII)I")){
    if(n<3||!a){dvm__throw(v,"java/lang/IllegalArgumentException","missing read range");return true;}
@@ -1237,14 +1269,14 @@ bool io_runtime_call(struct dvm *v,const char *c,const char *m,const char *sig,d
   baos_data *b=baos_of(v,self);if(!b){dvm__throw(v,"java/lang/IllegalStateException","ByteArrayOutputStream not initialized");return true;}
   if(IS("write","(I)V")){unsigned char byte=(unsigned char)a[0].i;return baos_append(v,b,&byte,1)?true:(dvm_exception(v)!=0);}
   if(IS("write","([B)V")||IS("write","([BII)V")){
-   struct dvm_object *arr=dvm__obj(v,a[0].l);
-   if(!arr){dvm__throw(v,"java/lang/NullPointerException","ByteArrayOutputStream.write");return true;}
-   if(arr->kind!=DVM_OBJ_ARRAY||arr->elem_kind!='B'){dvm__throw(v,"java/lang/IllegalArgumentException","not a byte array");return true;}
+   const dvm_ref gc5_ref_arr=(a[0].l); if(!gc_operation_admit(v,gc5_ref_arr))return true;
+   if(!dvm__obj(v,gc5_ref_arr)){dvm__throw(v,"java/lang/NullPointerException","ByteArrayOutputStream.write");return true;}
+   if(dvm__obj(v,gc5_ref_arr)->kind!=DVM_OBJ_ARRAY||dvm__obj(v,gc5_ref_arr)->elem_kind!='B'){dvm__throw(v,"java/lang/IllegalArgumentException","not a byte array");return true;}
    int32_t off=IS("write","([BII)V")?a[1].i:0;
-   int32_t len=IS("write","([BII)V")?a[2].i:(int32_t)arr->length;
-   if(off<0||len<0||(uint64_t)(uint32_t)off+(uint32_t)len>arr->length){dvm__throw(v,"java/lang/IndexOutOfBoundsException","ByteArrayOutputStream.write range");return true;}
+   int32_t len=IS("write","([BII)V")?a[2].i:(int32_t)dvm__obj(v,gc5_ref_arr)->length;
+   if(off<0||len<0||(uint64_t)(uint32_t)off+(uint32_t)len>dvm__obj(v,gc5_ref_arr)->length){dvm__throw(v,"java/lang/IndexOutOfBoundsException","ByteArrayOutputStream.write range");return true;}
    if(!len)return true;
-   return baos_append(v,b,(const unsigned char*)arr->data+(size_t)off,(size_t)len)?true:(dvm_exception(v)!=0);
+   return baos_append(v,b,(const unsigned char*)dvm__obj(v,gc5_ref_arr)->data+(size_t)off,(size_t)len)?true:(dvm_exception(v)!=0);
   }
   if(IS("writeTo","(Ljava/io/OutputStream;)V")){
    if(n!=1||!a||!a[0].l){dvm__throw(v,"java/lang/NullPointerException","ByteArrayOutputStream.writeTo target");return true;}
@@ -1288,10 +1320,10 @@ bool io_runtime_call(struct dvm *v,const char *c,const char *m,const char *sig,d
  if(!strcmp(c,"java/io/StringWriter")||!strcmp(c,"java/io/CharArrayWriter")){
   bool chars=!strcmp(c,"java/io/CharArrayWriter");
   if(IS("<init>","()V")||IS("<init>","(I)V")){
-   struct dvm_object *o=dvm__obj(v,self);if(!o){dvm__throw(v,"java/lang/NullPointerException","character writer receiver");return true;}
+   const dvm_ref gc5_ref_o=(self); if(!gc_operation_admit(v,gc5_ref_o))return true;if(!dvm__obj(v,gc5_ref_o)){dvm__throw(v,"java/lang/NullPointerException","character writer receiver");return true;}
    if(n&&a[0].i<0){dvm__throw(v,"java/lang/IllegalArgumentException","negative writer size");return true;}
    sw_data *w=calloc(1,sizeof *w);if(!w){dvm__throw(v,"java/lang/OutOfMemoryError","character writer");return true;}
-   if(n&&a[0].i){w->buf=malloc((size_t)a[0].i*sizeof *w->buf);if(!w->buf){free(w);dvm__throw(v,"java/lang/OutOfMemoryError","character writer");return true;}w->cap=a[0].i;}o->data=w;o->data_destroy=sw_free;return true;
+   if(n&&a[0].i){w->buf=malloc((size_t)a[0].i*sizeof *w->buf);if(!w->buf){free(w);dvm__throw(v,"java/lang/OutOfMemoryError","character writer");return true;}w->cap=a[0].i;}dvm__obj(v,gc5_ref_o)->data=w;dvm__obj(v,gc5_ref_o)->data_destroy=sw_free;return true;
   }
   sw_data *w=sw_of(v,self);if(!w){dvm__throw(v,"java/lang/IllegalStateException","character writer not initialized");return true;}
   if(IS("flush","()V")||IS("close","()V"))return true;
@@ -1306,9 +1338,9 @@ bool io_runtime_call(struct dvm *v,const char *c,const char *m,const char *sig,d
    dvm_ref array=0;int32_t off=0,len=0;bool temporary=false;
    if(str||strrange||app){dvm_ref text=a[0].l;if(!text){if(!app){dvm__throw(v,"java/lang/NullPointerException","writer text");return true;}text=dvm_new_string(v,"null");}if(!io_text_units(v,text,&array))return true;temporary=true;}
    else array=a[0].l;
-   struct dvm_object *b=dvm__obj(v,array);if(!b){dvm__throw(v,"java/lang/NullPointerException","writer array");return true;}if(b->kind!=DVM_OBJ_ARRAY||b->elem_kind!='C'){dvm__throw(v,"java/lang/IllegalArgumentException","writer char array");return true;}
-   len=(int32_t)b->length;if(strrange||arrrange){off=a[1].i;len=a[2].i;}else if(app&&n==3){off=a[1].i;int64_t count=(int64_t)a[2].i-off;if(count<0||count>INT32_MAX){dvm__throw(v,"java/lang/IndexOutOfBoundsException","writer append range");return true;}len=(int32_t)count;}
-   if(off<0||len<0||(uint32_t)off>b->length||(uint32_t)len>b->length-(uint32_t)off){dvm__throw(v,"java/lang/IndexOutOfBoundsException","writer range");return true;}
+   const dvm_ref gc5_ref_b=(array); if(!gc_operation_admit(v,gc5_ref_b))return true;if(!dvm__obj(v,gc5_ref_b)){dvm__throw(v,"java/lang/NullPointerException","writer array");return true;}if(dvm__obj(v,gc5_ref_b)->kind!=DVM_OBJ_ARRAY||dvm__obj(v,gc5_ref_b)->elem_kind!='C'){dvm__throw(v,"java/lang/IllegalArgumentException","writer char array");return true;}
+   len=(int32_t)dvm__obj(v,gc5_ref_b)->length;if(strrange||arrrange){off=a[1].i;len=a[2].i;}else if(app&&n==3){off=a[1].i;int64_t count=(int64_t)a[2].i-off;if(count<0||count>INT32_MAX){dvm__throw(v,"java/lang/IndexOutOfBoundsException","writer append range");return true;}len=(int32_t)count;}
+   if(off<0||len<0||(uint32_t)off>dvm__obj(v,gc5_ref_b)->length||(uint32_t)len>dvm__obj(v,gc5_ref_b)->length-(uint32_t)off){dvm__throw(v,"java/lang/IndexOutOfBoundsException","writer range");return true;}
    (void)io_units_append(v,w,(uint16_t*)dvm_array_data(v,array)+off,(size_t)len);if(temporary)dvm__discard_temporary(v,array);if(app)out->l=self;return true;
   }
   if(chars&&IS("writeTo","(Ljava/io/Writer;)V")){if(!a[0].l){dvm__throw(v,"java/lang/NullPointerException","writer target");return true;}dvm_ref array=io_units_array(v,w->buf,w->len);if(!array)return true;dvm_pin(v,array);union dvm_value args[3]={{.l=array},{.i=0},{.i=(int32_t)w->len}};struct dvm_method *method=dvm_find_method(v,dvm_object_class(v,a[0].l),"write","([CII)V");if(method)(void)dvm_call(v,method,a[0].l,args,3,out);else dvm__throw(v,"java/lang/NoSuchMethodError","Writer.write([CII)V");dvm_unpin(v,array);if(method&&!method->has_code&&method->cls&&(!strcmp(method->cls->name,"java/io/StringWriter")||!strcmp(method->cls->name,"java/io/CharArrayWriter")||!strcmp(method->cls->name,"java/io/PrintWriter")))dvm__discard_temporary(v,array);return true;}
@@ -1318,12 +1350,12 @@ bool io_runtime_call(struct dvm *v,const char *c,const char *m,const char *sig,d
   bool writer_ctor=IS("<init>","(Ljava/io/Writer;)V")||IS("<init>","(Ljava/io/Writer;Z)V");
   bool stream_ctor=IS("<init>","(Ljava/io/OutputStream;)V")||IS("<init>","(Ljava/io/OutputStream;Z)V");
   if(writer_ctor||stream_ctor){
-   struct dvm_object *o=dvm__obj(v,self);if(!o||!a||!a[0].l){dvm__throw(v,"java/lang/NullPointerException","PrintWriter target");return true;}
-   if(o->data){dvm__throw(v,"java/lang/IllegalStateException","PrintWriter already initialized");return true;}
+   const dvm_ref gc5_ref_o=(self); if(!gc_operation_admit(v,gc5_ref_o))return true;if(!dvm__obj(v,gc5_ref_o)||!a||!a[0].l){dvm__throw(v,"java/lang/NullPointerException","PrintWriter target");return true;}
+   if(dvm__obj(v,gc5_ref_o)->data){dvm__throw(v,"java/lang/IllegalStateException","PrintWriter already initialized");return true;}
    struct dvm_class *target=dvm_object_class(v,a[0].l),*base=dvm_find_class_or_external(v,stream_ctor?"java/io/OutputStream":"java/io/Writer");
    if(a[0].l==self||!target||!base||!dvm__class_assignable(v,target,base)){dvm__throw(v,"java/lang/IllegalArgumentException","PrintWriter target type");return true;}
    pw_data *w=calloc(1,sizeof *w);if(!w){dvm__throw(v,"java/lang/OutOfMemoryError","PrintWriter");return true;}
-   w->vm=v;w->writer=a[0].l;w->output=stream_ctor;w->auto_flush=n>1&&a[1].i;dvm_pin(v,w->writer);o->data=w;o->data_destroy=pw_free;return true;
+   w->vm=v;w->writer=a[0].l;w->output=stream_ctor;w->auto_flush=n>1&&a[1].i;dvm_pin(v,w->writer);dvm__obj(v,gc5_ref_o)->data=w;dvm__obj(v,gc5_ref_o)->data_destroy=pw_free;return true;
   }
   pw_data *w=pw_of(v,self);if(!w){dvm__throw(v,"java/lang/IllegalStateException","PrintWriter not initialized");return true;}
   if(IS("flush","()V")){(void)pw_control(v,w,"flush");return true;}
@@ -1341,14 +1373,14 @@ bool io_runtime_call(struct dvm *v,const char *c,const char *m,const char *sig,d
    printed=true;(void)append_string(v,self,a[0].l);if(!strcmp(m,"append"))out->l=self;
   }else if(IS("write","(Ljava/lang/String;II)V")){printed=true;(void)pw_string_range(v,self,a[0].l,a[1].i,a[2].i);
   }else if(IS("write","([C)V")||IS("print","([C)V")||IS("println","([C)V")){
-   printed=true;struct dvm_object *array=dvm__obj(v,a[0].l);(void)pw_chars(v,self,a[0].l,0,array?(int32_t)array->length:0);
+   printed=true;const dvm_ref gc5_ref_array=(a[0].l); if(!gc_operation_admit(v,gc5_ref_array))return true;(void)pw_chars(v,self,a[0].l,0,dvm__obj(v,gc5_ref_array)?(int32_t)dvm__obj(v,gc5_ref_array)->length:0);
   }else if(IS("write","([CII)V")){printed=true;(void)pw_chars(v,self,a[0].l,a[1].i,a[2].i);
   }else if(IS("write","(I)V")||IS("print","(C)V")||IS("println","(C)V")||IS("append","(C)Ljava/io/PrintWriter;")){
    printed=true;(void)append_char(v,self,(uint16_t)a[0].i);if(!strcmp(m,"append"))out->l=self;
   }else if(IS("print","(Ljava/lang/Object;)V")||IS("println","(Ljava/lang/Object;)V")){
    printed=true;dvm_ref text=0;
-   if(a[0].l){struct dvm_object *object=dvm__obj(v,a[0].l);if(object&&object->kind==DVM_OBJ_STRING)text=a[0].l;
-    else{struct dvm_method *method=object?dvm_find_method(v,object->cls,"toString","()Ljava/lang/String;"):NULL;union dvm_value value={0};
+   if(a[0].l){const dvm_ref gc5_ref_object=(a[0].l); if(!gc_operation_admit(v,gc5_ref_object))return true;if(dvm__obj(v,gc5_ref_object)&&dvm__obj(v,gc5_ref_object)->kind==DVM_OBJ_STRING)text=a[0].l;
+    else{struct dvm_method *method=dvm__obj(v,gc5_ref_object)?dvm_find_method(v,dvm__obj(v,gc5_ref_object)->cls,"toString","()Ljava/lang/String;"):NULL;union dvm_value value={0};
      if(method){if(!dvm_call(v,method,a[0].l,NULL,0,&value)||dvm_exception(v))return true;text=value.l;}
      else{dvm__throw(v,"java/lang/NoSuchMethodError","PrintWriter object.toString");return true;}}}
    (void)append_string(v,self,text);
@@ -1780,6 +1812,7 @@ static bool baos_test_call(struct dvm *v,dvm_ref self,const char *name,const cha
 /* Callable separately by the integration driver, and included in the existing
  * IO suite below. All operations execute real VM builtin methods via dvm_call. */
 bool io_runtime_baos_selftest(struct dvm *v){
+ struct io_scope_guard guard __attribute__((cleanup(io_scope_cleanup)))={0};if(!io_scope_begin(v,&guard,0))return false;
  if(!v||dvm_exception(v))return false;
  unsigned checks=0;bool ok=false;const char *stage="setup";
  dvm_ref stream=0,input=0,peer=0,snapshot=0,text=0,empty=0,escaped=0,current=0;
@@ -1861,6 +1894,7 @@ cleanup:
  return ok;
 }
 bool io_runtime_selftest(struct dvm *v){
+ struct io_scope_guard guard __attribute__((cleanup(io_scope_cleanup)))={0};if(!io_scope_begin(v,&guard,0))return false;
  if(!io_runtime_baos_selftest(v))return false;
  union dvm_value out={0},arg={0};
  {
@@ -1972,6 +2006,10 @@ bool io_runtime_selftest(struct dvm *v){
 #include "input_stream_reader_selftest.inc"
 
 int io_gc_payload(struct dvm *v,struct dvm_object *o,dvm_gc_visit_fn visit,void *user){
+ struct gc_operation_pin gc5_pin __attribute__((cleanup(gc_operation_pin_end)));
+ if(!gc_operation_pin_begin(v,&gc5_pin,o))return DVM_GC_PAYLOAD_INVALID;
+ o=dvm__obj(v,gc5_pin.ref);
+
  (void)v;void *p=o->data;
  if(o->data_destroy==reader_fixture_free)return DVM_GC_PAYLOAD_ATOMIC;
  if(o->data_destroy==sw_free||o->data_destroy==fr_free||o->data_destroy==fos_free)return DVM_GC_PAYLOAD_ATOMIC;

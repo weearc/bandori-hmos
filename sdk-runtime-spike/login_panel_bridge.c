@@ -208,6 +208,10 @@ static void sdk_saved_poll(struct dvm *v){
 /* Pure local cancellation-model round trip. Never invokes SDK listeners,
  * login, routes or network; fixture is not a server response. */
 static void task6j_model_selftest(struct dvm *v){
+ /* GC-STEP6-FIX: the idle-poll fixture is an independent native entry.
+  * Child invoke scopes end before the diagnostic helpers below run. */
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return;
  dvm_ref saved=v->exception;bool parked=v->parked;uint64_t steps=v->call_steps,limit=v->step_limit;v->exception=0;v->parked=false;v->call_steps=0;v->step_limit=100000;diag6j_fixture=1;
  const char *stage="class_lookup";union dvm_value q={0},a[3]={{0}};dvm_ref model=0,json=0,serialized=0;bool ok=false;
  struct dvm_class *mc=dvm_find_class(v,"com/gsc/base/model/CallBackModel"),*jc=dvm_find_class(v,"copy/google/json/JSON");
@@ -221,6 +225,7 @@ static void task6j_model_selftest(struct dvm *v){
  if(!value||!dvm_call(v,value,0,a,1,&q)||v->exception)goto done;stage="Integer.intValue";if(!invoke(v,q.l,"intValue","()I",NULL,0,&q))goto done;ok=q.i==6002;
  done: {struct dvm_object *e=diag6j_obj(v,v->exception);diag6j_log(v,"kind=cancel_model_selftest ok=%d stage=%s original_type=%s steps=%llu limit=100000 no_callback=1 no_network=1",ok,stage,e&&e->cls?e->cls->name:"none",(unsigned long long)v->call_steps);if(v->exception){char detail[700];dvm_describe_exception(v,v->exception,detail,sizeof detail);diag6j_log(v,"kind=fixture_only_exception detail=%s synthetic_local_model=1 no_server_data=1",detail);}}
  diag6j_fixture=0;
+ gc_operation_end(&operation); /* Release borrows before restoring caller state. */
  v->exception=saved;v->parked=parked;v->call_steps=steps;v->step_limit=limit;
 }
 /* Observe SDK-internal callback dispatch only; never deliver a callback here. */

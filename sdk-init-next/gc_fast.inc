@@ -100,6 +100,9 @@ static bool gc_fast_class_retention(struct gc_fast_mark *s,struct dvm_class *cls
  if(entry){entry->retention_known=true;entry->retention=retain;}return retain;
 }
 static void gc_fast_classify(struct gc_fast_mark *s,struct dvm_object *o){
+ struct gc_operation_pin gc6_owner __attribute__((cleanup(gc_operation_pin_end)));
+ if(!gc_operation_pin_begin(s->vm,&gc6_owner,o)){s->failed=true;s->failure="classify_owner_pin";return;}
+ o=gc_peek_object(s->vm,gc6_owner.ref);
  if(!dvm_gc_payload_requires_visitor(o))return;
  int kind=dvm_gc_payload_visit(s->vm,o,NULL,NULL);
  unsigned category=kind==DVM_GC_PAYLOAD_ATOMIC?0:kind==DVM_GC_PAYLOAD_REFS?1:2;
@@ -266,6 +269,9 @@ static const char *gc_fast_owner_edges(struct dvm *v,dvm_ref r,dvm_gc_visit_fn v
  * The callback queues young targets only; it never recursively enters old. */
 static void gc_fast_trace_one(struct gc_fast_mark *s,dvm_ref r){
  struct dvm_object *o=gc_peek_object(s->vm,r);if(!o){s->failed=true;s->failure="invalid_trace_owner";return;}
+ struct gc_operation_pin gc6_owner __attribute__((cleanup(gc_operation_pin_end)));
+ if(!gc_operation_pin_begin(s->vm,&gc6_owner,o)){s->failed=true;s->failure="trace_owner_pin";return;}
+ o=gc_peek_object(s->vm,r);
  s->last_ref=r;s->last_class=o->cls?o->cls->name:"none";
  if(!dvm_gc_visit_declared_refs(s->vm,r,gc_fast_mark_slot,s)){s->retain_all=true;s->retain_reason="declared_reference_layout";}
  if(gc_fast_owner_edges(s->vm,r,gc_fast_mark_slot,s)){s->retain_all=true;s->retain_reason="owner_reference_layout";}
@@ -293,6 +299,8 @@ static size_t gc_young_used(struct dvm *vm){size_t bytes=0;for(dvm_ref r=1;r<=vm
 extern bool sdk_input_gc_touch_snapshot(uint64_t *,uint64_t *) __attribute__((weak));
 bool dvm_gc_fast_collect(struct dvm *vm,const char *reason){
  if(!vm||!dvm_gil_held(vm)||gc_fast_running||vm->gc_initializing||vm->gc_destroying)return false;
+ if(!dvm_gc_contract_healthy())return false;
+ dvm_gc_metrics_attempt(reason);
  gc_fast_configuration(vm);if(!gc_fast_enabled)return false;
  if(!perf_gc_allowed(reason&&!strcmp(reason,"manual_debug")))return false;
  struct gil_site_scope gs __attribute__((cleanup(gil_site_leave)))=gil_site_enter("GC");
@@ -402,6 +410,7 @@ bool dvm_gc_fast_collect(struct dvm *vm,const char *reason){
  atomic_store_explicit(&gc_destroy_cycle,0,memory_order_release);
  unsigned depth=dvm_gil_unlock_all(vm);uint64_t world_end=gc_fast_ns();
  double hold_ms=(double)(world_end-wall_begin)/1e6;
+ dvm_gc_metrics_finish(reason,complete,reclaimed,live_reclaimed,ra.live_bytes,world_end-wall_begin);
  double enter_ms=(double)(enter_end-wall_begin)/1e6,scratch_ms=(double)(scratch_end-scratch_begin)/1e6;
  double mark_ms=(double)(mark_end-scratch_end+scratch_begin-enter_end)/1e6,sweep_ms=(double)(sweep_end-mark_end)/1e6,exit_ms=(double)(world_end-sweep_end)/1e6;
  /* All CSV/inventory IO is outside the measured STW, not a hidden debug scan. */

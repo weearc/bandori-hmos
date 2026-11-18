@@ -1,4 +1,5 @@
 import probe from 'libprobe.so';
+import { LoadingProgress } from './LoadingProgress';
 import { webview } from '@kit.ArkWeb';
 import { WebPlatformBridge } from './WebPlatformBridge';
 import { common } from '@kit.AbilityKit';
@@ -334,8 +335,42 @@ const SETTINGS_CAPABILITY_SUMMARY: string = 'Settings capability evidence: suppo
   @State loginHasResponse: boolean = false;
   @State diagnosticsVisible: boolean = false;
   @StorageLink('pageGeometryStatus') pageGeometryStatus: string = 'HOST_PAGESIZE=pending\nGUEST_PAGE_ALIGN=pending';
-  @StorageLink('vmBootStatus') vmBootStatus: string = 'vm_last_step=waiting';
+  @StorageLink('vmBootStatus') @Watch('updateSplash') vmBootStatus: string = 'vm_last_step=waiting';
   @StorageLink('vmBootBlocking') vmBootBlocking: boolean = false;
+  @StorageLink('loadingPrepared') @Watch('updateSplash') loadingPrepared: boolean = false;
+  @StorageLink('loadingSnapshot') @Watch('updateSplash') loadingSnapshot: string = 'stage=0 submissions=0 mono_ms=0';
+  @StorageLink('loadingError') loadingError: string = '';
+  @StorageLink('loadingSplashDisabled') loadingSplashDisabled: boolean = false;
+  @State splashVisible: boolean = true;
+  @State splashOpacity: number = 1;
+  @State splashProgress: number = 0;
+  @State splashLabel: string = '检查安装包';
+  @State splashLogs: boolean = false;
+  private splashModel: LoadingProgress = new LoadingProgress();
+  private splashFading: boolean = false;
+  private splashFadeTimer: number = -1;
+  private updateSplash(): void {
+    this.splashModel.update(this.vmBootStatus, this.loadingPrepared, this.loadingSnapshot);
+    this.splashProgress = this.splashModel.value;
+    this.splashLabel = this.splashModel.label;
+    if (this.splashModel.presented && !this.splashFading) {
+      this.splashFading = true;
+      this.probeLog('SPLASH_FIRST_SUBMISSION ' + this.loadingSnapshot + ' wall=' + Date.now());
+      this.getUIContext().animateTo({ duration: 200, curve: Curve.Linear }, () => { this.splashOpacity = 0; });
+      this.splashFadeTimer = setTimeout(() => { this.splashVisible = false; this.splashFadeTimer = -1;
+        this.probeLog('SPLASH_FADE_COMPLETE wall=' + Date.now()); }, 200);
+    }
+  }
+  private retrySplash(): void {
+    try {
+      // UIAbilityContext.restartApp is phone-only (801 on tablets).
+      this.context().getApplicationContext().restartApp({ bundleName: 'top.weearc.bangdream.nativeprobe', abilityName: 'EntryAbility' });
+    } catch (error) {
+      let detail = error as BusinessError;
+      this.probeLog('SPLASH_RETRY_FAILED code=' + detail.code);
+      this.loadingError = '重启失败，请关闭应用后重试。';
+    }
+  }
   @State loginResult: string = '';
   @State passwordVaultBusy: boolean = false;
   @State passwordVaultFillBusy: boolean = false;
@@ -1706,6 +1741,7 @@ const SETTINGS_CAPABILITY_SUMMARY: string = 'Settings capability evidence: suppo
     }
   }
   aboutToDisappear(): void {
+    if (this.splashFadeTimer !== -1) { clearTimeout(this.splashFadeTimer); this.splashFadeTimer = -1; }
     if (this.genericWebRetryTimer !== -1) { clearInterval(this.genericWebRetryTimer); this.genericWebRetryTimer = -1; }
     this.genericWebSyncNeeded = true;
     this.genericWebPendingEvaluations = [];
@@ -1731,7 +1767,7 @@ const SETTINGS_CAPABILITY_SUMMARY: string = 'Settings capability evidence: suppo
       XComponent({ id: 'surface', type: XComponentType.SURFACE, libraryname: 'probe' }).id('unity-host-surface').focusable(true).onFocus(() => { this.unitySurfaceFocused = true; }).onBlur(() => { this.unitySurfaceFocused = false; }).width('100%').height(this.unityPresentation ? '100%' : '45%').onLoad(() => { this.probeLog('XCOMPONENT_MOUNT id=unity-host-surface'); this.startGameOnce(); }).onDestroy(() => { this.probeLog('XCOMPONENT_UNMOUNT id=unity-host-surface'); })
     }
     }.width('100%').height('100%')
-    if (this.vmBootBlocking) {
+    if (this.vmBootBlocking && this.loadingSplashDisabled) {
       Column({ space: 12 }) {
         Text(this.pageGeometryStatus).fontSize(14).fontColor(Color.White).maxLines(3)
         Text(this.vmBootStatus).fontSize(22).fontColor(Color.White).maxLines(8)
@@ -1758,6 +1794,7 @@ const SETTINGS_CAPABILITY_SUMMARY: string = 'Settings capability evidence: suppo
     }
     if (this.diagnosticsVisible) {
     Column({ space: 8 }) {
+    Text('关于 / About\n' + probe.apkVersionInfo()).fontSize(14)
     Text(this.pageGeometryStatus).fontSize(14).maxLines(3)
     Text(this.vmBootStatus).fontSize(14).maxLines(5)
     Text(this.status).fontSize(12)
@@ -1786,7 +1823,7 @@ const SETTINGS_CAPABILITY_SUMMARY: string = 'Settings capability evidence: suppo
     }
     }.width('95%').padding(12).backgroundColor('#F5F5F5').borderRadius(12)
     }
-    if (this.unityPresentation && !this.loginVisible && this.genericWebPages.length === 0 &&
+    if (this.loadingSplashDisabled && this.unityPresentation && !this.loginVisible && this.genericWebPages.length === 0 &&
       !this.titleInitRequired && this.titleProcess >= 2 && this.titleProcess < 15) {
       Text('NOW LOADING…').id('title-progress-feedback').fontSize(24).fontColor(Color.White)
         .padding(16).backgroundColor('#BB202020').borderRadius(12)
@@ -1912,5 +1949,36 @@ const SETTINGS_CAPABILITY_SUMMARY: string = 'Settings capability evidence: suppo
           return this.genericWebCommand(id, action, payload);
         } })
     }, (page: GenericWebPage): string => { return page.id + ':' + String(page.serial); })
+    if (!this.loadingSplashDisabled && this.splashVisible && this.loadingError.length === 0) {
+      Column({ space: 24 }) {
+        Row({ space: 9 }) {
+          Row() {}.width(9).height(28).borderRadius(5).backgroundColor('#515968')
+          Row() {}.width(9).height(48).borderRadius(5).backgroundColor('#515968')
+          Row() {}.width(9).height(36).borderRadius(5).backgroundColor('#515968')
+        }.height(56).alignItems(VerticalAlign.Center)
+        Stack({ alignContent: Alignment.Start }) {
+          Row() {}.width('100%').height('2px').backgroundColor('#ECEEF1')
+          Row() {}.width(this.splashProgress + '%').height('2px').backgroundColor('#697585')
+        }.width(220).height('2px')
+        Text(this.splashLabel).fontSize('14fp').fontColor('#777D86').maxLines(1)
+      }.id('loading-splash').width('100%').height('100%').justifyContent(FlexAlign.Center)
+        .backgroundColor('#FFFFFF').opacity(this.splashOpacity).hitTestBehavior(HitTestMode.None)
+        .onAppear(() => { this.probeLog('SPLASH_VISIBLE wall=' + Date.now()); this.updateSplash(); })
+    }
+    if (!this.loadingSplashDisabled && this.loadingError.length > 0) {
+      Column({ space: 16 }) {
+        Text('暂时无法启动').fontSize(20).fontColor('#333B48')
+        Text(this.loadingError).fontSize('14fp').fontColor('#777D86')
+        Row({ space: 16 }) {
+          Button('重试').id('loading-retry').onClick(() => { this.retrySplash(); })
+          Button('查看日志').id('loading-view-logs').onClick(() => { this.splashLogs = !this.splashLogs; })
+        }
+        if (this.splashLogs) {
+          Text(this.vmBootStatus.slice(0, 1200)).id('loading-error-log').fontSize(12).fontColor('#555D68')
+            .maxLines(12).width('80%')
+        }
+      }.id('loading-error-card').width('100%').height('100%').justifyContent(FlexAlign.Center)
+        .backgroundColor('#FFFFFF').hitTestBehavior(HitTestMode.Transparent)
+    }
   }.id('login-host-page').width('100%').height('100%') }
 }

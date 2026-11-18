@@ -1,4 +1,5 @@
 #include "intent_runtime.h"
+#include "gc_operation.h"
 #include "uri_runtime.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -284,7 +285,7 @@ static bool launch_call(struct dvm *v,const char *cls,const char *m,const char *
  int32_t enter=transition?a[0].i:0,exit=transition?a[1].i:0;
  return launch_request(v,cls,m,sig,self,intent,operation,request_code,enter,exit);
 }
-bool intent_runtime_call(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,
+static bool intent_runtime_call_gc9_operation(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,
  const union dvm_value *a,int n,union dvm_value *out){
  memset(out,0,sizeof *out);
  if(!strcmp(c,"android/content/Intent")){
@@ -843,4 +844,14 @@ int intent_gc_payload(struct dvm *v,struct dvm_object *o,dvm_gc_visit_fn visit,v
  (void)v;if(o->data_destroy!=intent_payload_free)return DVM_GC_PAYLOAD_UNKNOWN;intent_payload *p=o->data;
  if(p->magic!=INTENT_MAGIC)return DVM_GC_PAYLOAD_INVALID;
  if(visit){visit(&p->component_class,user);visit(&p->extras,user);visit(&p->data,user);visit(&p->categories,user);}return DVM_GC_PAYLOAD_REFS;
+}
+
+bool intent_runtime_call(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,
+ const union dvm_value *a,int n,union dvm_value *out){
+
+ struct gc_operation op __attribute__((cleanup(gc_operation_end)))={0};
+ if(!gc_operation_begin(v,&op)||!gc_operation_admit(v,self))return true;
+ bool handled=intent_runtime_call_gc9_operation(v,c,m,sig,self,a,n,out);
+ if(handled&&!dvm_exception(v))gc_operation_result(&op,sig,out->l);
+ return handled;
 }

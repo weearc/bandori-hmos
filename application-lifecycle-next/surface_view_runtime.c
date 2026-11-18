@@ -4,6 +4,7 @@
 #include "window_runtime.h"
 #include "dvm/dvm_internal.h"
 #include "gc_runtime.h"
+#include "gc_operation.h"
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -69,6 +70,8 @@ bool surface_view_runtime_call(struct dvm *v,const char *c,const char *m,const c
  if(!strcmp(m,"getSurface")&&!strcmp(sig,"()Landroid/view/Surface;")){if(!surface_valid(s))return fail(v,"java/lang/IllegalStateException","Surface identity lost");out->l=s->surface;return true;}
  if(!strcmp(m,"addCallback")&&!strcmp(sig,"(Landroid/view/SurfaceHolder$Callback;)V")&&n==1&&a){
   if(!a[0].l)return fail(v,"java/lang/NullPointerException","callback");
+  struct gc_operation op __attribute__((cleanup(gc_operation_end)))={0};
+  if(!gc_operation_begin(v,&op)||!gc_operation_admit(v,a[0].l))return true;
   struct dvm_class *cb=dvm__class_by_desc(v,"Landroid/view/SurfaceHolder$Callback;"); struct dvm_object *obj=dvm__obj(v,a[0].l); if(!cb||!obj||!dvm__class_assignable(v,obj->cls,cb))return fail(v,"java/lang/IllegalArgumentException","callback type");
   for(unsigned i=0;i<CALLBACKS;i++)if(s->callbacks[i]==a[0].l&&callback_valid(s,i))return true;
   for(unsigned i=0;i<CALLBACKS;i++)if(!s->callbacks[i]||!callback_valid(s,i)){s->callbacks[i]=a[0].l;s->callback_identity[i]=obj->identity_generation;dvm_pin(v,a[0].l);return true;}

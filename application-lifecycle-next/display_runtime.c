@@ -41,6 +41,8 @@ bool display_runtime_call(struct dvm*v,const char*c,const char*m,const char*sig,
   if(!service||strcmp(service,"display")||dvm_string_utf8_length(v,a[0].l)!=7)return false;
   struct dvm_object *receiver=dvm__obj(v,self);
   struct dvm_class *context=dvm_find_class_or_external(v,"android/content/Context");
+  /* Class lookup may allocate: reacquire the receiver before inspecting its class. */
+  if(receiver)receiver=dvm__obj(v,self);
   if(!receiver||!context||!dvm__class_assignable(v,receiver->cls,context)){
    dvm__throw(v,"java/lang/IllegalArgumentException","invalid display service Context");return true;
   }

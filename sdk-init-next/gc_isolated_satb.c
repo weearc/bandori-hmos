@@ -24,7 +24,7 @@ struct gcs_object {
 };
 struct gcs_block {
  size_t offset,bytes;
- uint32_t generation,borrows;
+ uint32_t generation,borrows,pins;
  bool retired,keep;
  size_t next_free;
 };
@@ -155,7 +155,7 @@ gcs_object *gcs_alloc(gcs_heap *h,const struct dvm_gc_layout *layout,size_t slot
   memset(h->arena+offset,0,size); /* Touch backing; later MADV_DONTNEED is real. */
   struct gcs_block *block=&h->blocks[index];block->offset=offset;block->bytes=size;
   block->generation++;if(!block->generation)block->generation++;
-  block->retired=block->keep=false;block->borrows=0;
+  block->retired=block->keep=false;block->borrows=block->pins=0;
   h->evac.committed_bytes+=size;
  }
  gcs_object *o=(gcs_object *)(h->arena+offset);

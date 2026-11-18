@@ -13,6 +13,12 @@
 #include "native_asset_backend_names.h"
 #endif
 #include "assets.h"
+/* Installed once by libprobe before the VM starts. A returned fd is owned by
+ * the caller. Do not fall back to stale files from a different APK when set. */
+static int (*apk_asset_open)(const char*);
+void sdk_apk_set_asset_open(int (*open_asset)(const char*)){apk_asset_open=open_asset;}
+int sdk_apk_open_asset(const char* name){return apk_asset_open?apk_asset_open(name):-1;}
+int sdk_apk_asset_source_ready(void){return apk_asset_open!=NULL;}
 struct game_asset_manager { int root; };
 struct game_asset { int fd; off_t length,position; void* mapping; };
 _Static_assert(sizeof(off_t)==8,"Only ARM64/64-bit file offsets supported");
@@ -47,7 +53,7 @@ static int asset_fd(AAssetManager* manager,const char* name) {
 }
 AAsset* AAssetManager_open(AAssetManager* manager,const char* name,int mode) {
     if(mode<0 || mode>3) return NULL;
-    int fd=asset_fd(manager,name); if(fd<0) return NULL;
+    int fd=apk_asset_open?apk_asset_open(name):asset_fd(manager,name); if(fd<0) return NULL;
     struct stat info;
     if(fstat(fd,&info)<0 || !S_ISREG(info.st_mode) || info.st_size<0) {close(fd);return NULL;}
     AAsset* asset=calloc(1,sizeof(*asset));

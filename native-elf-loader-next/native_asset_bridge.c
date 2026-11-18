@@ -30,8 +30,8 @@ bool native_asset_bridge_configure(struct dvm *vm,const char *root) {
     AAsset *metadata=AAssetManager_open(m,"bin/Data/Managed/Metadata/global-metadata.dat",2);
     off_t size=metadata?AAsset_getLength64(metadata):-1;
     if(metadata)AAsset_close(metadata);
-    sdk_trace_fprintf(stderr,"NATIVE_ASSET metadata_file_bytes=%lld expected=29633644 root=%s\n",(long long)size,root);
-    if(size!=29633644){game_assets_destroy(m);return false;}
+    sdk_trace_fprintf(stderr,"NATIVE_ASSET metadata_file_bytes=%lld root=%s\n",(long long)size,root);
+    if(size<=0){game_assets_destroy(m);return false;}
     pthread_mutex_lock(&guard);
     if(owner) { pthread_mutex_unlock(&guard); game_assets_destroy(m); return false; }
     owner=vm; manager=m; pthread_mutex_unlock(&guard);

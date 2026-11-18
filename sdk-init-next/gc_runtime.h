@@ -2,6 +2,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdatomic.h>
+#include <stddef.h>
+#include "gc_generation.h"
 
 struct dvm;
 struct dvm_class;
@@ -12,6 +14,19 @@ typedef bool (*dvm_gc_root_fn)(struct dvm *,dvm_gc_visit_fn,void *,void *);
 enum { DVM_GC_HANDLE_STRONG=1u,DVM_GC_HANDLE_WEAK=2u,
        DVM_GC_HANDLE_BORROW_BODY=4u,DVM_GC_HANDLE_BORROW_PAYLOAD=8u };
 enum { DVM_GC_ROOT_STRONG=1u,DVM_GC_ROOT_WEAK=2u };
+enum dvm_gc_contract_reason { GC_CONTRACT_NON_GIL,GC_CONTRACT_PIN_OVERFLOW,
+ GC_CONTRACT_PIN_UNDERFLOW,GC_CONTRACT_BORROW_OVERFLOW,GC_CONTRACT_BORROW_UNDERFLOW,
+ GC_CONTRACT_IDENTITY,GC_CONTRACT_SCOPE_ORDER,GC_CONTRACT_SCOPE_DEPTH,
+ GC_CONTRACT_MISSING_SCOPE,GC_CONTRACT_STALE_HANDLE,GC_CONTRACT_LOAN,
+ GC_CONTRACT_REASONS };
+bool dvm_gc_contract_fail(struct dvm *,unsigned);
+void dvm_gc_contract_note(unsigned);
+bool dvm_gc_contract_healthy(void);
+void dvm_gc_contract_snapshot(uint64_t *);
+bool dvm_gc_pin_checked(struct dvm *,uint32_t);
+bool dvm_gc_unpin_checked(struct dvm *,uint32_t);
+bool dvm_gc_payload_scope_active(struct dvm *);
+bool dvm_gc_require_payload_borrow(struct dvm *,uint32_t);
 dvm_gc_handle dvm_gc_handle_new(struct dvm *,uint32_t,unsigned);
 uint32_t dvm_gc_handle_ref(struct dvm *,dvm_gc_handle);
 bool dvm_gc_handle_drop(struct dvm *,dvm_gc_handle);
@@ -23,7 +38,12 @@ void dvm_gc_forget_identity(struct dvm *,uint32_t,uint64_t);
 bool dvm_gc_handles_selftest(struct dvm *,const char *);
 void dvm_gc_handles_destroy(struct dvm *);
 void dvm_gc_handle_counts(struct dvm *,uint32_t *,uint32_t *,uint32_t *);
-struct dvm_gc_scope_ref {uint32_t ref;uint64_t identity;};
+struct dvm_gc_scope_ref {gen_ref ref;uint64_t identity;};
+/* Layout oracle only; never used as a production reference carrier. */
+struct dvm_gc_scope_ref_layout32 {uint32_t ref;uint64_t identity;};
+_Static_assert(sizeof(struct dvm_gc_scope_ref_layout32)==16,"old scope entry size");
+_Static_assert(sizeof(struct dvm_gc_scope_ref)==sizeof(struct dvm_gc_scope_ref_layout32),"scope entry must not grow");
+_Static_assert(offsetof(struct dvm_gc_scope_ref,identity)==8,"scope identity offset unchanged");
 struct dvm_gc_native_scope {
    struct dvm *vm;
    struct dvm_gc_native_scope *previous_thread,*next_vm;
@@ -31,6 +51,8 @@ struct dvm_gc_native_scope {
    uint32_t count,capacity,guest_depth;
    bool active,failed;
 };
+_Static_assert(sizeof(struct dvm_gc_native_scope)==560,"native scope ABI remains 560 bytes on supported 64-bit hosts");
+enum gen_result dvm_gc_scope_last_error(void);
 bool dvm_gc_native_enter(struct dvm *,struct dvm_gc_native_scope *,uint32_t,const char *,const uint32_t *,int);
 void dvm_gc_native_leave(struct dvm_gc_native_scope *);
 void dvm_gc_native_leave_result(struct dvm_gc_native_scope *,const char *,uint32_t);

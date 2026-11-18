@@ -10,6 +10,7 @@
 #include "executor_runtime.h"
 #include "portable.h"
 #include "gc_runtime.h"
+#include "gc_operation.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -71,9 +72,17 @@ static dvm_ref message_obtain(struct dvm *v){
  * arbitrary escaped guest reference. Only slots are cleared, without guest
  * calls, so cleanup cannot overwrite the callback's pending exception. */
 static void message_recycle_unchecked(struct dvm *v,dvm_ref ref){
+ /* GC-STEP7: operation-local admission; cleanup precedes caller return. */
+ struct gc_operation gc7 __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&gc7)||!gc_operation_admit(v,ref))return ;
+
  struct dvm_object *o=dvm__obj(v,ref);if(!o||o->data_destroy!=message_state_free)return;
  struct message_lifetime_state *s=o->data;if(s->state==MESSAGE_POOLED||s->state==MESSAGE_RETIRED)return;
- if(s->state==MESSAGE_IN_USE)dvm_unpin(v,ref);
+ if(s->state==MESSAGE_IN_USE){
+  dvm_unpin(v,ref);
+  o=gc_operation_object(v,ref);if(!o||o->data_destroy!=message_state_free)return;
+  s=o->data;
+ }
  if(o->slots)memset(o->slots,0,(size_t)o->cls->islots*sizeof *o->slots);
  s->state=MESSAGE_RETIRED;
  if(message_pool.vm==v&&message_pool.count<50){s->state=MESSAGE_POOLED;message_pool.refs[message_pool.count++]=ref;dvm_pin(v,ref);}
@@ -527,16 +536,16 @@ static struct rrw_handle *rrw_handle_of(struct dvm *v,dvm_ref self){
  return o&&o->data_destroy==rrw_handle_destroy?o->data:NULL;
 }
 static bool rrw_outer_call(struct dvm *v,const char *m,const char *sig,dvm_ref self,union dvm_value *out){
- struct dvm_object *o=dvm__obj(v,self);
- if(!o){dvm__throw(v,"java/lang/NullPointerException","ReentrantReadWriteLock receiver");return true;}
+ const dvm_ref gc4_ref_o=(self); if(!gc_operation_admit(v,gc4_ref_o))return true;
+ if(!dvm__obj(v,gc4_ref_o)){dvm__throw(v,"java/lang/NullPointerException","ReentrantReadWriteLock receiver");return true;}
  if(!strcmp(m,"<init>")){
   if(strcmp(sig,"()V"))return false;
-  if(o->data_destroy==rrw_handle_destroy||!o->cls||!o->cls->name||
-     strcmp(o->cls->name,RRW_OUTER_NAME)){
+  if(dvm__obj(v,gc4_ref_o)->data_destroy==rrw_handle_destroy||!dvm__obj(v,gc4_ref_o)->cls||!dvm__obj(v,gc4_ref_o)->cls->name||
+     strcmp(dvm__obj(v,gc4_ref_o)->cls->name,RRW_OUTER_NAME)){
    dvm__throw(v,"java/lang/IllegalStateException","ReentrantReadWriteLock constructor receiver");
    return true;
   }
-  if(o->data){dvm__throw(v,"java/lang/IllegalStateException","ReentrantReadWriteLock already initialized");return true;}
+  if(dvm__obj(v,gc4_ref_o)->data){dvm__throw(v,"java/lang/IllegalStateException","ReentrantReadWriteLock already initialized");return true;}
   struct rrw_lock *l=calloc(1,sizeof *l);
   if(!l){dvm__throw(v,"java/lang/OutOfMemoryError","ReentrantReadWriteLock");return true;}
   int rc=pthread_mutex_init(&l->mutex,NULL);
@@ -552,14 +561,14 @@ static bool rrw_outer_call(struct dvm *v,const char *m,const char *sig,dvm_ref s
    dvm__throw(v,"java/lang/IllegalStateException","ReentrantReadWriteLock condition: %d",rc);
    return true;
   }
-  l->vm=v;l->self=self;o->data=l;o->data_destroy=rrw_state_destroy;
+  l->vm=v;l->self=self;dvm__obj(v,gc4_ref_o)->data=l;dvm__obj(v,gc4_ref_o)->data_destroy=rrw_state_destroy;
   return true;
  }
- if(o->data_destroy!=rrw_state_destroy||!o->data){
+ if(dvm__obj(v,gc4_ref_o)->data_destroy!=rrw_state_destroy||!dvm__obj(v,gc4_ref_o)->data){
   dvm__throw(v,"java/lang/IllegalStateException","ReentrantReadWriteLock constructor not called");
   return true;
  }
- struct rrw_lock *l=o->data;
+ struct rrw_lock *l=dvm__obj(v,gc4_ref_o)->data;
  if(RRW_IS("readLock",RRW_READ_SIG)||RRW_IS("readLock",RRW_LOCK_RET_SIG))
   return rrw_make_child(v,l,false,out);
  if(RRW_IS("writeLock",RRW_WRITE_SIG)||RRW_IS("writeLock",RRW_LOCK_RET_SIG))
@@ -578,15 +587,17 @@ static bool rrw_child_ops(struct dvm *v,struct rrw_lock *l,bool write,const char
  return false;
 }
 static bool rrw_child_call(struct dvm *v,const char *m,const char *sig,dvm_ref self,bool write,union dvm_value *out){
- struct dvm_object *o=dvm__obj(v,self);
+ if(!gc_operation_admit(v,self))return true;
+
+ const dvm_ref gc4_ref_o=(self); if(!gc_operation_admit(v,gc4_ref_o))return true;
  const char *want=write?RRW_WRITE_NAME:RRW_READ_NAME;
- if(!o){dvm__throw(v,"java/lang/NullPointerException","%s receiver",want);return true;}
- if(o->data_destroy!=rrw_handle_destroy||!o->data||!o->cls||!o->cls->name||
-    strcmp(o->cls->name,want)){
+ if(!dvm__obj(v,gc4_ref_o)){dvm__throw(v,"java/lang/NullPointerException","%s receiver",want);return true;}
+ if(dvm__obj(v,gc4_ref_o)->data_destroy!=rrw_handle_destroy||!dvm__obj(v,gc4_ref_o)->data||!dvm__obj(v,gc4_ref_o)->cls||!dvm__obj(v,gc4_ref_o)->cls->name||
+    strcmp(dvm__obj(v,gc4_ref_o)->cls->name,want)){
   dvm__throw(v,"java/lang/IllegalStateException","%s receiver is not this lock",want);
   return true;
  }
- struct rrw_handle *h=o->data;
+ struct rrw_handle *h=dvm__obj(v,gc4_ref_o)->data;
  return rrw_child_ops(v,h->lock,write,m,sig,out);
 }
 static bool rrw_lock_call(struct dvm *v,const char *m,const char *sig,dvm_ref self,union dvm_value *out){
@@ -1221,19 +1232,21 @@ static void trace_unity_message(struct dvm *v,struct handler *handler,dvm_ref me
 }
 static bool dispatch_body(struct worker *w,struct task *t){
  struct dvm *v=w->vm;
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return false;
  if(t->runnable){
   /* Handler.post can receive a FutureTask submitted through an executor.
    * Its run() is owned by executor_runtime_call, not by a guest method that
    * dvm_find_method can see.  Without this branch the task fails with
    * NoSuchMethodError and a waiter on Future.get never completes. */
-  struct dvm_object *ro=dvm__obj(v,t->runnable);
+  const dvm_ref gc4_ref_ro=(t->runnable); if(!gc_operation_admit(v,gc4_ref_ro))return false;
   bool future_like=false;
-  for(struct dvm_class *k=ro?ro->cls:NULL;k;k=k->super)
+  for(struct dvm_class *k=dvm__obj(v,gc4_ref_ro)?dvm__obj(v,gc4_ref_ro)->cls:NULL;k;k=k->super)
    if(k->name&&!strcmp(k->name,"java/util/concurrent/FutureTask")){future_like=true;break;}
   if(future_like){union dvm_value ignored={0};return executor_runtime_call(v,"java/util/concurrent/FutureTask","run","()V",t->runnable,NULL,0,&ignored);}
   return call_method(v,t->runnable,"run","()V",NULL,0);
  }
- struct dvm_object *o=dvm__obj(v,t->handler);struct handler *h=o?o->data:NULL;union dvm_value arg={.l=t->message};
+ const dvm_ref gc4_ref_o=(t->handler); if(!gc_operation_admit(v,gc4_ref_o))return false;struct handler *h=dvm__obj(v,gc4_ref_o)?dvm__obj(v,gc4_ref_o)->data:NULL;union dvm_value arg={.l=t->message};
  trace_unity_message(v,h,t->message,"enter");
  /* AOSP Looper.dispatchMessage runs Message.callback first, then the
   * Handler.Callback, then Handler.handleMessage.  Message.obtain(handler,
@@ -1389,7 +1402,7 @@ static dvm_ref await_looper(struct dvm *v,struct worker *w){
  bool timeout=w->alive&&!w->ready;dvm_ref result=w->alive&&w->ready?w->looper:0;pthread_mutex_unlock(&queue_lock);if(timeout)dvm__throw(v,"java/lang/IllegalStateException","Looper publication timed out");return result;
 }
 static bool enqueue(struct dvm *v,dvm_ref handler,dvm_ref runnable,dvm_ref message,int64_t delay,union dvm_value *out){
- struct dvm_object *o=dvm__obj(v,handler);struct handler *h=o?o->data:NULL;struct worker *w=h?worker_for_looper(v,h->looper):NULL;
+ const dvm_ref gc4_ref_o=(handler); if(!gc_operation_admit(v,gc4_ref_o))return true;struct handler *h=dvm__obj(v,gc4_ref_o)?dvm__obj(v,gc4_ref_o)->data:NULL;struct worker *w=h?worker_for_looper(v,h->looper):NULL;
  {union dvm_value cv={0},wv={0},ov={0};bool cok=message&&dvm_get_field(v,message,"callback","Ljava/lang/Runnable;",&cv);bool wok=message&&dvm_get_field(v,message,"what","I",&wv);bool ook=message&&dvm_get_field(v,message,"obj","Ljava/lang/Object;",&ov);
   const char*oc="?";if(ov.l){struct dvm_class*ocls=dvm_object_class(v,ov.l);if(ocls&&ocls->name)oc=ocls->name;}
   FILE*df=fopen("/data/storage/el2/base/haps/entry/files/sdkdex/engine-probe.txt","a");if(df){fprintf(df,"HANDLER_ENQUEUE handler=%u runnable=%u message=%u handler_state=%d worker=%d looper_ok=%d callback_read=%d callback=%u what_read=%d what=%d obj_read=%d obj=%u obj_class=%s\n",(unsigned)handler,(unsigned)runnable,(unsigned)message,h?1:0,w?1:0,h?thread_runtime_looper(v,h->looper)!=NULL:0,cok,(unsigned)cv.l,wok,wok?wv.i:-1,ook,(unsigned)ov.l,oc);fclose(df);}}
@@ -1405,7 +1418,7 @@ static bool enqueue(struct dvm *v,dvm_ref handler,dvm_ref runnable,dvm_ref messa
  t->sequence=++run.sequence;struct task **at=&w->head;while(!front&&*at&&((*at)->due<t->due||((*at)->due==t->due&&(*at)->sequence<t->sequence)))at=&(*at)->next;t->next=*at;*at=t;++w->queued;out->i=1;pthread_cond_broadcast(&changed);pthread_mutex_unlock(&queue_lock);{FILE*df=fopen("/data/storage/el2/base/haps/entry/files/sdkdex/engine-probe.txt","a");if(df){fprintf(df,"HANDLER_ENQUEUED handler=%u message=%u queued=%u\n",(unsigned)handler,(unsigned)message,w->queued);fclose(df);}}return true;
 }
 static bool send_empty(struct dvm *v,dvm_ref handler,int what,int64_t delay,union dvm_value *out){
- struct dvm_object *h=dvm__obj(v,handler);if(!h||!h->data||!thread_runtime_looper(v,((struct handler *)h->data)->looper))return false;
+ const dvm_ref gc4_ref_h=(handler); if(!gc_operation_admit(v,gc4_ref_h))return true;if(!dvm__obj(v,gc4_ref_h)||!dvm__obj(v,gc4_ref_h)->data||!thread_runtime_looper(v,((struct handler *)dvm__obj(v,gc4_ref_h)->data)->looper))return false;
  dvm_ref message=message_obtain(v);
  if(!message){dvm__throw(v,"java/lang/OutOfMemoryError","Message");return true;}
  union dvm_value value={.i=what};
@@ -1413,8 +1426,8 @@ static bool send_empty(struct dvm *v,dvm_ref handler,int what,int64_t delay,unio
  bool handled=enqueue(v,handler,0,message,delay,out);
  /* This Message was never exposed to the caller. Failed publication must
   * return it too; an external sendMessage argument remains caller-owned. */
- struct dvm_object *mo=dvm__obj(v,message);
- if(mo&&mo->data_destroy==message_state_free&&((struct message_lifetime_state *)mo->data)->state==MESSAGE_OWNED)message_recycle_unchecked(v,message);
+ const dvm_ref gc4_ref_mo=(message); if(!gc_operation_admit(v,gc4_ref_mo))return true;
+ if(dvm__obj(v,gc4_ref_mo)&&dvm__obj(v,gc4_ref_mo)->data_destroy==message_state_free&&((struct message_lifetime_state *)dvm__obj(v,gc4_ref_mo)->data)->state==MESSAGE_OWNED)message_recycle_unchecked(v,message);
  return handled;
 }
 /* AOSP Handler.obtainMessage(...) 是 Message.obtain(this,...) 的便捷方法：
@@ -1454,14 +1467,14 @@ static bool task_what(struct dvm *v,const struct task *t,int what){
  return dvm_get_field(v,t->message,"what","I",&value)&&value.i==what;
 }
 static bool has_messages(struct dvm *v,dvm_ref handler,int what,union dvm_value *out){
- struct dvm_object *o=dvm__obj(v,handler);struct handler *h=o?o->data:NULL;struct worker *w=h?worker_for_looper(v,h->looper):NULL;
+ const dvm_ref gc4_ref_o=(handler); if(!gc_operation_admit(v,gc4_ref_o))return false;struct handler *h=dvm__obj(v,gc4_ref_o)?dvm__obj(v,gc4_ref_o)->data:NULL;struct worker *w=h?worker_for_looper(v,h->looper):NULL;
  if(!h||!w||!thread_runtime_looper(v,h->looper))return false;
  out->i=0;pthread_mutex_lock(&queue_lock);
  for(struct task *t=w->head;t;t=t->next)if(t->handler==handler&&task_what(v,t,what)){out->i=1;break;}
  pthread_mutex_unlock(&queue_lock);return true;
 }
 static bool remove_messages(struct dvm *v,dvm_ref handler,int what){
- struct dvm_object *o=dvm__obj(v,handler);struct handler *h=o?o->data:NULL;struct worker *w=h?worker_for_looper(v,h->looper):NULL;
+ const dvm_ref gc4_ref_o=(handler); if(!gc_operation_admit(v,gc4_ref_o))return false;struct handler *h=dvm__obj(v,gc4_ref_o)?dvm__obj(v,gc4_ref_o)->data:NULL;struct worker *w=h?worker_for_looper(v,h->looper):NULL;
  if(!h||!w||!thread_runtime_looper(v,h->looper))return false;
  pthread_mutex_lock(&queue_lock);struct task **at=&w->head;
  while(*at){struct task *t=*at;if(t->handler==handler&&task_what(v,t,what)){*at=t->next;--w->queued;if(t->message)message_recycle_unchecked(v,t->message);free(t);}else at=&t->next;}
@@ -1487,6 +1500,10 @@ static void thread_gc_tasks(struct thread_gc_scan *s,struct task *head){
 }
 /* Exact producer identities; never classify by guest class name. */
 int thread_runtime_gc_payload(struct dvm *v,struct dvm_object *o,dvm_gc_visit_fn visit,void *user){
+ struct gc_operation_pin gc4_pin __attribute__((cleanup(gc_operation_pin_end)));
+ if(!gc_operation_pin_begin(v,&gc4_pin,o))return DVM_GC_PAYLOAD_INVALID;
+ o=dvm__obj(v,gc4_pin.ref);
+
  if(!o||!o->data)return DVM_GC_PAYLOAD_UNKNOWN;
  if(o->data_destroy==worker_payload_release){struct worker *w=o->data;if(w->vm!=v)return DVM_GC_PAYLOAD_INVALID;if(!visit)return DVM_GC_PAYLOAD_REFS;
   if(pthread_mutex_trylock(&queue_lock))return DVM_GC_PAYLOAD_INVALID;
@@ -1616,7 +1633,7 @@ void thread_runtime_shutdown(struct dvm *v,unsigned grace){
  dvm_gc_root_provider_remove(v,"thread_runtime",NULL);
 }
 #define IS(name,signature) (!strcmp(m,name)&&!strcmp(sig,signature))
-bool thread_runtime_call(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int n,union dvm_value *out){
+static bool thread_runtime_call_gc4_operation(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int n,union dvm_value *out){
  if(!strcmp(c,"java/lang/Thread")&&(IS("sleep","(J)V")||IS("sleep","(JI)V"))){
   int nanos=n==2?a[1].i:0;
   if(a[0].j<0||nanos<0||nanos>999999){dvm__throw(v,"java/lang/IllegalArgumentException","Thread.sleep duration");return true;}
@@ -1722,8 +1739,8 @@ bool thread_runtime_call(struct dvm *v,const char *c,const char *m,const char *s
   out->l=self==current?thread_stack_trace_current(v):thread_stack_trace_empty(v);
   return true;
  }
- if(is_thread(v,self)&&(!strcmp(c,"android/os/HandlerThread")||!strcmp(c,"java/lang/Thread"))){struct dvm_object *o=dvm__obj(v,self);struct worker *w=o->data;
-  if(IS("<init>","(Ljava/lang/String;)V")||IS("<init>","(Ljava/lang/String;I)V")){if(!a[0].l){dvm__throw(v,"java/lang/NullPointerException","thread name");return true;}int priority=0;if(IS("<init>","(Ljava/lang/String;I)V")){priority=a[1].i;if(!thread_priority_valid(priority)){dvm__throw(v,"java/lang/IllegalArgumentException","Priority out of range: %d",priority);return true;}}w=calloc(1,sizeof *w);if(!w){dvm__throw(v,"java/lang/OutOfMemoryError","worker state");return true;}w->vm=v;w->self=self;w->name=a[0].l;w->priority=priority;o->data=w;o->data_destroy=worker_payload_release;return true;}
+ if(is_thread(v,self)&&(!strcmp(c,"android/os/HandlerThread")||!strcmp(c,"java/lang/Thread"))){const dvm_ref gc4_ref_o=(self); if(!gc_operation_admit(v,gc4_ref_o))return true;struct worker *w=dvm__obj(v,gc4_ref_o)->data;
+  if(IS("<init>","(Ljava/lang/String;)V")||IS("<init>","(Ljava/lang/String;I)V")){if(!a[0].l){dvm__throw(v,"java/lang/NullPointerException","thread name");return true;}int priority=0;if(IS("<init>","(Ljava/lang/String;I)V")){priority=a[1].i;if(!thread_priority_valid(priority)){dvm__throw(v,"java/lang/IllegalArgumentException","Priority out of range: %d",priority);return true;}}w=calloc(1,sizeof *w);if(!w){dvm__throw(v,"java/lang/OutOfMemoryError","worker state");return true;}w->vm=v;w->self=self;w->name=a[0].l;w->priority=priority;dvm__obj(v,gc4_ref_o)->data=w;dvm__obj(v,gc4_ref_o)->data_destroy=worker_payload_release;return true;}
   if(!w)return false;
   if(IS("start","()V"))return start(v,w);if(IS("getLooper","()Landroid/os/Looper;")){out->l=await_looper(v,w);return true;}
   if(IS("getName","()Ljava/lang/String;")){out->l=w->name;return true;}if(IS("setName","(Ljava/lang/String;)V")){if(!a[0].l)dvm__throw(v,"java/lang/NullPointerException","thread name");else w->name=a[0].l;return true;}if(IS("isAlive","()Z")){pthread_mutex_lock(&queue_lock);out->i=w->alive;pthread_mutex_unlock(&queue_lock);return true;}
@@ -1839,6 +1856,15 @@ bool thread_runtime_call(struct dvm *v,const char *c,const char *m,const char *s
  }
  return false;
 }
+bool thread_runtime_call(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int n,union dvm_value *out){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return true;
+ bool ok=thread_runtime_call_gc4_operation(v,c,m,sig,self,a,n,out);
+ const char *ret=sig?strchr(sig,')'):NULL;
+ gc_operation_result(&operation,sig,ok&&out&&ret&&(ret[1]=='L'||ret[1]=='[')?out->l:0);
+ return ok;
+}
+
 static bool thread_priority_selftest(struct dvm *v){
  bool ok=true,process_positive=false,process_invalid=true,handler_ctor_invalid=false,handler_applied=false;int handler_nice=-1,error=0;
  union dvm_value out={0};

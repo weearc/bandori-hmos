@@ -20,6 +20,7 @@ bool jni_gc_selftest(struct dvm *vm,const char *path)
     struct jni_thread_env *t=thread_ensure(b);
     if(!t||t->pending||dvm_exception(vm)){if(owned)dvm_gil_release(vm);return false;}
     FILE *f=fopen(path,"w");if(!f){if(owned)dvm_gil_release(vm);return false;}
+    if(fchmod(fileno(f),0644)){fclose(f);if(owned)dvm_gil_release(vm);return false;}
     JNIEnv *env=(JNIEnv *)(void *)t;
     unsigned checks=0;bool ok=false,frame=false;const char *stage="begin";
     dvm_ref direct_ref=0,copy_ref=0,string_ref=0,weak_ref=0,reused_ref=0,other_ref=0;
@@ -35,13 +36,13 @@ bool jni_gc_selftest(struct dvm *vm,const char *path)
     jbyte *p=(*env)->GetPrimitiveArrayCritical(env,direct,&is_copy);
     jbyte *p2=(*env)->GetPrimitiveArrayCritical(env,direct,NULL);
     JNI_GC_CHECK("critical_direct_pointer_not_copy",p&&p==o->data&&p2==p&&is_copy==JNI_FALSE);
-    JNI_GC_CHECK("nested_payload_borrows_separate_from_legacy_pins",o->gc_payload_borrows==2&&o->gc_body_borrows==0&&o->gc_strong_handles==2&&o->pins==pins);
+    JNI_GC_CHECK("nested_payload_borrows_each_have_checked_pin",o->gc_payload_borrows==2&&o->gc_body_borrows==0&&o->gc_strong_handles==2&&o->pins==pins+2);
     global=(*env)->NewGlobalRef(env,direct);
     struct jni_gc_test_root roots={.ref=direct_ref};
     JNI_GC_CHECK("jni_local_and_global_strong_roots",global&&jni_gc_strong_roots(vm,jni_gc_test_visit,&roots,b)&&roots.hits==2);
     (*env)->DeleteGlobalRef(env,global);global=NULL;
     (*env)->DeleteLocalRef(env,direct);
-    JNI_GC_CHECK("deleted_local_keeps_critical_identity",dvm__obj(vm,direct_ref)==o&&o->pins==0&&o->gc_payload_borrows==2);
+    JNI_GC_CHECK("deleted_local_keeps_critical_identity",dvm__obj(vm,direct_ref)==o&&o->pins==2&&o->gc_payload_borrows==2);
     roots.hits=0;
     JNI_GC_CHECK("critical_handles_remain_authoritative_strong_roots",dvm_gc_visit_roots(vm,DVM_GC_ROOT_STRONG,jni_gc_test_visit,&roots)&&roots.hits==2);
     dvm__discard_temporary(vm,direct_ref);
@@ -56,11 +57,11 @@ bool jni_gc_selftest(struct dvm *vm,const char *path)
     JNI_GC_CHECK("critical_wrong_array_rejected_without_releasing",jni_gc_test_pending_is(t,"java/lang/IllegalArgumentException")&&o->gc_payload_borrows==2);
     (*env)->ExceptionClear(env);
     p[0]=41;(*env)->ReleasePrimitiveArrayCritical(env,direct,p,JNI_COMMIT);
-    JNI_GC_CHECK("critical_commit_keeps_acquisition",o->gc_payload_borrows==2&&((jbyte *)o->data)[0]==41);
+    JNI_GC_CHECK("critical_commit_keeps_acquisition",o->pins==2&&o->gc_payload_borrows==2&&((jbyte *)o->data)[0]==41);
     (*env)->ReleasePrimitiveArrayCritical(env,direct,p,0);
-    JNI_GC_CHECK("critical_final_release_drops_exactly_one_nested_loan",o->gc_payload_borrows==1&&o->gc_strong_handles==1);
+    JNI_GC_CHECK("critical_final_release_drops_exactly_one_nested_loan",o->pins==1&&o->gc_payload_borrows==1&&o->gc_strong_handles==1);
     (*env)->ReleasePrimitiveArrayCritical(env,direct,p2,JNI_ABORT);
-    JNI_GC_CHECK("critical_abort_drops_final_loan_without_undoing_direct_write",!o->gc_payload_borrows&&!o->gc_strong_handles&&((jbyte *)o->data)[0]==41);
+    JNI_GC_CHECK("critical_abort_drops_final_loan_without_undoing_direct_write",!o->pins&&!o->gc_payload_borrows&&!o->gc_strong_handles&&((jbyte *)o->data)[0]==41);
     (*env)->ReleasePrimitiveArrayCritical(env,direct,p2,0);
     JNI_GC_CHECK("critical_duplicate_final_release_rejected",jni_gc_test_pending_is(t,"java/lang/IllegalArgumentException")&&!o->gc_payload_borrows);
     (*env)->ExceptionClear(env);
@@ -128,7 +129,7 @@ done:
      * not touched if this check runs on an already initialized live VM. */
     for(struct jni_critical_borrow **it=&t->critical;*it;){
         struct jni_critical_borrow *c=*it;
-        if(c->ref==direct_ref){*it=c->next;dvm_gc_handle_drop(vm,c->retention);free(c);}else it=&c->next;
+        if(c->ref==direct_ref){*it=c->next;(void)dvm_gc_unpin_checked(vm,c->ref);dvm_gc_handle_drop(vm,c->retention);free(c);}else it=&c->next;
     }
     for(int i=0;i<JNI_MAX_ARRAY_CACHE;i++)if(t->arrays[i].used&&t->arrays[i].ref==copy_ref)clear_array_cache(&t->arrays[i]);
     for(struct jni_utf_cache *c=t->strings;c;c=c->next)if(c->used&&c->ref==string_ref)clear_utf_cache(c);

@@ -4,6 +4,7 @@
 #include "thread_runtime.h"
 #include "portable.h"
 #include "gc_runtime.h"
+#include "gc_operation.h"
 #include <errno.h>
 #include <limits.h>
 #include <stdlib.h>
@@ -328,12 +329,12 @@ static bool unit_millis(struct dvm *v,dvm_ref unit,uint64_t *scale){
 static struct executor_state *executor_of(struct dvm *v,dvm_ref self){struct dvm_object *o=dvm__obj(v,self);struct executor_state *p=o&&(is_name(o,"java/util/concurrent/ThreadPoolExecutor")||is_name(o,"java/util/concurrent/ScheduledThreadPoolExecutor"))?o->data:NULL;return p&&p->vm==v&&p->self==self?p:NULL;}
 static struct future_state *future_of(struct dvm *v,dvm_ref self){struct dvm_object *o=dvm__obj(v,self);return o&&is_name(o,"java/util/concurrent/FutureTask")?o->data:NULL;}
 static bool invoke_runnable(struct dvm *v,dvm_ref runnable){
- struct dvm_object *o=dvm__obj(v,runnable);if(!o){dvm__throw(v,"java/lang/NullPointerException","executor task");return false;}
- bool future_like=is_name(o,"java/util/concurrent/FutureTask");
+ const dvm_ref gc4_ref_o=(runnable); if(!gc_operation_admit(v,gc4_ref_o))return false;if(!dvm__obj(v,gc4_ref_o)){dvm__throw(v,"java/lang/NullPointerException","executor task");return false;}
+ bool future_like=is_name(dvm__obj(v,gc4_ref_o),"java/util/concurrent/FutureTask");
  sdk_trace_fprintf(stderr,"RUNNABLE_DISPATCH class=%s future_like=%d data=%p destroy=%p\n",
-                   o->cls&&o->cls->name?o->cls->name:"?",future_like,o->data,(void*)o->data_destroy);
+                   dvm__obj(v,gc4_ref_o)->cls&&dvm__obj(v,gc4_ref_o)->cls->name?dvm__obj(v,gc4_ref_o)->cls->name:"?",future_like,dvm__obj(v,gc4_ref_o)->data,(void*)dvm__obj(v,gc4_ref_o)->data_destroy);
  if(future_like){union dvm_value ignored={0};return executor_runtime_call(v,"java/util/concurrent/FutureTask","run","()V",runnable,NULL,0,&ignored);}
- struct dvm_method *m=dvm_find_method(v,o->cls,"run","()V");if(!m){sdk_trace_missing_api(o->cls?o->cls->name:"?","run","()V");dvm__throw(v,"java/lang/NoSuchMethodError","Runnable.run");return false;}
+ struct dvm_method *m=dvm_find_method(v,dvm__obj(v,gc4_ref_o)->cls,"run","()V");if(!m){sdk_trace_missing_api(dvm__obj(v,gc4_ref_o)->cls?dvm__obj(v,gc4_ref_o)->cls->name:"?","run","()V");dvm__throw(v,"java/lang/NoSuchMethodError","Runnable.run");return false;}
  union dvm_value out={0};return dvm_call(v,m,runnable,NULL,0,&out);
 }
 /* ---- AOSP ThreadPoolExecutor rejection policies -------------------------
@@ -380,7 +381,7 @@ static bool rejection_discard_oldest(struct dvm *v,dvm_ref self,const union dvm_
  return executor_execute(v,p,a[0].l);
 }
 static bool rejection_policy_dispatch(struct dvm *v,dvm_ref handler,const union dvm_value *a,int n,union dvm_value *out){
- struct dvm_object *o=dvm__obj(v,handler);const char *name=o&&o->cls?o->cls->name:NULL;
+ const dvm_ref gc4_ref_o=(handler); if(!gc_operation_admit(v,gc4_ref_o))return false;const char *name=dvm__obj(v,gc4_ref_o)&&dvm__obj(v,gc4_ref_o)->cls?dvm__obj(v,gc4_ref_o)->cls->name:NULL;
  if(!name)return false;
  if(!strcmp(name,"java/util/concurrent/ThreadPoolExecutor$DiscardPolicy"))return rejection_discard(v,handler,a,n,out);
  if(!strcmp(name,"java/util/concurrent/ThreadPoolExecutor$CallerRunsPolicy"))return rejection_caller_runs(v,handler,a,n,out);
@@ -532,7 +533,7 @@ static bool executor_ctor(struct dvm *v,dvm_ref self,const union dvm_value *a,in
  }
  struct queue_state *q=queue_of(v,a[4].l);if(!q){dvm__throw(v,"java/lang/UnsupportedOperationException","ThreadPoolExecutor requires a supported queue object");return true;}
  uint64_t nanos=0;if(!unit_millis(v,a[3].l,&nanos))return true;if((uint64_t)keep>UINT64_MAX/nanos){dvm__throw(v,"java/lang/IllegalArgumentException","keep-alive overflow");return true;}
- struct dvm_object *o=dvm__obj(v,self);if(!o){dvm__throw(v,"java/lang/NullPointerException","ThreadPoolExecutor receiver");return true;}if(o->data){dvm__throw(v,"java/lang/IllegalStateException","ThreadPoolExecutor already initialized");return true;}
+ const dvm_ref gc4_ref_o=(self); if(!gc_operation_admit(v,gc4_ref_o))return true;if(!dvm__obj(v,gc4_ref_o)){dvm__throw(v,"java/lang/NullPointerException","ThreadPoolExecutor receiver");return true;}if(dvm__obj(v,gc4_ref_o)->data){dvm__throw(v,"java/lang/IllegalStateException","ThreadPoolExecutor already initialized");return true;}
  struct executor_state *p=calloc(1,sizeof *p);if(!p){dvm__throw(v,"java/lang/OutOfMemoryError","ThreadPoolExecutor state");return true;}
  p->vm=v;p->self=self;p->handler=handler;p->factory=factory;p->queue_ref=a[4].l;p->queue=q;p->core=(unsigned)core;p->maximum=(unsigned)maximum;
  /* Java keeps sub-millisecond keep-alive times positive; round up instead of
@@ -540,7 +541,7 @@ static bool executor_ctor(struct dvm *v,dvm_ref self,const union dvm_value *a,in
   * the original keepAliveTime being > 0, so keep_alive_ms is our truthful
   * positive-time indicator as well. */
  uint64_t keep_ms=((uint64_t)keep*nanos)/1000000u;if(keep>0&&keep_ms==0)keep_ms=1;p->keep_alive_ms=keep_ms;
- p->next=all_executors;all_executors=p;o->data=p;o->data_destroy=executor_destroy;return true;
+ p->next=all_executors;all_executors=p;dvm__obj(v,gc4_ref_o)->data=p;dvm__obj(v,gc4_ref_o)->data_destroy=executor_destroy;return true;
 }
 static bool executor_reject(struct dvm *v,struct executor_state *p,dvm_ref task,const char *reason){
  if(!p->handler){dvm__throw(v,"java/util/concurrent/RejectedExecutionException","%s",reason);return true;}
@@ -568,20 +569,22 @@ static bool executor_execute(struct dvm *v,struct executor_state *p,dvm_ref task
  return executor_reject(v,p,task,"executor queue full");
 }
 static bool future_ctor(struct dvm *v,dvm_ref self,const union dvm_value *a,int n,const char *sig){
- struct dvm_object *o=dvm__obj(v,self);if(!o){dvm__throw(v,"java/lang/NullPointerException","FutureTask receiver");return true;}if(o->data){dvm__throw(v,"java/lang/IllegalStateException","FutureTask already initialized");return true;}
+ const dvm_ref gc4_ref_o=(self); if(!gc_operation_admit(v,gc4_ref_o))return true;if(!dvm__obj(v,gc4_ref_o)){dvm__throw(v,"java/lang/NullPointerException","FutureTask receiver");return true;}if(dvm__obj(v,gc4_ref_o)->data){dvm__throw(v,"java/lang/IllegalStateException","FutureTask already initialized");return true;}
  struct future_state *f=calloc(1,sizeof *f);if(!f){dvm__throw(v,"java/lang/OutOfMemoryError","FutureTask state");return true;}
  if(pthread_mutex_init(&f->lock,NULL)){free(f);dvm__throw(v,"java/lang/OutOfMemoryError","FutureTask mutex");return true;}
  if(pthread_cond_init(&f->changed,NULL)){pthread_mutex_destroy(&f->lock);free(f);dvm__throw(v,"java/lang/OutOfMemoryError","FutureTask condition");return true;}
  if(!strcmp(sig,"(Ljava/util/concurrent/Callable;)V")){if(n!=1||!a[0].l){future_destroy(f);dvm__throw(v,"java/lang/NullPointerException","FutureTask callable");return true;}f->callable=a[0].l;}
  else if(!strcmp(sig,"(Ljava/lang/Runnable;Ljava/lang/Object;)V")){if(n!=2||!a[0].l){future_destroy(f);dvm__throw(v,"java/lang/NullPointerException","FutureTask runnable");return true;}f->runnable=a[0].l;f->result=a[1].l;}
  else {future_destroy(f);return false;}
- f->status=FUTURE_NEW;o->data=f;o->data_destroy=future_destroy;return true;
+ f->status=FUTURE_NEW;dvm__obj(v,gc4_ref_o)->data=f;dvm__obj(v,gc4_ref_o)->data_destroy=future_destroy;return true;
 }
 static bool future_run(struct dvm *v,dvm_ref self){
+ if(!gc_operation_admit(v,self))return true;
+
  struct future_state *f=future_of(v,self);if(!f){dvm__throw(v,"java/lang/IllegalStateException","FutureTask constructor not called");return true;}
  pthread_mutex_lock(&f->lock);if(f->status!=FUTURE_NEW){pthread_mutex_unlock(&f->lock);return true;}f->status=FUTURE_RUNNING;dvm_ref callable=f->callable,runnable=f->runnable;pthread_mutex_unlock(&f->lock);
  dvm_ref result=f->result;bool success=true;
- if(callable){struct dvm_object *o=dvm__obj(v,callable);struct dvm_method *m=o?dvm_find_method(v,o->cls,"call","()Ljava/lang/Object;"):NULL;if(!m){sdk_trace_missing_api(o&&o->cls?o->cls->name:"?","call","()Ljava/lang/Object;");dvm__throw(v,"java/lang/NoSuchMethodError","Callable.call");success=false;}else{union dvm_value out={0};success=dvm_call(v,m,callable,NULL,0,&out);result=out.l;}}
+ if(callable){const dvm_ref gc4_ref_o=(callable); if(!gc_operation_admit(v,gc4_ref_o))return true;struct dvm_method *m=dvm__obj(v,gc4_ref_o)?dvm_find_method(v,dvm__obj(v,gc4_ref_o)->cls,"call","()Ljava/lang/Object;"):NULL;if(!m){sdk_trace_missing_api(dvm__obj(v,gc4_ref_o)&&dvm__obj(v,gc4_ref_o)->cls?dvm__obj(v,gc4_ref_o)->cls->name:"?","call","()Ljava/lang/Object;");dvm__throw(v,"java/lang/NoSuchMethodError","Callable.call");success=false;}else{union dvm_value out={0};success=dvm_call(v,m,callable,NULL,0,&out);result=out.l;}}
  else if(runnable)success=invoke_runnable(v,runnable);
  dvm_ref exception=dvm_exception(v);if(exception){dvm_clear_exception(v);success=false;}
  pthread_mutex_lock(&f->lock);f->result=result;f->exception=exception;
@@ -639,12 +642,12 @@ static bool queue_call(struct dvm *v,const char *c,const char *m,const char *sig
  bool ok=queue_call_body(v,c,m,sig,self,a,n,out);executor_gc_leave(&scope);return ok;
 }
 static bool queue_call_body(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int n,union dvm_value *out){
- struct dvm_object *o=dvm__obj(v,self);bool transfer=is_name(o,"java/util/concurrent/LinkedTransferQueue");
+ const dvm_ref gc4_ref_o=(self); if(!gc_operation_admit(v,gc4_ref_o))return true;bool transfer=is_name(dvm__obj(v,gc4_ref_o),"java/util/concurrent/LinkedTransferQueue");
  /* The shipped notification worker uses only ctor/add/take/size/isEmpty.
   * Share the real FIFO, mutex, condition wait and GC visitor. Transfer/rendezvous
   * APIs stay unsupported; never pretend an enqueued item was consumed. */
  if(transfer&&!((!strcmp(m,"<init>")&&!strcmp(sig,"()V"))||(!strcmp(m,"add")&&!strcmp(sig,"(Ljava/lang/Object;)Z"))||(!strcmp(m,"take")&&!strcmp(sig,"()Ljava/lang/Object;"))||(!strcmp(m,"size")&&!strcmp(sig,"()I"))||(!strcmp(m,"isEmpty")&&!strcmp(sig,"()Z"))))return false;
- int kind=(transfer||is_name(o,"java/util/concurrent/LinkedBlockingDeque")||is_name(o,"java/util/concurrent/LinkedBlockingQueue")||is_name(o,"java/util/concurrent/ArrayBlockingQueue"))?QUEUE_LINKED:is_name(o,"java/util/concurrent/SynchronousQueue")?QUEUE_SYNC:0;if(!kind)return false;
+ int kind=(transfer||is_name(dvm__obj(v,gc4_ref_o),"java/util/concurrent/LinkedBlockingDeque")||is_name(dvm__obj(v,gc4_ref_o),"java/util/concurrent/LinkedBlockingQueue")||is_name(dvm__obj(v,gc4_ref_o),"java/util/concurrent/ArrayBlockingQueue"))?QUEUE_LINKED:is_name(dvm__obj(v,gc4_ref_o),"java/util/concurrent/SynchronousQueue")?QUEUE_SYNC:0;if(!kind)return false;
  if(!strcmp(m,"<init>")){
   size_t max=INT_MAX;bool linked_queue=!strcmp(c,"java/util/concurrent/LinkedBlockingQueue");bool array_queue=!strcmp(c,"java/util/concurrent/ArrayBlockingQueue");
   if((!strcmp(c,"java/util/concurrent/LinkedBlockingDeque")||linked_queue||array_queue)&&!strcmp(sig,"(I)V")){if(n!=1||a[0].i<=0){dvm__throw(v,"java/lang/IllegalArgumentException","blocking queue capacity must be positive");return true;}max=(size_t)a[0].i;}
@@ -698,10 +701,10 @@ static bool scheduled_create(struct dvm *v,const union dvm_value *a,int n,union 
  if((n!=1&&n!=2)||a[0].i<0){dvm__throw(v,"java/lang/IllegalArgumentException","invalid scheduled pool size");return true;}
  if(n==2&&!a[1].l){dvm__throw(v,"java/lang/NullPointerException","scheduled ThreadFactory");return true;}
  struct dvm_class *pc=dvm_find_class_or_external(v,"java/util/concurrent/ScheduledThreadPoolExecutor"),*qc=dvm_find_class_or_external(v,"java/util/concurrent/LinkedBlockingQueue");
- dvm_ref pr=pc?dvm_new_object(v,pc):0,qr=qc?dvm_new_object(v,qc):0;struct queue_state *q=qr?new_queue(v,qr,QUEUE_LINKED,QUEUE_LIMIT):NULL;struct dvm_object *o=dvm__obj(v,pr);
- if(!q||!o){if(!dvm_exception(v))dvm__throw(v,"java/lang/OutOfMemoryError","scheduled executor");return true;}
+ dvm_ref pr=pc?dvm_new_object(v,pc):0,qr=qc?dvm_new_object(v,qc):0;struct queue_state *q=qr?new_queue(v,qr,QUEUE_LINKED,QUEUE_LIMIT):NULL;const dvm_ref gc4_ref_o=(pr); if(!gc_operation_admit(v,gc4_ref_o))return true;
+ if(!q||!dvm__obj(v,gc4_ref_o)){if(!dvm_exception(v))dvm__throw(v,"java/lang/OutOfMemoryError","scheduled executor");return true;}
  struct executor_state *p=calloc(1,sizeof *p);if(!p){dvm__throw(v,"java/lang/OutOfMemoryError","scheduled executor");return true;}
- p->vm=v;p->self=pr;p->queue=q;p->queue_ref=qr;p->core=(unsigned)a[0].i;p->maximum=INT_MAX;p->keep_alive_ms=10;p->scheduled=true;p->factory=n==2?a[1].l:0;p->next=all_executors;all_executors=p;o->data=p;o->data_destroy=executor_destroy;out->l=pr;return true;
+ p->vm=v;p->self=pr;p->queue=q;p->queue_ref=qr;p->core=(unsigned)a[0].i;p->maximum=INT_MAX;p->keep_alive_ms=10;p->scheduled=true;p->factory=n==2?a[1].l:0;p->next=all_executors;all_executors=p;dvm__obj(v,gc4_ref_o)->data=p;dvm__obj(v,gc4_ref_o)->data_destroy=executor_destroy;out->l=pr;return true;
 }
 /* Shared schedule() path for Runnable and Callable.  The FutureTask is the
  * real returned ScheduledFuture; its future_state carries the deadline and,
@@ -782,15 +785,15 @@ static bool scheduled_ctor(struct dvm *v,dvm_ref self,const union dvm_value *a,i
   factory=a[1].l;handler=a[2].l;
   if(!factory||!handler){dvm__throw(v,"java/lang/NullPointerException","ThreadFactory or RejectedExecutionHandler");return true;}
  }else if(strcmp(sig,"(I)V"))return false;
- struct dvm_object *o=dvm__obj(v,self);if(!o){dvm__throw(v,"java/lang/NullPointerException","ScheduledThreadPoolExecutor receiver");return true;}
- if(o->data){dvm__throw(v,"java/lang/IllegalStateException","ScheduledThreadPoolExecutor already initialized");return true;}
+ const dvm_ref gc4_ref_o=(self); if(!gc_operation_admit(v,gc4_ref_o))return true;if(!dvm__obj(v,gc4_ref_o)){dvm__throw(v,"java/lang/NullPointerException","ScheduledThreadPoolExecutor receiver");return true;}
+ if(dvm__obj(v,gc4_ref_o)->data){dvm__throw(v,"java/lang/IllegalStateException","ScheduledThreadPoolExecutor already initialized");return true;}
  struct dvm_class *qc=dvm_find_class_or_external(v,"java/util/concurrent/LinkedBlockingQueue");
  dvm_ref qr=qc?dvm_new_object(v,qc):0;struct queue_state *q=qr?new_queue(v,qr,QUEUE_LINKED,QUEUE_LIMIT):NULL;
  if(!q){if(!dvm_exception(v))dvm__throw(v,"java/lang/OutOfMemoryError","ScheduledThreadPoolExecutor queue");return true;}
  struct executor_state *p=calloc(1,sizeof *p);if(!p){dvm__throw(v,"java/lang/OutOfMemoryError","ScheduledThreadPoolExecutor state");return true;}
  p->vm=v;p->self=self;p->queue=q;p->queue_ref=qr;p->core=(unsigned)core;p->maximum=INT_MAX;
  p->keep_alive_ms=10; /* AOSP DEFAULT_KEEPALIVE_MILLIS */p->scheduled=true;p->factory=factory;p->handler=handler;
- p->next=all_executors;all_executors=p;o->data=p;o->data_destroy=executor_destroy;return true;
+ p->next=all_executors;all_executors=p;dvm__obj(v,gc4_ref_o)->data=p;dvm__obj(v,gc4_ref_o)->data_destroy=executor_destroy;return true;
 }
 /* Executors.newCachedThreadPool: AOSP 的缓存池参数是 corePoolSize=0、
  * maximumPoolSize=Integer.MAX_VALUE、keepAliveTime=60 SECONDS、
@@ -962,11 +965,20 @@ static bool executor_call(struct dvm *v,const char *c,const char *m,const char *
 }
 
 static bool executor_runtime_call_body(struct dvm *,const char *,const char *,const char *,dvm_ref,const union dvm_value *,int,union dvm_value *);
-bool executor_runtime_call(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int n,union dvm_value *out){
+static bool executor_runtime_call_gc4_operation(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int n,union dvm_value *out){
  if(!executor_runtime_gc_install(v)){dvm__throw(v,"java/lang/OutOfMemoryError","executor GC root registration");return true;}
  struct executor_gc_scope scope;executor_gc_enter(&scope,v,self,a,n,sig);
  bool ok=executor_runtime_call_body(v,c,m,sig,self,a,n,out);executor_gc_leave(&scope);return ok;
 }
+bool executor_runtime_call(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int n,union dvm_value *out){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return true;
+ bool ok=executor_runtime_call_gc4_operation(v,c,m,sig,self,a,n,out);
+ const char *ret=sig?strchr(sig,')'):NULL;
+ gc_operation_result(&operation,sig,ok&&out&&ret&&(ret[1]=='L'||ret[1]=='[')?out->l:0);
+ return ok;
+}
+
 static bool executor_runtime_call_body(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int n,union dvm_value *out){
  memset(out,0,sizeof *out);
  if(!strcmp(c,"java/util/concurrent/Executors")&&!strcmp(m,"newScheduledThreadPool")&&!strcmp(sig,"(I)Ljava/util/concurrent/ScheduledExecutorService;"))return scheduled_create(v,a,n,out);
@@ -1028,6 +1040,9 @@ static void executor_gc_task(struct executor_gc_scan *s,dvm_ref *slot){
  /* Only a Future that is already rooted by a running/queued task is
   * expanded here. All dormant Future payloads belong to GC-3 tracing. */
  if(o&&o->data&&o->data_destroy==future_destroy){
+  struct gc_operation_pin gc5_owner __attribute__((cleanup(gc_operation_pin_end)));
+  if(!gc_operation_pin_begin(s->vm,&gc5_owner,o)){s->ok=false;return;}
+  o=dvm__obj(s->vm,gc5_owner.ref);
   struct future_state *f=o->data;
   executor_gc_slot(s,&f->callable);executor_gc_slot(s,&f->runnable);
   executor_gc_slot(s,&f->result);executor_gc_slot(s,&f->exception);
@@ -1163,6 +1178,10 @@ static void executor_selftest_idle(struct dvm *v,struct executor_state *p,uint64
 }
 
 bool executor_runtime_selftest(struct dvm *v,unsigned *checks){
+ /* GC-STEP6: this operation owns all raw diagnostic/fixture borrows. */
+ struct gc_operation gc6_operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&gc6_operation))return false;
+
  bool ok=true;union dvm_value out={0},args[5]={{.i=1},{.i=1},{.j=0},{0},{0}};
 #define EXEC_CHECK(expr) do{bool pass=!!(expr);if(dvm_exception(v)){pass=false;dvm_clear_exception(v);}if(checks)++*checks;if(!pass){ok=false;sdk_trace_fprintf(stderr,"EXECUTOR_SELFTEST_FAIL line=%d expression=%s\n",__LINE__,#expr);}}while(0)
  struct dvm_class *queue_class=dvm_find_class_or_external(v,"java/util/concurrent/LinkedBlockingDeque");
@@ -1566,6 +1585,10 @@ done:
 }
 
 int executor_gc_payload(struct dvm *v,struct dvm_object *o,dvm_gc_visit_fn visit,void *u){
+ struct gc_operation_pin gc4_pin __attribute__((cleanup(gc_operation_pin_end)));
+ if(!gc_operation_pin_begin(v,&gc4_pin,o))return DVM_GC_PAYLOAD_INVALID;
+ o=dvm__obj(v,gc4_pin.ref);
+
  if(o->data_destroy==default_factory_state_destroy)return DVM_GC_PAYLOAD_ATOMIC;
  if(o->data_destroy==borrowed_worker_destroy){struct executor_worker *w=o->data;if(!w||!w->pool||w->pool->vm!=v)return DVM_GC_PAYLOAD_INVALID;
   if(visit){visit(&w->pool->self,u);visit(&w->self,u);visit(&w->first_task,u);visit(&w->trampoline,u);visit(&w->gc_current_task,u);}return DVM_GC_PAYLOAD_REFS;}

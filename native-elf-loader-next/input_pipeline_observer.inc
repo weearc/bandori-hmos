@@ -1,9 +1,10 @@
 /* Numeric-only observation of REAL events. No VM access or file IO here.
  * Aggregate counters remain exact even if the bounded detail ring is full. */
 #define INPUT_OBS_CAP 4096u
-#define INPUT_OBS_STAGES 6u
-enum { INPUT_HOST, INPUT_ENQUEUE, INPUT_REJECT, INPUT_GUEST, INPUT_NATIVE, INPUT_GIL };
-struct input_obs_row { uint64_t seq,begin,end; int stage,action,rc; };
+#include <sys/syscall.h>
+#define INPUT_OBS_STAGES 8u
+enum { INPUT_HOST, INPUT_ENQUEUE, INPUT_REJECT, INPUT_GUEST, INPUT_NATIVE, INPUT_GIL, INPUT_GUEST_BEGIN, INPUT_DRAIN_BATCH };
+struct input_obs_row { uint64_t seq,begin,end; int stage,action,rc,pointer_count; long tid; };
 static struct input_obs_row input_obs_rows[INPUT_OBS_CAP];
 static unsigned input_obs_head,input_obs_tail;
 static pthread_mutex_t input_obs_lock=PTHREAD_MUTEX_INITIALIZER;
@@ -13,11 +14,12 @@ static atomic_uint_fast64_t input_obs_zero[INPUT_OBS_STAGES],input_obs_positive[
 static atomic_uint_fast64_t input_obs_lost,input_obs_wait_hist[8],input_obs_gil_hist[8],input_obs_wait_max;
 static _Thread_local uint64_t input_obs_gil_begin;
 static void input_obs_queue_snapshot(uint64_t *);
+static void touch_batch_write(FILE *);
 static unsigned input_obs_bucket(uint64_t ns){
  static const uint64_t limits[]={100000,500000,1000000,5000000,16000000,33000000,100000000};
  unsigned i=0;while(i<7&&ns>limits[i])i++;return i;
 }
-static void input_obs_record(int stage,uint64_t seq,int action,int rc,uint64_t begin,uint64_t end){
+static void input_obs_record_count(int stage,uint64_t seq,int action,int rc,uint64_t begin,uint64_t end,int pointer_count){
  if(!atomic_load_explicit(&input_obs_enabled,memory_order_relaxed))return;
  int saved=errno;unsigned a=(unsigned)(action&255);if(a>6)a=7;
  atomic_fetch_add_explicit(&input_obs_counts[stage][a],1,memory_order_relaxed);
@@ -27,8 +29,11 @@ static void input_obs_record(int stage,uint64_t seq,int action,int rc,uint64_t b
  if(pthread_mutex_trylock(&input_obs_lock)){atomic_fetch_add(&input_obs_lost,1);errno=saved;return;}
  unsigned next=(input_obs_tail+1)%INPUT_OBS_CAP;
  if(next==input_obs_head)atomic_fetch_add(&input_obs_lost,1);
- else {input_obs_rows[input_obs_tail]=(struct input_obs_row){seq,begin,end,stage,action,rc};input_obs_tail=next;}
+ else {static _Thread_local long tid;if(!tid)tid=syscall(SYS_gettid);input_obs_rows[input_obs_tail]=(struct input_obs_row){seq,begin,end,stage,action,rc,pointer_count,tid};input_obs_tail=next;}
  pthread_mutex_unlock(&input_obs_lock);errno=saved;
+}
+static void input_obs_record(int stage,uint64_t seq,int action,int rc,uint64_t begin,uint64_t end){
+ input_obs_record_count(stage,seq,action,rc,begin,end,-1);
 }
 /* Called by XComponent after its REAL event read/queue result, including
  * fetch failures and pre-ABI rejections. No coordinates/pointer IDs stored. */
@@ -60,17 +65,20 @@ static void input_obs_flush(void){
  static int was_enabled;int on=atomic_load(&input_obs_enabled);
  pthread_mutex_lock(&input_obs_lock);int pending=input_obs_head!=input_obs_tail;pthread_mutex_unlock(&input_obs_lock);
  if(!on&&!was_enabled&&!pending)return;was_enabled=on;
- FILE *f=input_obs_file("input-pipeline.csv","a");
- if(f){fseek(f,0,SEEK_END);if(!ftell(f))fputs("pid,seq,stage,action,return,begin_ns,end_ns\n",f);
+ /* A new filename keeps an old seven-column file from acquiring mixed rows. */
+ FILE *f=input_obs_file("input-pipeline-v2.csv","a");
+ if(f){fseek(f,0,SEEK_END);if(!ftell(f))fputs("pid,seq,stage,action,return,begin_ns,end_ns,pointer_count,tid\n",f);
   for(unsigned n=0;n<2048;n++){
    struct input_obs_row row;pthread_mutex_lock(&input_obs_lock);int have=input_obs_head!=input_obs_tail;
    if(have){row=input_obs_rows[input_obs_head];input_obs_head=(input_obs_head+1)%INPUT_OBS_CAP;}
    pthread_mutex_unlock(&input_obs_lock);if(!have)break;
-   fprintf(f,"%d,%llu,%d,%d,%d,%llu,%llu\n",getpid(),(unsigned long long)row.seq,row.stage,row.action,row.rc,(unsigned long long)row.begin,(unsigned long long)row.end);
+   fprintf(f,"%d,%llu,%d,%d,%d,%llu,%llu,%d,%ld\n",getpid(),(unsigned long long)row.seq,row.stage,row.action,row.rc,(unsigned long long)row.begin,(unsigned long long)row.end,row.pointer_count,row.tid);
   }fclose(f);
  }
  f=input_obs_file("input-pipeline-status.txt","w");if(!f)return;
  uint64_t q[8];input_obs_queue_snapshot(q);
+ touch_batch_write(f); /* Independent worker; no GIL or touch_lock held. */
+ fprintf(f,"detail_file=input-pipeline-v2.csv schema=2 row_bytes=%zu ring_bytes=%zu stage_6=guest_call_begin unknown_pointer_count=-1\n",sizeof(struct input_obs_row),sizeof input_obs_rows);
  fprintf(f,"queued=%llu injected=%llu failed=%llu dropped=%llu depth=%llu capacity=%llu full=%llu gil_try_failures=%llu\n",(unsigned long long)q[0],(unsigned long long)q[1],(unsigned long long)q[2],(unsigned long long)q[3],(unsigned long long)q[4],(unsigned long long)q[5],(unsigned long long)q[6],(unsigned long long)q[7]);
  fprintf(f,"pid=%d mono_ns=%llu enabled=%d detail_capacity=%u detail_lost=%llu queue_wait_max_ns=%llu coalesced=0 gil_hist_scope=failed_try_to_next_acquire_not_exclusive_wait\n",getpid(),(unsigned long long)perf_now(),on,INPUT_OBS_CAP,(unsigned long long)atomic_load(&input_obs_lost),(unsigned long long)atomic_load(&input_obs_wait_max));
  for(unsigned s=0;s<INPUT_OBS_STAGES;s++){

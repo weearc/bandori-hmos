@@ -2,6 +2,55 @@
 
 本文件记录对外可见的变更。日期为本地时间（Asia/Shanghai）。
 
+## 2026-11-18
+
+### 新增：对象目录 / 世代 / 指标 / 准入契约
+
+- `sdk-init-next/gc_directory.inc`、`gc_directory.h`：双向 ID 目录。内部引用为 64 位
+  `[32 位世代票据 | 32 位槽号]`，正向槽位表与反向 `body` 地址互校，冲突即拒绝。
+- `sdk-init-next/gc_reverse.inc`：反向映射（65,536 桶链式哈希），支撑引用回收与身份校验。
+- `sdk-init-next/gc_generation.c`、`gc_generation.h`、`gc_generation_publish.inc`：世代发行与发布顺序，
+  保证「槽复用后旧引用必然失效」。
+- `sdk-init-next/gc_metrics.h`、`gc_metrics.inc`：内存指标——live charge、committed、metadata、
+  分配与复用计数，供设备端读取。
+- `sdk-init-next/gc_contract.inc`、`gc_operation.h`、`gc_scope_generation.inc`：准入契约与作用域借用
+  （pin / borrow / monitor），把「裸指针跨分配点使用」收敛为可判定的失败而不是悬空访问。
+
+### 新增：逐帧临时对象释放模块
+
+- `sdk-runtime-spike/overlay/leak_release_candidate.h`、`.inc`：对 proxy 分派每帧产生的
+  `Object[1]` 与装箱 `Long` 在返回后回收；带金丝雀隔离（抽 1/8 不复用并填 `0xDD`），
+  便于观测「是否有人读取已释放对象」。
+- 开关文件 `leak-release-control`（`1` 开 / `0` 关，重启生效）。
+- 效果：同一构建下主页静置由 35.199 KiB/s 降到 0.2 KiB/s；关闭后回到 40.6 KiB/s。
+  300 秒窗口释放 16,953 对 / 3,036,400 字节。
+
+### 修复：诊断导出持锁写盘导致的帧停顿
+
+- 采样与导出原先在持锁状态下做 CSV 格式化与写盘，实测持锁 p99 41.9 ms、帧等待该锁 p99 36.7 ms。
+- 改为「持锁只做内存快照，格式化 / write / fsync 全部在锁外」，帧路径不再等待导出锁。
+- 修复后持锁 p99 0.53 ms（约 80 倍改善），游玩中 >33 ms 帧占比 1.0–1.1%，
+  开启释放时不再比关闭时更卡（修复前为 关 8 次 / 开 15 次，修复后为 关 13 次 / 开 10 次）。
+
+### 修复：启动期重复复制 guest 载荷
+
+- `native-probe/entry/src/main/cpp/apk_cache_runtime.inc`：清单命中且目标 `.sha256` 侧车与内容摘要
+  全部一致时跳过复制；否则回退到原 `.part → 写入 → fsync → rename` 路径。
+- 每次启动节省 18.1 MB 写入（三个 DEX 共 18,120,212 字节）。
+
+### 新增：触摸录制与重放（诊断）
+
+- `native-probe/entry/src/main/cpp/touch_record.inc`、`touch_record_core.h`、`touch_record_format.h`：
+  环形缓冲 + 后台线程批量写入，行格式抽成独立头文件以保证与旧数据逐字节一致；
+  刷盘由「每批次 fsync」改为按字节阈值 / 200 ms，降低录制对帧的影响。
+- `touch_replay_host.inc`、`tools/touch-replay-os.c`：回放宿主侧支持。
+
+### 新增：观测与诊断模块
+
+- `native-elf-loader-next/gc_observ_core.c`、`gc_observ_core.h`、`gc_observ_export.inc`：复用事件观测。
+- `native-elf-loader-next/touch_worker.inc`、`touch_drain_budget.inc`：触摸工作线程与排空预算。
+- `cri-audio-adaptation/aaudio_diagnostics.inc`：音频路径诊断。
+
 ## 2026-11-15
 
 ### 修复：宿主分辨率不再被写死（可移植性）

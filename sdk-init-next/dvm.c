@@ -57,6 +57,7 @@ extern void layout_params_runtime_vm_shutdown(struct dvm *vm) __attribute__((wea
 #include "leak_scope.h"
 #include "page_geometry.h"
 #include "java_basics.h"
+#include "gc_operation.h"
 #include <fcntl.h>
 
 
@@ -393,19 +394,16 @@ static void name_to_desc(const char *name, char *buf, size_t sz)
  * makes those built-ins correct without auditing every one of them.
  *
  * Only the block table moves, and no caller ever holds a pointer into it. */
-static struct dvm_object *heap_slot(struct dvm *vm, dvm_ref ref)
-{
-   uint32_t i = ref - 1u;
-   return &vm->heap_blocks[i / DVM_HEAP_BLOCK][i % DVM_HEAP_BLOCK];
-}
+#include "gc_directory.inc"
+#include "gc_generation_publish.inc"
+static bool gc_native_touch_checked(struct dvm *,uint32_t,struct dvm_object *);
 
 struct dvm_object *dvm__obj(struct dvm *vm, dvm_ref ref)
 {
-   if (!ref || ref > vm->heap_size) return NULL;
-   struct dvm_object *o = heap_slot(vm, ref);
-   if (!o->live) return NULL;
+   struct dvm_object *o = gc_dir_lookup(vm, ref, true);
+   if (!o) return NULL;
    o=dvm_gc_resolve(vm,o);
-   if(o&&o->live)dvm_gc_native_touch(vm,ref,o);
+   if(o&&o->live&&!gc_native_touch_checked(vm,ref,o))return NULL;
    return o && o->live ? o : NULL;
 }
 
@@ -432,6 +430,7 @@ bool dvm_heap_header_count_class(struct dvm *vm,const char *name,uint32_t *count
 static void gc_fast_allocation_poll(struct dvm *,bool);
 static dvm_ref heap_alloc(struct dvm *vm)
 {
+   atomic_fetch_add_explicit(&gen_heap_attempts,1,memory_order_relaxed);
    gc_fast_allocation_poll(vm,false);
    if (vm->free_head) {
       dvm_ref r = vm->free_head;
@@ -444,26 +443,27 @@ static dvm_ref heap_alloc(struct dvm *vm)
          fprintf(stderr,"GC1_ALLOCATION_FAILED reason=object_start_registration ref=%u\n",r);
          return 0;
       }
+      if (!gen_heap_publish(vm,r,true)) {
+         vm_arena_object_start_set(o,false);
+         o->next_free=vm->free_head;vm->free_head=r;
+         return 0;
+      }
       o->identity_generation = ++vm->next_object_identity;
       o->live = true;
       dvm_gc_native_touch(vm,r,o);
       return r;
    }
-   if (vm->heap_size == vm->heap_cap) {
-      struct dvm_object **t =
-         realloc(vm->heap_blocks, (size_t)(vm->heap_nblocks + 1) * sizeof *t);
-      if (!t) return 0;
-      vm->heap_blocks = t;
-      struct dvm_object *blk = calloc(DVM_HEAP_BLOCK, sizeof *blk);
-      if (!blk) return 0;
-      vm->heap_blocks[vm->heap_nblocks++] = blk;
-      vm->heap_cap += DVM_HEAP_BLOCK;
-   }
+   if (vm->heap_size == vm->heap_cap && !gc_dir_extend(vm)) return 0;
    dvm_ref r = ++vm->heap_size;
    atomic_init(&heap_slot(vm, r)->gc_self, heap_slot(vm, r));
    if (!vm_arena_object_start_set(heap_slot(vm,r),true)) {
       --vm->heap_size;
       fprintf(stderr,"GC1_ALLOCATION_FAILED reason=object_start_registration ref=%u\n",r);
+      return 0;
+   }
+   if (!gen_heap_publish(vm,r,false)) {
+      vm_arena_object_start_set(heap_slot(vm,r),false);
+      --vm->heap_size;
       return 0;
    }
    heap_slot(vm, r)->identity_generation = ++vm->next_object_identity;
@@ -472,16 +472,15 @@ static dvm_ref heap_alloc(struct dvm *vm)
    return r;
 }
 
+#include "gc_contract.inc"
 void dvm_pin(struct dvm *vm, dvm_ref ref)
 {
-   struct dvm_object *o = dvm__obj(vm, ref);
-   if (o) ++o->pins;
+   (void)dvm_gc_pin_checked(vm,ref);
 }
 
 void dvm_unpin(struct dvm *vm, dvm_ref ref)
 {
-   struct dvm_object *o = dvm__obj(vm, ref);
-   if (o && o->pins) --o->pins;
+   (void)dvm_gc_unpin_checked(vm,ref);
 }
 
 /* No collector.  The VM runs short bursts of app glue code (an activity
@@ -527,6 +526,7 @@ static void heap_free(struct dvm *vm, dvm_ref ref)
    memset(o, 0, sizeof *o);
    o->next_free = vm->free_head;
    vm->free_head = ref;
+   atomic_fetch_add_explicit(&gen_heap_freed,1,memory_order_relaxed);
 }
 
 void dvm__discard_temporary(struct dvm *vm,dvm_ref ref)
@@ -536,6 +536,7 @@ void dvm__discard_temporary(struct dvm *vm,dvm_ref ref)
 
 #include "gc_layout.inc"
 #include "gc_handles.inc"
+#include "gc_metrics.inc"
 #include "gc_foundation.inc"
 
 /* Opt-in bounded creation attribution. Cumulative requested bytes are not
@@ -3063,6 +3064,10 @@ void dvm_clear_exception(struct dvm *vm) { vm->exception = 0; vm->parked = false
 
 void dvm_describe_exception(struct dvm *vm, dvm_ref exc, char *buf, size_t sz)
 {
+   struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+   if(!gc_operation_begin(vm,&operation))return ;
+   if(!gc_operation_admit(vm,exc))return ;
+
    /* Follow the cause chain.  Wrapping is how library code reports a failure —
     * `catch (Throwable t) { throw new RuntimeException(t); }` — and the
     * wrapper carries no message at all, so stopping at the outermost throwable
@@ -3070,15 +3075,16 @@ void dvm_describe_exception(struct dvm *vm, dvm_ref exc, char *buf, size_t sz)
     * wrong.  The cause is the part worth reading. */
    size_t at = 0;
    for (int hop = 0; hop < 8 && exc; ++hop) {
-      struct dvm_object *o = dvm__obj(vm, exc);
-      if (!o) break;
-      const char *cn = o->cls ? o->cls->name : "java/lang/Throwable";
+      if(!gc_operation_admit(vm,exc))return;
+      const dvm_ref gc_ref_exception=exc;
+      if (!dvm__obj(vm,gc_ref_exception)) break;
+      const char *cn = dvm__obj(vm,gc_ref_exception)->cls ? dvm__obj(vm,gc_ref_exception)->cls->name : "java/lang/Throwable";
       union dvm_value msg = { 0 };
       const char *text = NULL;
       if (dvm_get_field(vm, exc, "detailMessage", "Ljava/lang/String;", &msg) &&
           msg.l)
-         text = dvm_string_utf8(vm, msg.l);
-      if (!text) text = o->utf8;
+         {if(!gc_operation_admit(vm,msg.l))return; text = dvm_string_utf8(vm, msg.l);}
+      if (!text) text = dvm__obj(vm,gc_ref_exception)->utf8;
       if (at >= sz) return;
       at += (size_t)snprintf(buf + at, sz - at, "%s%s%s%s",
                              hop ? " <- " : "", cn,
@@ -3101,6 +3107,10 @@ void dvm_describe_exception(struct dvm *vm, dvm_ref exc, char *buf, size_t sz)
 static void log_forwarded_uncaught(struct dvm *vm, dvm_ref exc,
                                    const struct dvm_method *handler)
 {
+   struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+   if(!gc_operation_begin(vm,&operation))return ;
+   if(!gc_operation_admit(vm,exc))return ;
+
    char why[1024];
    dvm_describe_exception(vm, exc, why, sizeof why);
    fprintf(stderr, "[dvm] forwarded uncaught %s to %s.%s\n", why,
@@ -3115,12 +3125,13 @@ static void log_forwarded_uncaught(struct dvm *vm, dvm_ref exc,
    if (!dvm_get_field(vm, exc, "stackTrace", "[Ljava/lang/StackTraceElement;",
                       &trace) || !trace.l)
       return;
-   struct dvm_object *array = dvm__obj(vm, trace.l);
-   if (!array || array->kind != DVM_OBJ_ARRAY || array->elem_kind != 'L' ||
-       !array->data)
+   if(!gc_operation_admit(vm,trace.l))return;
+   const dvm_ref gc_ref_trace=trace.l;
+   if (!dvm__obj(vm,gc_ref_trace) || dvm__obj(vm,gc_ref_trace)->kind != DVM_OBJ_ARRAY || dvm__obj(vm,gc_ref_trace)->elem_kind != 'L' ||
+       !dvm__obj(vm,gc_ref_trace)->data)
       return;
-   const dvm_ref *items = array->data;
-   uint32_t n = array->length < 32u ? array->length : 32u;
+   const dvm_ref *items = dvm__obj(vm,gc_ref_trace)->data;
+   uint32_t n = dvm__obj(vm,gc_ref_trace)->length < 32u ? dvm__obj(vm,gc_ref_trace)->length : 32u;
    for (uint32_t i = 0; i < n; ++i) {
       union dvm_value cls = { 0 }, method = { 0 };
       if (!items[i]) continue;
@@ -3155,19 +3166,22 @@ bool dvm__set_field_from(struct dvm *vm, dvm_ref obj, struct dvm_class *owner,
                          const char *name, const char *type,
                          union dvm_value val)
 {
+   struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+   if(!gc_operation_begin(vm,&operation))return false;
    if(leak_scope_current&&(type&&(type[0]=='L'||type[0]=='['))&&leak_scope_mentions(vm,val.l,NULL,0))leak_scope_cancel(vm,LEAK_STORE);
-   struct dvm_object *o = dvm__obj(vm, obj);
-   if (!o || !o->cls) return false;
-   struct dvm_field *f = class_find_field(owner ? owner : o->cls, name, type, false);
-   if (!f || !o->slots || f->slot >= o->cls->islots) return false;
+   const dvm_ref gc5_ref_o=obj;
+   if(!gc_operation_admit(vm,gc5_ref_o))return false;
+   if (!dvm__obj(vm,gc5_ref_o) || !dvm__obj(vm,gc5_ref_o)->cls) return false;
+   struct dvm_field *f = class_find_field(owner ? owner : dvm__obj(vm,gc5_ref_o)->cls, name, type, false);
+   if (!f || !dvm__obj(vm,gc5_ref_o)->slots || f->slot >= dvm__obj(vm,gc5_ref_o)->cls->islots) return false;
    {
       char *rb = NULL; size_t rl = 0; bool rd = false;
-      if (name_range_hit(vm, &o->slots[f->slot], sizeof(union dvm_value), &rb, &rl, &rd))
-         name_guard_report("set_field", vm, o->cls, f->name, f->slot, val,
-                           &o->slots[f->slot], rb, rl, rd);
+      if (name_range_hit(vm, &dvm__obj(vm,gc5_ref_o)->slots[f->slot], sizeof(union dvm_value), &rb, &rl, &rd))
+         name_guard_report("set_field", vm, dvm__obj(vm,gc5_ref_o)->cls, f->name, f->slot, val,
+                           &dvm__obj(vm,gc5_ref_o)->slots[f->slot], rb, rl, rd);
    }
-   if (f->kind == 'L') GC_STORE_REF(vm,&o->slots[f->slot].l,val.l,"runtime_set_field");
-   else o->slots[f->slot] = val;
+   if (f->kind == 'L') GC_STORE_REF(vm,&dvm__obj(vm,gc5_ref_o)->slots[f->slot].l,val.l,"runtime_set_field");
+   else dvm__obj(vm,gc5_ref_o)->slots[f->slot] = val;
    return true;
 }
 
@@ -4280,7 +4294,11 @@ static bool execute(struct dvm *vm, struct frame *fr, union dvm_value *out)
       case 0x1f: { /* check-cast */
          REQ(AA(u0));
          struct dvm_class *t = dd ? resolve_type(vm, dd, IU(1)) : NULL;
-         struct dvm_object *o = dvm__obj(vm, r[AA(u0)]);
+         struct gc_operation gc6_opcode __attribute__((cleanup(gc_operation_end)));
+         if(!gc_operation_begin(vm,&gc6_opcode))goto exception;
+         const dvm_ref gc6_opcode_ref=r[AA(u0)];
+         if(!gc_operation_admit(vm,gc6_opcode_ref))goto exception;
+         struct dvm_object *o = dvm__obj(vm,gc6_opcode_ref);
          if (o && t && !class_assignable(vm, o->cls, t)) {
             fprintf(stderr, "[dvm] check-cast at %s.%s%s pc=%u: %s to %s\n",
                     m->cls->name, m->name, m->sig ? m->sig : "",
@@ -4299,7 +4317,11 @@ static bool execute(struct dvm *vm, struct frame *fr, union dvm_value *out)
       case 0x20: { /* instance-of */
          REQ(A4(u0)); REQ(B4(u0));
          struct dvm_class *t = dd ? resolve_type(vm, dd, IU(1)) : NULL;
-         struct dvm_object *o = dvm__obj(vm, r[B4(u0)]);
+         struct gc_operation gc6_opcode __attribute__((cleanup(gc_operation_end)));
+         if(!gc_operation_begin(vm,&gc6_opcode))goto exception;
+         const dvm_ref gc6_opcode_ref=r[B4(u0)];
+         if(!gc_operation_admit(vm,gc6_opcode_ref))goto exception;
+         struct dvm_object *o = dvm__obj(vm,gc6_opcode_ref);
          r[A4(u0)] = (o && t && class_assignable(vm, o->cls, t)) ? 1u : 0u;
          fr->pc += 2;
          break;
@@ -4591,7 +4613,11 @@ static bool execute(struct dvm *vm, struct frame *fr, union dvm_value *out)
          REQ(AA(u0));
          uint16_t bc = IU(1);
          REQ(bc & 0xff); REQ(bc >> 8);
-         struct dvm_object *a = dvm__obj(vm, r[bc & 0xff]);
+         struct gc_operation gc6_opcode __attribute__((cleanup(gc_operation_end)));
+         if(!gc_operation_begin(vm,&gc6_opcode))goto exception;
+         const dvm_ref gc6_opcode_ref=r[bc & 0xff];
+         if(!gc_operation_admit(vm,gc6_opcode_ref))goto exception;
+         struct dvm_object *a = dvm__obj(vm,gc6_opcode_ref);
          uint32_t idx = r[bc >> 8];
          if (!array_check(vm, a, idx)) goto exception;
          switch (op) {
@@ -5275,13 +5301,14 @@ exception:
 #undef REQ
 #undef THROW_AND_DISPATCH
 }
-static _Thread_local struct dvm_method *g_builtin_method;
-
-static bool annotation_value_to_dvm(struct dvm *vm, struct dex_file *dex,
+static _Thread_local struct dvm_method *g_builtin_method;static bool annotation_value_to_dvm(struct dvm *vm, struct dex_file *dex,
                                     const struct dex_value *value,
                                     const char *expected,
-                                    union dvm_value *out)
-{
+                                    union dvm_value *out);
+static bool annotation_value_to_dvm_operation(struct dvm *vm, struct dex_file *dex,
+                                    const struct dex_value *value,
+                                    const char *expected,
+                                    union dvm_value *out){
    memset(out, 0, sizeof *out);
    if (!value) return false;
    switch (value->type) {
@@ -5317,10 +5344,10 @@ static bool annotation_value_to_dvm(struct dvm *vm, struct dex_file *dex,
          const char *desc = dex_annotation_type(dex, (uint32_t)value->bits);
          struct dvm_class *cls = desc ? dvm__class_by_desc(vm, desc) : NULL;
          dvm_ref ref = cls ? dvm_new_object(vm, cls) : 0;
-         struct dvm_object *obj = dvm__obj(vm, ref);
-         if (!obj) return false;
-         obj->annotation_dex = dex;
-         obj->annotation_off = (uint32_t)value->bits;
+         const dvm_ref gc_ref_obj=ref; if(!gc_operation_admit(vm,gc_ref_obj))return false;
+         if (!dvm__obj(vm,gc_ref_obj)) return false;
+         dvm__obj(vm,gc_ref_obj)->annotation_dex = dex;
+         dvm__obj(vm,gc_ref_obj)->annotation_off = (uint32_t)value->bits;
          out->l = ref;
          return true;
       }
@@ -5339,8 +5366,8 @@ static bool annotation_value_to_dvm(struct dvm *vm, struct dex_file *dex,
             ? 'L' : expected[1];
          dvm_ref array = dvm_new_array(vm, element_kind, expected + 1,
                                        (uint32_t)count);
-         struct dvm_object *obj = dvm__obj(vm, array);
-         if (!obj) { free(items); return false; }
+         const dvm_ref gc_ref_obj=array; if(!gc_operation_admit(vm,gc_ref_obj)) { free(items);return false; }
+         if (!dvm__obj(vm,gc_ref_obj)) { free(items); return false; }
          for (int i = 0; i < count; ++i) {
             union dvm_value item;
             if (!annotation_value_to_dvm(vm, dex, &items[i], expected + 1,
@@ -5350,16 +5377,16 @@ static bool annotation_value_to_dvm(struct dvm *vm, struct dex_file *dex,
             }
             switch (element_kind) {
                case 'Z': case 'B':
-                  ((uint8_t *)obj->data)[i] = (uint8_t)item.u;
+                  ((uint8_t *)dvm__obj(vm,gc_ref_obj)->data)[i] = (uint8_t)item.u;
                   break;
                case 'C': case 'S':
-                  ((uint16_t *)obj->data)[i] = (uint16_t)item.u;
+                  ((uint16_t *)dvm__obj(vm,gc_ref_obj)->data)[i] = (uint16_t)item.u;
                   break;
                case 'J': case 'D':
-                  ((uint64_t *)obj->data)[i] = item.ju;
+                  ((uint64_t *)dvm__obj(vm,gc_ref_obj)->data)[i] = item.ju;
                   break;
                default:
-                  ((uint32_t *)obj->data)[i] = item.u;
+                  ((uint32_t *)dvm__obj(vm,gc_ref_obj)->data)[i] = item.u;
                   break;
             }
          }
@@ -5371,6 +5398,18 @@ static bool annotation_value_to_dvm(struct dvm *vm, struct dex_file *dex,
          return false;
    }
 }
+static bool annotation_value_to_dvm(struct dvm *vm, struct dex_file *dex,
+                                    const struct dex_value *value,
+                                    const char *expected,
+                                    union dvm_value *out){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(vm,&operation))return false;
+ bool ok=annotation_value_to_dvm_operation(vm,dex,value,expected,out);
+ bool reference=value&&(value->type==DEX_VALUE_STRING||value->type==DEX_VALUE_TYPE||value->type==DEX_VALUE_ENUM||value->type==DEX_VALUE_ANNOTATION||value->type==DEX_VALUE_ARRAY);
+ gc_operation_result(&operation,reference?"()Ljava/lang/Object;":"()V",ok&&reference?out->l:0);
+ return ok;
+}
+
 
 static bool annotation_element_builtin(struct dvm *vm, dvm_ref self,
                                        const union dvm_value *args, int nargs,
@@ -5439,8 +5478,11 @@ static uint64_t monitor_now_ms(void)
 
 bool dvm__monitor_try_enter(struct dvm *vm, dvm_ref ref)
 {
-   struct dvm_object *o = dvm__obj(vm, ref);
-   if (!o) {
+   struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+   if(!gc_operation_begin(vm,&operation))return false;
+   const dvm_ref gc4_ref = ref;
+   if(!gc_operation_admit(vm,gc4_ref))return false;
+   if (!dvm__obj(vm,gc4_ref)) {
       dvm__throw(vm, "java/lang/NullPointerException", "monitor-enter null");
       return false;
    }
@@ -5449,9 +5491,9 @@ bool dvm__monitor_try_enter(struct dvm *vm, dvm_ref ref)
       dvm__throw(vm, "java/lang/OutOfMemoryError", "monitor thread identity");
       return false;
    }
-   if (o->monitor_owner && o->monitor_owner != me) return false;
-   o->monitor_owner = me;
-   ++o->monitor_depth;
+   if (dvm__obj(vm,gc4_ref)->monitor_owner && dvm__obj(vm,gc4_ref)->monitor_owner != me) return false;
+   dvm__obj(vm,gc4_ref)->monitor_owner = me;
+   ++dvm__obj(vm,gc4_ref)->monitor_depth;
    return true;
 }
 
@@ -5473,15 +5515,18 @@ bool dvm__monitor_enter(struct dvm *vm, dvm_ref ref)
 
 bool dvm__monitor_exit(struct dvm *vm, dvm_ref ref)
 {
-   struct dvm_object *o = dvm__obj(vm, ref);
+   struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+   if(!gc_operation_begin(vm,&operation))return false;
+   const dvm_ref gc4_ref = ref;
+   if(!gc_operation_admit(vm,gc4_ref))return false;
    const uint64_t me = monitor_thread_token(vm);
-   if (!o || o->monitor_owner != me || !o->monitor_depth) {
+   if (!dvm__obj(vm,gc4_ref) || dvm__obj(vm,gc4_ref)->monitor_owner != me || !dvm__obj(vm,gc4_ref)->monitor_depth) {
       dvm__throw(vm, "java/lang/IllegalMonitorStateException",
                  "monitor-exit without ownership");
       return false;
    }
-   if (--o->monitor_depth) return true;
-   o->monitor_owner = 0;
+   if (--dvm__obj(vm,gc4_ref)->monitor_depth) return true;
+   dvm__obj(vm,gc4_ref)->monitor_owner = 0;
    dvm_gil_notify_one_for(monitor_channel(ref, 1));
    return true;
 }
@@ -5489,6 +5534,10 @@ bool dvm__monitor_exit(struct dvm *vm, dvm_ref ref)
 bool dvm__monitor_wait(struct dvm *vm, dvm_ref ref, uint64_t timeout_ms,
                        bool *notified)
 {
+   struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+   if(!gc_operation_begin(vm,&operation))return false;
+   if(!gc_operation_admit(vm,ref))return false;
+
    struct dvm_object *o = dvm__obj(vm, ref);
    const uint64_t me = monitor_thread_token(vm);
    if (!o || o->monitor_owner != me || !o->monitor_depth) {
@@ -5594,6 +5643,10 @@ static bool invoke_body(struct dvm *vm, struct dvm_method *m, dvm_ref self,
 static void trace_return(struct dvm *vm, const struct dvm_method *m, char kind,
                          const union dvm_value *v)
 {
+ /* GC-STEP6: this operation owns all raw diagnostic/fixture borrows. */
+ struct gc_operation gc6_operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(vm,&gc6_operation))return;
+
    const char *cls = m && m->cls && m->cls->name ? m->cls->name : "?";
    const char *name = m && m->name ? m->name : "?";
    if (kind == 'V') {
@@ -5686,7 +5739,7 @@ static bool invoke(struct dvm *vm, struct dvm_method *m, dvm_ref self,
    const char *sdk_method=m?m->name:NULL;
    static unsigned json_parse_serial;unsigned json_parse_id=0;uint64_t json_parse_start=vm->call_steps;
    struct json_hot_entry *json_hot_before=NULL;
-   if(sdk_owner&&sdk_method&&!strcmp(sdk_owner,"copy/google/json/JSON")&&!strcmp(sdk_method,"fromJson")&&m->sig&&!strcmp(m->sig,"(Ljava/lang/String;Ljava/lang/reflect/Type;)Ljava/lang/Object;")&&nslots==2&&json_parse_serial<48){json_parse_id=++json_parse_serial;int saved=errno;FILE *f=fopen("/data/storage/el2/base/haps/entry/files/sdkdex/engine-probe.txt","a");if(f){struct dvm_object *type=dvm__obj(vm,slots[1]);const char *name=type&&type->kind==DVM_OBJ_CLASS&&type->klass?type->klass->name:type&&type->cls?type->cls->name:"null";const char *data=dvm_string_utf8(vm,slots[0]);dprintf(fileno(f),"SDK_NOTIFY_JSON id=%u stage=enter bytes=%zu type=%s steps=%llu thread=%u text=<redacted>\n",json_parse_id,(size_t)dvm_string_utf8_length(vm,slots[0]),name,(unsigned long long)vm->call_steps,vm->cur_thread);fclose(f);}errno=saved;}
+   if(sdk_owner&&sdk_method&&!strcmp(sdk_owner,"copy/google/json/JSON")&&!strcmp(sdk_method,"fromJson")&&m->sig&&!strcmp(m->sig,"(Ljava/lang/String;Ljava/lang/reflect/Type;)Ljava/lang/Object;")&&nslots==2&&json_parse_serial<48){json_parse_id=++json_parse_serial;int saved=errno;FILE *f=fopen("/data/storage/el2/base/haps/entry/files/sdkdex/engine-probe.txt","a");if(f){struct gc_operation gc6_diag_type __attribute__((cleanup(gc_operation_end)));if(!gc_operation_begin(vm,&gc6_diag_type)){fclose(f);return false;}struct dvm_object *type=dvm__obj(vm,slots[1]);const char *name=type&&type->kind==DVM_OBJ_CLASS&&type->klass?type->klass->name:type&&type->cls?type->cls->name:"null";const char *data=dvm_string_utf8(vm,slots[0]);dprintf(fileno(f),"SDK_NOTIFY_JSON id=%u stage=enter bytes=%zu type=%s steps=%llu thread=%u text=<redacted>\n",json_parse_id,(size_t)dvm_string_utf8_length(vm,slots[0]),name,(unsigned long long)vm->call_steps,vm->cur_thread);fclose(f);}errno=saved;}
    static unsigned canonicalize_serial;unsigned canonicalize_id=0;
    if(sdk_owner&&sdk_method&&!strcmp(sdk_owner,"okhttp3/HttpUrl")&&!strcmp(sdk_method,"canonicalize")&&nslots==9&&canonicalize_serial<48){canonicalize_id=++canonicalize_serial;int saved=errno;FILE *f=fopen("/data/storage/el2/base/haps/entry/files/sdkdex/engine-probe.txt","a");if(f){dprintf(fileno(f),"SDK_CANON id=%u stage=enter ref=%u utf8_length=%zu start=%u end=%u call_steps=%llu thread=%u\n",canonicalize_id,slots[0],(size_t)dvm_string_utf8_length(vm,slots[0]),slots[1],slots[2],(unsigned long long)vm->call_steps,vm->cur_thread);fclose(f);}errno=saved;}
    bool sdk_init_event=sdk_owner&&sdk_method&&((!strcmp(sdk_owner,"com/gsc/pub/GSCPubCommon")&&(!strcmp(sdk_method,"init")||!strcmp(sdk_method,"a")||!strcmp(sdk_method,"initInternal")||!strcmp(sdk_method,"initInternalV2")))||(!strncmp(sdk_owner,"com/gsc/pub/GSCPubCommon$",sizeof("com/gsc/pub/GSCPubCommon$")-1)&&(!strcmp(sdk_method,"onSuccess")||!strcmp(sdk_method,"onFailed")||!strcmp(sdk_method,"onError")||!strcmp(sdk_method,"onInitSuccess")||!strcmp(sdk_method,"onInitFailed")))||(!strcmp(sdk_owner,"java/util/concurrent/atomic/AtomicBoolean")&&!strcmp(sdk_method,"set")));
@@ -5778,9 +5831,9 @@ static bool invoke(struct dvm *vm, struct dvm_method *m, dvm_ref self,
    if(json_parse_id){int saved=errno;FILE *f=fopen("/data/storage/el2/base/haps/entry/files/sdkdex/engine-probe.txt","a");if(f){char detail[512]={0};if(vm->exception)dvm_describe_exception(vm,vm->exception,detail,sizeof detail);dprintf(fileno(f),"SDK_NOTIFY_JSON id=%u stage=exit ok=%d steps=%llu delta=%llu thread=%u exception=%.512s\n",json_parse_id,ok,(unsigned long long)vm->call_steps,(unsigned long long)(vm->call_steps-json_parse_start),vm->cur_thread,detail);fclose(f);}errno=saved;}
    {static unsigned http_logged;bool response=sdk_owner&&sdk_method&&!strcmp(sdk_owner,"okhttp3/Response$Builder")&&!strcmp(sdk_method,"build");bool body=sdk_owner&&sdk_method&&!strcmp(sdk_owner,"okhttp3/ResponseBody")&&!strcmp(sdk_method,"string");if(ok&&!vm->exception&&(response||body)&&http_logged++<32){int saved=errno;FILE *f=fopen("/data/storage/el2/base/haps/entry/files/sdkdex/engine-probe.txt","a");if(f){if(response){union dvm_value code={0},request={0},url={0},text={0};dvm_get_field(vm,out->l,"code","I",&code);dvm_get_field(vm,out->l,"request","Lokhttp3/Request;",&request);if(request.l)dvm_get_field(vm,request.l,"url","Lokhttp3/HttpUrl;",&url);if(url.l)dvm_get_field(vm,url.l,"url","Ljava/lang/String;",&text);const char *address=dvm_string_utf8(vm,text.l);dprintf(fileno(f),"NET_JAVA_HTTP status=%d response=%u url_length=%zu thread=%u\n",code.i,out->l,address?strlen(address):0,vm->cur_thread);}else{const char *text=dvm_string_utf8(vm,out->l);dprintf(fileno(f),"NET_JAVA_HTTP_BODY ref=%u bytes=%zu text=<redacted> thread=%u\n",self,(size_t)dvm_string_utf8_length(vm,out->l),vm->cur_thread);}fclose(f);}errno=saved;}}
    if(canonicalize_id){int saved=errno;FILE *f=fopen("/data/storage/el2/base/haps/entry/files/sdkdex/engine-probe.txt","a");if(f){dprintf(fileno(f),"SDK_CANON id=%u stage=exit ok=%d exception=%u call_steps=%llu thread=%u\n",canonicalize_id,ok,vm->exception,(unsigned long long)vm->call_steps,vm->cur_thread);fclose(f);}errno=saved;}
-   {static unsigned types_logged;bool type_call=sdk_owner&&sdk_method&&((!strcmp(sdk_owner,"copy/google/json/internal/$Gson$Types")&&!strcmp(sdk_method,"getCollectionElementType"))||(!strcmp(sdk_owner,"java/lang/Class")&&(!strcmp(sdk_method,"getGenericInterfaces")||!strcmp(sdk_method,"getGenericSuperclass"))));if(type_call&&types_logged++<48){int saved=errno;FILE *f=fopen("/data/storage/el2/base/haps/entry/files/sdkdex/engine-probe.txt","a");if(f){struct dvm_object *receiver=dvm__obj(vm,self),*result=dvm__obj(vm,out->l);dprintf(fileno(f),"SDK_NOTIFY_GENERIC owner=%s method=%s self=%u represented=%s input0=%u input1=%u ok=%d exception=%u result=%u result_class=%s represented_result=%s array_length=%u\n",sdk_owner,sdk_method,self,receiver&&receiver->kind==DVM_OBJ_CLASS&&receiver->klass?receiver->klass->name:"-",nslots?slots[0]:0,nslots>1?slots[1]:0,ok,vm->exception,out->l,result&&result->cls?result->cls->name:"-",result&&result->kind==DVM_OBJ_CLASS&&result->klass?result->klass->name:"-",result&&result->kind==DVM_OBJ_ARRAY?dvm_array_length(vm,out->l):0);fclose(f);}errno=saved;}}
+   {static unsigned types_logged;bool type_call=sdk_owner&&sdk_method&&((!strcmp(sdk_owner,"copy/google/json/internal/$Gson$Types")&&!strcmp(sdk_method,"getCollectionElementType"))||(!strcmp(sdk_owner,"java/lang/Class")&&(!strcmp(sdk_method,"getGenericInterfaces")||!strcmp(sdk_method,"getGenericSuperclass"))));if(type_call&&types_logged++<48){int saved=errno;FILE *f=fopen("/data/storage/el2/base/haps/entry/files/sdkdex/engine-probe.txt","a");if(f){struct gc_operation gc6_diag_receiver __attribute__((cleanup(gc_operation_end)));if(!gc_operation_begin(vm,&gc6_diag_receiver)){fclose(f);return false;}struct dvm_object *receiver=dvm__obj(vm,self),*result=dvm__obj(vm,out->l);dprintf(fileno(f),"SDK_NOTIFY_GENERIC owner=%s method=%s self=%u represented=%s input0=%u input1=%u ok=%d exception=%u result=%u result_class=%s represented_result=%s array_length=%u\n",sdk_owner,sdk_method,self,receiver&&receiver->kind==DVM_OBJ_CLASS&&receiver->klass?receiver->klass->name:"-",nslots?slots[0]:0,nslots>1?slots[1]:0,ok,vm->exception,out->l,result&&result->cls?result->cls->name:"-",result&&result->kind==DVM_OBJ_CLASS&&result->klass?result->klass->name:"-",result&&result->kind==DVM_OBJ_ARRAY?dvm_array_length(vm,out->l):0);fclose(f);}errno=saved;}}
    if(sdk_notify){int saved=errno;FILE *f=fopen("/data/storage/el2/base/haps/entry/files/sdkdex/engine-probe.txt","a");
-      if(f&&ok&&!strcmp(sdk_owner,"com/base/annotation/model/RouteMeta")&&!strcmp(sdk_method,"getDestination")){struct dvm_object *dest=dvm__obj(vm,out->l);dprintf(fileno(f),"SDK_NOTIFY_DEST id=%u ref=%u class=%s\n",sdk_notify_id,out->l,dest&&dest->kind==DVM_OBJ_CLASS&&dest->klass?dest->klass->name:"null_or_nonclass");}
+      if(f&&ok&&!strcmp(sdk_owner,"com/base/annotation/model/RouteMeta")&&!strcmp(sdk_method,"getDestination")){struct gc_operation gc6_diag_dest __attribute__((cleanup(gc_operation_end)));if(!gc_operation_begin(vm,&gc6_diag_dest)){fclose(f);return false;}struct dvm_object *dest=dvm__obj(vm,out->l);dprintf(fileno(f),"SDK_NOTIFY_DEST id=%u ref=%u class=%s\n",sdk_notify_id,out->l,dest&&dest->kind==DVM_OBJ_CLASS&&dest->klass?dest->klass->name:"null_or_nonclass");}
       if(f&&!ok&&vm->exception){char desc[512];dvm_describe_exception(vm,vm->exception,desc,sizeof desc);dprintf(fileno(f),"SDK_NOTIFY_EXCEPTION id=%u detail=%s\n",sdk_notify_id,desc);for(int i=0;i<vm->nexc_trace&&i<8;i++){struct dvm_method *em=vm->exc_trace[i];dprintf(fileno(f),"SDK_NOTIFY_FRAME id=%u index=%d class=%s method=%s sig=%s pc=%u\n",sdk_notify_id,i,em&&em->cls?em->cls->name:"?",em?em->name:"?",em&&em->sig?em->sig:"?",vm->exc_pc);}}
       if(f){dprintf(fileno(f),"SDK_NOTIFY id=%u stage=exit class=%s method=%s ok=%d exception=%u bool_result=%d mono_ms=%llu\n",sdk_notify_id,sdk_owner,sdk_method,ok,vm->exception,m->sig&&strstr(m->sig,")Z")?(int)out->i:-1,(unsigned long long)dvm__now_ms());if(!strcmp(sdk_owner,"com/base/cachelib/CacheInstaller"))dprintf(fileno(f),"SDK_NOTIFY_CACHE pid=%d vm_serial=%llu method=%s self=%u arg0=%u result_ref=%u mono_ms=%llu\n",(int)getpid(),(unsigned long long)vm->serial,sdk_method,self,nslots?slots[0]:0,out->l,(unsigned long long)dvm__now_ms());fclose(f);}errno=saved;}
 #endif
@@ -5890,17 +5943,17 @@ static bool invoke_body(struct dvm *vm, struct dvm_method *m, dvm_ref self,
            dvm__sig_param(m->sig, i, one, sizeof one); ++i) {
          const bool wide = one[0] == 'J' || one[0] == 'D';
          if ((one[0] == 'L' || one[0] == '[') && slots[slot]) {
-            struct dvm_object *o = dvm__obj(vm, (dvm_ref)slots[slot]);
+            const dvm_ref gc_trace_arg=(dvm_ref)slots[slot];
             char desc[384] = "";
-            if (o && o->cls && o->kind != DVM_OBJ_STRING)
+            if (dvm__obj(vm,gc_trace_arg) && dvm__obj(vm,gc_trace_arg)->cls && dvm__obj(vm,gc_trace_arg)->kind != DVM_OBJ_STRING)
                dvm_describe_exception(vm, (dvm_ref)slots[slot], desc,
                                       sizeof desc);
             fprintf(stderr, "[dvm] %*s  arg%d = %s%s%s\n", vm->depth * 2, "", i,
-                    o && o->kind == DVM_OBJ_STRING ? "\""
-                       : o && o->cls && o->cls->name ? o->cls->name : "?",
-                    o && o->kind == DVM_OBJ_STRING
+                    dvm__obj(vm,gc_trace_arg) && dvm__obj(vm,gc_trace_arg)->kind == DVM_OBJ_STRING ? "\""
+                       : dvm__obj(vm,gc_trace_arg) && dvm__obj(vm,gc_trace_arg)->cls && dvm__obj(vm,gc_trace_arg)->cls->name ? dvm__obj(vm,gc_trace_arg)->cls->name : "?",
+                    dvm__obj(vm,gc_trace_arg) && dvm__obj(vm,gc_trace_arg)->kind == DVM_OBJ_STRING
                        ? (dvm_string_utf8(vm, (dvm_ref)slots[slot]) ?: "") : "",
-                    o && o->kind == DVM_OBJ_STRING ? "\"" : "");
+                    dvm__obj(vm,gc_trace_arg) && dvm__obj(vm,gc_trace_arg)->kind == DVM_OBJ_STRING ? "\"" : "");
             if (desc[0] && (strstr(desc, "Exception") || strstr(desc, "Error")))
                fprintf(stderr, "[dvm] %*s    (%s)\n", vm->depth * 2, "", desc);
          } else if (one[0] != 'L' && one[0] != '[') {
@@ -7410,6 +7463,9 @@ struct dvm *dvm_create(const struct dvm_hooks *hooks)
    struct dvm *vm = calloc(1, sizeof *vm);
    if (!vm) { vm_arena_end(); return NULL; }
    vm->gc_initializing=true;
+   struct gc_contract_boot_guard gc_boot __attribute__((cleanup(gc_contract_boot_restore)))={gc_contract_boot_vm};
+   gc_contract_boot_vm=vm;
+   dvm_gc_metrics_reset();
    vm->process_start_elapsed_ms = (int64_t)(luna_os_boottime_ns() / 1000000ULL);
    vm->process_start_uptime_ms = (int64_t)(luna_os_uptime_ns() / 1000000ULL);
    vm->main_host_thread=luna_os_thread_token();
@@ -7562,14 +7618,14 @@ static bool gc_depth_boundary_selftest(struct dvm *vm){
    gc_depth_deferred_builtin=(struct dvm_method){.cls=cls,.name="gcDeferredNativeReturn",.sig="()[B",.access=DEX_ACC_STATIC,.ret_kind='L',.builtin=gc_depth_return_deferred};
    union dvm_value length={0};bool deferred_called=dvm_call(vm,&gc_depth_deferred_guest,0,NULL,0,&length);
    gc_exec_test_probe=NULL;gc_depth_test=NULL;
-   struct dvm_object *kept=dvm_gc_resolve(vm,heap_slot(vm,old));
-   struct dvm_object *returned=result.l?dvm_gc_resolve(vm,heap_slot(vm,result.l)):NULL;
+   const dvm_ref gc6_kept=old;
+   const dvm_ref gc6_returned=result.l;
    bool ok=called&&deferred_called&&length.i==7&&test.deferred_probe_ok&&!dvm_exception(vm)&&test.probe_ok&&before==1&&outer.count==before+1&&
-      gc2_scope_contains(&outer,result.l)&&kept&&kept->gc_body_borrows==1&&kept->gc_payload_borrows==1&&
-      old_pointer&&old_pointer[0]==0x5a&&returned&&returned->kind==DVM_OBJ_ARRAY&&returned->length==1&&
-      returned->gc_body_borrows==1&&returned->gc_payload_borrows==1&&gc_guest_execution_depth==test.depth;
-   E1_ROOT_LOG("DEPTH_BEFORE_EXIT ok=%d called=%d deferred_called=%d length=%d deferred_probe=%d nested_probe=%d before=%u after=%u result=%u returned_length=%u kept_body=%u kept_payload=%u returned_body=%u returned_payload=%u actual_depth=%u expected_depth=%u exception=%u\n",ok,called,deferred_called,length.i,test.deferred_probe_ok,test.probe_ok,before,outer.count,result.l,returned?returned->length:0,kept?kept->gc_body_borrows:0,kept?kept->gc_payload_borrows:0,returned?returned->gc_body_borrows:0,returned?returned->gc_payload_borrows:0,gc_guest_execution_depth,test.depth,dvm_exception(vm));
-   for(uint32_t i=0;i<outer.count;i++){struct dvm_object *member=gc_peek_object(vm,outer.refs[i].ref);E1_ROOT_LOG("DEPTH_PARENT_MEMBER ref=%u old=%d returned=%d nested=%d deferred=%d class=%s\n",outer.refs[i].ref,outer.refs[i].ref==old,outer.refs[i].ref==result.l,outer.refs[i].ref==test.nested,outer.refs[i].ref==test.deferred,member&&member->cls?member->cls->name:"?");}
+      gc2_scope_contains(&outer,result.l)&&gc_peek_object(vm,gc6_kept)&&gc_peek_object(vm,gc6_kept)->gc_body_borrows==1&&gc_peek_object(vm,gc6_kept)->gc_payload_borrows==1&&
+      old_pointer&&old_pointer[0]==0x5a&&gc_peek_object(vm,gc6_returned)&&gc_peek_object(vm,gc6_returned)->kind==DVM_OBJ_ARRAY&&gc_peek_object(vm,gc6_returned)->length==1&&
+      gc_peek_object(vm,gc6_returned)->gc_body_borrows==1&&gc_peek_object(vm,gc6_returned)->gc_payload_borrows==1&&gc_guest_execution_depth==test.depth;
+   E1_ROOT_LOG("DEPTH_BEFORE_EXIT ok=%d called=%d deferred_called=%d length=%d deferred_probe=%d nested_probe=%d before=%u after=%u result=%u returned_length=%u kept_body=%u kept_payload=%u returned_body=%u returned_payload=%u actual_depth=%u expected_depth=%u exception=%u\n",ok,called,deferred_called,length.i,test.deferred_probe_ok,test.probe_ok,before,outer.count,result.l,gc_peek_object(vm,gc6_returned)?gc_peek_object(vm,gc6_returned)->length:0,gc_peek_object(vm,gc6_kept)?gc_peek_object(vm,gc6_kept)->gc_body_borrows:0,gc_peek_object(vm,gc6_kept)?gc_peek_object(vm,gc6_kept)->gc_payload_borrows:0,gc_peek_object(vm,gc6_returned)?gc_peek_object(vm,gc6_returned)->gc_body_borrows:0,gc_peek_object(vm,gc6_returned)?gc_peek_object(vm,gc6_returned)->gc_payload_borrows:0,gc_guest_execution_depth,test.depth,dvm_exception(vm));
+   for(uint32_t i=0;i<outer.count;i++){dvm_ref slot=gen_slot(outer.refs[i].ref);struct dvm_object *member=gc_peek_object(vm,slot);E1_ROOT_LOG("DEPTH_PARENT_MEMBER ref=%u old=%d returned=%d nested=%d deferred=%d class=%s\n",slot,slot==old,slot==result.l,slot==test.nested,slot==test.deferred,member&&member->cls?member->cls->name:"?");}
    unsigned after=outer.count;uint32_t heap_after=vm->heap_size;
    /* Same-depth handoff keeps deferred cleanup live until final C owner exit. */
    struct dvm_gc_native_scope child={0};bool child_ok=dvm_gc_native_enter(vm,&child,0,"()V",NULL,0);
@@ -7577,8 +7633,8 @@ static bool gc_depth_boundary_selftest(struct dvm *vm){
    dvm_gc_native_leave_result(&child,"()[B",same);struct dvm_object *same_object=gc_peek_object(vm,same);
    bool same_deferred=same_object&&(same_object->gc_flags&DVM_GC_DEFERRED_FREE)&&same_object->gc_body_borrows&&gc2_scope_contains(&outer,same);
    dvm_gc_native_leave(&outer);
-   E1_ROOT_LOG("DEPTH_AFTER_EXIT child_ok=%d same_deferred=%d same_live=%d kept_body=%u kept_payload=%u returned_body=%u returned_payload=%u\n",child_ok,same_deferred,gc_peek_object(vm,same)!=NULL,kept?kept->gc_body_borrows:0,kept?kept->gc_payload_borrows:0,returned?returned->gc_body_borrows:0,returned?returned->gc_payload_borrows:0);
-   ok=ok&&child_ok&&same_deferred&&!gc_peek_object(vm,same)&&!kept->gc_body_borrows&&!kept->gc_payload_borrows&&returned&&!returned->gc_body_borrows&&!returned->gc_payload_borrows;
+   E1_ROOT_LOG("DEPTH_AFTER_EXIT child_ok=%d same_deferred=%d same_live=%d kept_body=%u kept_payload=%u returned_body=%u returned_payload=%u\n",child_ok,same_deferred,gc_peek_object(vm,same)!=NULL,gc_peek_object(vm,gc6_kept)?gc_peek_object(vm,gc6_kept)->gc_body_borrows:0,gc_peek_object(vm,gc6_kept)?gc_peek_object(vm,gc6_kept)->gc_payload_borrows:0,gc_peek_object(vm,gc6_returned)?gc_peek_object(vm,gc6_returned)->gc_body_borrows:0,gc_peek_object(vm,gc6_returned)?gc_peek_object(vm,gc6_returned)->gc_payload_borrows:0);
+   ok=ok&&child_ok&&same_deferred&&!gc_peek_object(vm,same)&&!gc_peek_object(vm,gc6_kept)->gc_body_borrows&&!gc_peek_object(vm,gc6_kept)->gc_payload_borrows&&gc_peek_object(vm,gc6_returned)&&!gc_peek_object(vm,gc6_returned)->gc_body_borrows&&!gc_peek_object(vm,gc6_returned)->gc_payload_borrows;
    dvm__discard_temporary(vm,old);if(test.nested)dvm__discard_temporary(vm,test.nested);if(test.deferred)dvm__discard_temporary(vm,test.deferred);if(result.l)dvm__discard_temporary(vm,result.l);
    fprintf(stderr,"GC2_GUEST_DEPTH_SELFTEST %s actual_dvm_call=1 guest_allocations=32 guest_array_length_reads=32 nested_c_borrow_released=%d outer_before=%u outer_after=%u expected_after=2 raw_pointer_preserved=1 returned_ref_handoff=1 heap_slots_delta=%u\n",ok?"PASS":"FAIL",test.probe_ok,before,after,heap_after-heap_before);
    fprintf(stderr,"GC2_DEFERRED_RETURN_SELFTEST %s discarded_inside_native=%d cross_depth_clear=%d real_guest_array_length=%d expected_length=7 same_depth_deferred_preserved=%d final_c_leave_reclaimed=%d\n",ok?"PASS":"FAIL",test.deferred_set,test.deferred_cleared,length.i,same_deferred,!gc_peek_object(vm,same));
@@ -7804,7 +7860,7 @@ void dvm_destroy(struct dvm *vm)
       free(o->slots);
    }
    for (uint32_t b = 0; b < vm->heap_nblocks; ++b) free(vm->heap_blocks[b]);
-   free(vm->heap_blocks);
+   gc_dir_destroy(vm);
 
    for (int i = 0; i < vm->nclasses; ++i) {
       struct dvm_class *c = vm->classes[i];

@@ -8,9 +8,12 @@ static void task6l_check(task6l_test_ctx *t,const char *name,bool ok){
 static dvm_ref task6l_hold(task6l_test_ctx *t,dvm_ref r){if(r&&t->npins<96){dvm_pin(t->v,r);t->pins[t->npins++]=r;}return r;}
 static dvm_ref task6l_object(task6l_test_ctx *t,const char *name){struct dvm_class *c=dvm_find_class_or_external(t->v,name);return c?task6l_hold(t,dvm_new_object(t->v,c)):0;}
 static bool task6l_call(task6l_test_ctx *t,dvm_ref r,const char *name,const char *sig,const union dvm_value *a,int n,union dvm_value *q){
- memset(q,0,sizeof *q);struct dvm_object *o=dvm__obj(t->v,r);struct dvm_method *m=o?dvm_find_method(t->v,o->cls,name,sig):NULL;
+ memset(q,0,sizeof *q);struct dvm_object *o=dvm__obj(t->v,r);
+ /* Class metadata is VM-owned; do not retain a movable header for post-call logging. */
+ const char *receiver=o&&o->cls?o->cls->name:"<null>";
+ struct dvm_method *m=o?dvm_find_method(t->v,o->cls,name,sig):NULL;
  bool ok=m&&dvm_call(t->v,m,r,a,n,q)&&!dvm_exception(t->v);
- if(t->f)dprintf(fileno(t->f),"TASK6L_CALL receiver=%s name=%s sig=%s resolved_owner=%s ok=%d exception=%u dvm_call=1\n",o&&o->cls?o->cls->name:"<null>",name,sig,m&&m->cls?m->cls->name:"<missing>",ok,t->v->exception);
+ if(t->f)dprintf(fileno(t->f),"TASK6L_CALL receiver=%s name=%s sig=%s resolved_owner=%s ok=%d exception=%u dvm_call=1\n",receiver,name,sig,m&&m->cls?m->cls->name:"<missing>",ok,t->v->exception);
  return ok;
 }
 static bool task6l_text(task6l_test_ctx *t,dvm_ref ref,const char *expected){const char *s=dvm_string_utf8(t->v,ref);return s&&dvm_string_utf8_length(t->v,ref)==strlen(expected)&&!memcmp(s,expected,strlen(expected));}
@@ -91,7 +94,7 @@ static void task6l_io_selftest(struct dvm *v){
  a[0].l=bytes;a[1].i=0;a[2].i=(int32_t)blen;task6l_check(&t,"ByteArrayOutputStream.write_range",task6l_call(&t,bo,"write","([BII)V",a,3,&q));
  ok=task6l_call(&t,bo,"toString","()Ljava/lang/String;",NULL,0,&q);task6l_check(&t,"ByteArrayOutputStream.default_UTF8",ok&&task6l_text(&t,q.l,utf8));
  a[0].l=task6l_hold(&t,dvm_new_string(v,"UTF-8"));ok=task6l_call(&t,bo,"toString","(Ljava/lang/String;)Ljava/lang/String;",a,1,&q);task6l_check(&t,"ByteArrayOutputStream.named_UTF8",ok&&task6l_text(&t,q.l,utf8));
- ok=task6l_call(&t,bo,"toByteArray","()[B",NULL,0,&q);arr=dvm__obj(v,q.l);copy=ok?task6l_hold(&t,q.l):0;
+ ok=task6l_call(&t,bo,"toByteArray","()[B",NULL,0,&q);copy=ok?task6l_hold(&t,q.l):0;arr=dvm__obj(v,copy);
  task6l_check(&t,"ByteArrayOutputStream.toByteArray_exact",ok&&arr&&arr->kind==DVM_OBJ_ARRAY&&arr->elem_kind=='B'&&arr->length==blen&&!memcmp(dvm_array_data(v,copy),utf8,blen));
  if(copy&&dvm_array_data(v,copy))((uint8_t*)dvm_array_data(v,copy))[0]='X';
  ok=task6l_call(&t,bo,"toString","()Ljava/lang/String;",NULL,0,&q);task6l_check(&t,"ByteArrayOutputStream.toByteArray_defensive_copy",ok&&task6l_text(&t,q.l,utf8));

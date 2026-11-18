@@ -29,7 +29,7 @@ __attribute__((visibility("default"))) int sdk_input_queue_multitouch(const mt_p
   unsigned tn=(mt_trace_tail+1)%MT_TRACE_CAP;
   if(tn!=mt_trace_head){q->trace_slot=mt_trace_tail;mt_trace *t=&mt_traces[mt_trace_tail];memset(t,0,sizeof *t);t->host=*host;t->event=packet;mt_trace_tail=tn;}else mt_trace_lost++;
  }
- input_obs_record(INPUT_ENQUEUE,packet.sequence,packet.action,0,host->callback_ns,packet.enqueue_ns);
+ input_obs_record_count(INPUT_ENQUEUE,packet.sequence,packet.action,0,host->callback_ns,packet.enqueue_ns,(int)packet.count);
  touch_tail=next;touch_queued++;pthread_mutex_unlock(&touch_lock);ed_notify();return 0;
 }
 static void multitouch_native_done(struct dvm *vm,dvm_ref event,int accepted){
@@ -63,10 +63,12 @@ static bool multitouch_inject(struct dvm *vm,dvm_ref player,const queued_touch *
   device_ready=true;
  }
  if(!sdk_motion_event_set_device_id(vm,me,device_id)){stage=6;goto done;}
- union dvm_value arg={.l=me};call_begin=perf_now();ok=dvm_call(vm,m,player,&arg,1,&out)&&!dvm_exception(vm);
+ union dvm_value arg={.l=me};call_begin=perf_now();
+ input_obs_record_count(INPUT_GUEST_BEGIN,q->packet.sequence,q->packet.action,0,call_begin,call_begin,(int)q->packet.count);
+ ok=dvm_call(vm,m,player,&arg,1,&out)&&!dvm_exception(vm);
  if(!ok)stage=7;
 done:
- input_obs_record(INPUT_GUEST,q->packet.sequence,q->packet.action,ok?(out.i?1:0):-(stage?stage:8),call_begin,perf_now());
+ input_obs_record_count(INPUT_GUEST,q->packet.sequence,q->packet.action,ok?(out.i?1:0):-(stage?stage:8),call_begin,perf_now(),(int)q->packet.count);
  ed_record((struct ed_row){.seq=q->packet.sequence,.host=q->host_ns,.enqueue=q->packet.enqueue_ns,.drain=q->drain_ns,.construct_begin=begin,.construct=constructed,.end=perf_now(),.ok=ok,.consumed=ok&&out.i});
  if(pinned)dvm_unpin(vm,me);
  if(consumed)*consumed=ok&&out.i;

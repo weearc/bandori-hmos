@@ -3,6 +3,7 @@
  * complete generated source/license. Dispatch, bounds/OOM fixes, constructors,
  * bulk snapshots and fail-fast iterator adaptation are local additions. */
 #include "collections.h"
+#include "gc_operation.h"
 #include "java_basics.h"
 #include "portable.h"
 #include <stdlib.h>
@@ -13,6 +14,8 @@
 #define RETL(x) do{out->l=(x);return true;}while(0)
 #define RETV() return true
 #define fprintf sdk_trace_fprintf
+/* The shared generated storage declares this payload destructor by name. */
+static void list_gc_destroy(void *p){free(p);}
 #include "upstream_collections.inc"
 
 /* Check the ordering contract used by the LinkedHashMap dispatcher. */
@@ -64,23 +67,25 @@ static bool invoke(method_fn fn,struct dvm *v,dvm_ref r,const union dvm_value *a
  bool ok=fn(v,r,a,n,out);if(fn==list_toArray&&!out->l&&!dvm_exception(v))dvm__throw(v,"java/lang/OutOfMemoryError","collection array");if(!ok&&!dvm_exception(v))dvm__throw(v,"java/lang/UnsupportedOperationException","collection operation did not implement its result");return true;
 }
 static dvm_ref snapshot(struct dvm *v,dvm_ref source){
+ struct gc_operation op __attribute__((cleanup(gc_operation_end)))={0};
+ if(!gc_operation_begin(v,&op)||!gc_operation_admit(v,source))return 0;
  if(!source){dvm__throw(v,"java/lang/NullPointerException","source Collection");return 0;}
  struct dvm_object *o=dvm__obj(v,source);union dvm_value result={0};
  if(o&&(is_type(o->cls,"java/util/ArrayList")||is_type(o->cls,"java/util/LinkedList"))){if(!list_toArray(v,source,NULL,0,&result))return 0;}
  else if(o&&is_type(o->cls,"java/util/concurrent/CopyOnWriteArrayList")){if(!java_basics_call(v,"java/util/concurrent/CopyOnWriteArrayList","toArray","()[Ljava/lang/Object;",source,NULL,0,&result))return 0;}
  else {struct dvm_method *m=o?dvm_find_method(v,o->cls,"toArray","()[Ljava/lang/Object;"):NULL;
-  if(!m){sdk_trace_missing_api(o&&o->cls?o->cls->name:"?","toArray","()[Ljava/lang/Object;");dvm__throw(v,"java/lang/NoSuchMethodError","Collection.toArray");return 0;}
+  if(!m){o=dvm__obj(v,source);sdk_trace_missing_api(o&&o->cls?o->cls->name:"?","toArray","()[Ljava/lang/Object;");dvm__throw(v,"java/lang/NoSuchMethodError","Collection.toArray");return 0;}
   if(!dvm_call(v,m,source,NULL,0,&result))return 0;
  }
  struct dvm_object *array=dvm__obj(v,result.l);
  if(!array||array->kind!=DVM_OBJ_ARRAY||array->elem_kind!='L'){dvm__throw(v,"java/lang/IllegalStateException","Collection.toArray returned no object array");return 0;}
- return result.l;
+ gc_operation_result(&op,"()[Ljava/lang/Object;",result.l);return result.l;
 }
 static bool bulk_add(struct dvm *v,dvm_ref self,dvm_ref source,int at,union dvm_value *out){
  dvm_ref array=snapshot(v,source);if(!array)return true;
  struct rt_list *l=list_of(v,self);if(at<0||!l||(uint32_t)at>l->size){dvm__throw(v,"java/lang/IndexOutOfBoundsException","addAll index");return true;}
  uint32_t n=dvm_array_length(v,array);dvm_ref *items=dvm_array_data(v,array);
- for(uint32_t i=0;i<n;++i){union dvm_value a[]={{.i=at+(int)i},{.l=items[i]}},ignored={0};if(!list_add_at(v,self,a,2,&ignored))return true;}
+ for(uint32_t i=0;i<n;++i){items=dvm_array_data(v,array);if(!items)return true;union dvm_value a[]={{.i=at+(int)i},{.l=items[i]}},ignored={0};if(!list_add_at(v,self,a,2,&ignored))return true;}
  out->i=n!=0;return true;
 }
 struct iterator{dvm_ref target;uint32_t cursor,expected;int64_t last;};
@@ -97,7 +102,7 @@ static bool iterator_call(struct dvm *v,const char *m,const char *sig,dvm_ref se
  it->cursor=(uint32_t)it->last;it->last=-1;it->expected=list_of(v,it->target)->mod_count;return true;
 }
 #define IS(name,signature) (!strcmp(m,name)&&!strcmp(sig,signature))
-bool collections_call(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int nargs,union dvm_value *out){
+static bool collections_call_gc9_operation(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int nargs,union dvm_value *out){
  (void)c;memset(out,0,sizeof *out);struct dvm_object *o=dvm__obj(v,self);
  if(o&&o->cls&&!strcmp(o->cls->name,"java/util/ArrayList$Itr"))return iterator_call(v,m,sig,self,out);
  bool linked=o&&is_type(o->cls,"java/util/LinkedList"), arraydeque=o&&is_type(o->cls,"java/util/ArrayDeque");
@@ -171,4 +176,13 @@ bool collections_call(struct dvm *v,const char *c,const char *m,const char *sig,
 #define MAP(name,signature,fn) if(IS(name,signature))return invoke(fn,v,self,a,nargs,out)
  MAP("put","(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",map_put);MAP("get","(Ljava/lang/Object;)Ljava/lang/Object;",map_get);MAP("remove","(Ljava/lang/Object;)Ljava/lang/Object;",map_remove);MAP("containsKey","(Ljava/lang/Object;)Z",map_containsKey);MAP("size","()I",map_size);MAP("isEmpty","()Z",map_isEmpty);MAP("clear","()V",map_clear);
  return false;
+}
+
+bool collections_call(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int nargs,union dvm_value *out){
+
+ struct gc_operation op __attribute__((cleanup(gc_operation_end)))={0};
+ if(!gc_operation_begin(v,&op)||!gc_operation_admit(v,self))return true;
+ bool handled=collections_call_gc9_operation(v,c,m,sig,self,a,nargs,out);
+ if(handled&&!dvm_exception(v))gc_operation_result(&op,sig,out->l);
+ return handled;
 }

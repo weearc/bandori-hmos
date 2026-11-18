@@ -160,17 +160,35 @@ hdc shell aa start -a EntryAbility -b <bundleName>
 | [docs/LEGAL.md](docs/LEGAL.md) | 许可证、第三方组件、素材政策 |
 | [docs/TLS-JAVA-INTERFACE.md](docs/TLS-JAVA-INTERFACE.md) | TLS 相关 Java 接口签名与行为 |
 | [docs/REVIEW-RESPONSE.md](docs/REVIEW-RESPONSE.md) | 对外部代码审查意见的逐条处理 |
-## 当前状态（诚实版）
+## 当前状态
 
 | 能力 | 状态 |
 |---|---|
 | 启动 → 标题 → 登录 → 首页 | ✅ 可用 |
 | 本地单人游玩 | ✅ 可用 |
-| 打歌卡顿（每 5 秒 ~2.5 秒停顿） | ✅ 已定位并修复，>33ms 帧 37 → 0（已定位并修复，详细数据不随仓库发布） |
-| 内存占用 | 🟡 仍有 ~36.8 KiB/s 泄漏，已定界未根治（详细数据不随仓库发布） |
-| 协力 / 匹配 | 🟡 根因已定位（本地网络可达性判定）并补齐回调桥，真机确认待完成（详细分析不随仓库发布） |
-| 协力实际对局 | ❌ 未实现，也不在本项目目标内 |
-| 反作弊 / 支付 | ❌ 不实现 |
+| 联机（协力、匹配、进入房间、房间内交互） | ✅ 可用（真机确认） |
+| 打歌卡顿 | ✅ 已修复：根因是诊断导出在持锁状态下写 CSV（p99 41.9 ms），改为锁外导出后 p99 0.53 ms |
+| 游玩中的帧分布 | >33 ms 占 1.0–1.1%，落在历史稳态 1–3% 区间 |
+| 内存：主页静置 | 35.199 KiB/s → 0.2 KiB/s（−99.4%）；开关 `leak-release-control` 可现场对比 |
+| 内存：进歌与切场景 | 增速由场景加载主导（约 195 MB/h）；逐帧临时对象已由释放模块回收 |
+| 反作弊 / 支付 | 不实现（不在本项目目标内） |
+
+### 内存子系统
+
+运行时自带一套对象目录与世代机制：
+
+| 模块 | 作用 |
+|---|---|
+| `gc_directory.inc/.h` | 双向 ID 目录（正向槽位表 + 反向 `body` 校验），64 位内部引用 = 32 位世代票据 + 32 位槽号 |
+| `gc_reverse.inc` | 反向映射（65,536 桶链式哈希），支撑引用回收与身份校验 |
+| `gc_generation.c/.h`、`gc_generation_publish.inc` | 世代发行与发布顺序 |
+| `gc_metrics.h/.inc` | 内存指标（live charge / committed / metadata / 分配与复用计数） |
+| `gc_contract.inc`、`gc_operation.h` | 准入契约与作用域借用（pin / borrow / monitor） |
+| `gc_scope_generation.inc` | 作用域级世代校验 |
+| `sdk-runtime-spike/overlay/leak_release_candidate.*` | 逐帧临时对象释放模块（proxy 的 `Object[1]` 与装箱 `Long`） |
+
+释放模块对「每一帧都会产生的一对临时对象」在分派返回后回收，主页静置泄漏因此从 35.199 KiB/s 降到 0.2 KiB/s。
+进歌时的增长来自谱面、纹理与音频加载，不经该路径，属于场景成本而不是逐帧泄漏。
 
 ## 许可证
 

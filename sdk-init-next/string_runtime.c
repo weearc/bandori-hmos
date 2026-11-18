@@ -1,4 +1,5 @@
 #include "string_runtime.h"
+#include "gc_operation.h"
 #include "enum_runtime.h"
 #include "java_basics.h"
 #include "platform_runtime.h"
@@ -18,9 +19,9 @@ extern int sdk_trace_fprintf(FILE*,const char*,...);
  * implementation. Return false for every case needing encoding or Java
  * validation so the original DEX retains those semantics. No request fields,
  * signature, consent, network result or interpreter budget are substituted. */
-bool string_runtime_httpurl_ascii(struct dvm *v,const uint32_t *slots,int n,union dvm_value *out){
+static bool string_runtime_httpurl_ascii_operation(struct dvm *v,const uint32_t *slots,int n,union dvm_value *out){
  if(n!=9||!slots||!slots[0]||!slots[3])return false;
- const char *text=dvm_string_utf8(v,slots[0]),*set=dvm_string_utf8(v,slots[3]);
+ const char *text=({const dvm_ref gc_payload_ref_86=(slots[0]);if(!gc_operation_admit(v,gc_payload_ref_86))return 0;dvm_string_utf8(v,gc_payload_ref_86);}),*set=({const dvm_ref gc_payload_ref_87=(slots[3]);if(!gc_operation_admit(v,gc_payload_ref_87))return 0;dvm_string_utf8(v,gc_payload_ref_87);});
  if(!text||!set)return false;
  int32_t start=(int32_t)slots[1],end=(int32_t)slots[2];size_t length=dvm_string_utf8_length(v,slots[0]),set_length=dvm_string_utf8_length(v,slots[3]);
  if(start<0||end<start||(size_t)end>length)return false;
@@ -40,36 +41,58 @@ bool string_runtime_httpurl_ascii(struct dvm *v,const uint32_t *slots,int n,unio
  out->l=dvm_new_string_n(v,text+start,(size_t)(end-start));
  if(!out->l)dvm__throw(v,"java/lang/OutOfMemoryError","canonicalize unchanged substring");return true;
 }
+bool string_runtime_httpurl_ascii(struct dvm *v,const uint32_t *slots,int n,union dvm_value *out){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return false;
+ bool result=string_runtime_httpurl_ascii_operation(v,slots,n,out);
+ gc_operation_result(&operation,"()Ljava/lang/Object;",result&&!dvm_exception(v)&&out?out->l:0);
+ return result;
+}
+
 /* Exact successful branch of shipped Headers.checkValue; failures remain
  * in DEX for its original exception type, message and UTF16 error index. */
-bool string_runtime_header_value_ascii(struct dvm *v,const uint32_t *slots,int n){
+static bool string_runtime_header_value_ascii_operation(struct dvm *v,const uint32_t *slots,int n){
  if(n!=2||!slots||!slots[0])return false;
- const char *text=dvm_string_utf8(v,slots[0]);if(!text)return false;
+ const char *text=({const dvm_ref gc_payload_ref_88=(slots[0]);if(!gc_operation_admit(v,gc_payload_ref_88))return 0;dvm_string_utf8(v,gc_payload_ref_88);});if(!text)return false;
  size_t length=dvm_string_utf8_length(v,slots[0]);
  for(size_t i=0;i<length;++i){unsigned char c=(unsigned char)text[i];if((c<=31&&c!='\t')||c>=127)return false;}
  return true;
 }
+bool string_runtime_header_value_ascii(struct dvm *v,const uint32_t *slots,int n){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return false;
+ bool result=string_runtime_header_value_ascii_operation(v,slots,n);
+ return result;
+}
+
 /* removeAll(name) is a no-op only after proving there are no matches in the
  * actual standard backing list. Restrict to ASCII, whose case folding is
  * exact here; matching names and every unsupported case remain in DEX. */
-bool string_runtime_header_absent(struct dvm *v,dvm_ref list,dvm_ref name){
- const char *key=name?dvm_string_utf8(v,name):NULL;if(!key)return false;
+static bool string_runtime_header_absent_operation(struct dvm *v,dvm_ref list,dvm_ref name){
+ const char *key=name?({const dvm_ref gc_payload_ref_89=(name);if(!gc_operation_admit(v,gc_payload_ref_89))return 0;dvm_string_utf8(v,gc_payload_ref_89);}):NULL;if(!key)return false;
  size_t key_len=dvm_string_utf8_length(v,name);
  for(size_t j=0;j<key_len;++j)if((unsigned char)key[j]>=128)return false;
- struct dvm_object *o=dvm__obj(v,list);
- if(!o||!o->cls||strcmp(o->cls->name,"java/util/ArrayList"))return false;
+ const dvm_ref gc_ref_o_92=(list); if(!gc_operation_admit(v,gc_ref_o_92))return false;
+ if(!dvm__obj(v,gc_ref_o_92)||!dvm__obj(v,gc_ref_o_92)->cls||strcmp(dvm__obj(v,gc_ref_o_92)->cls->name,"java/util/ArrayList"))return false;
  union dvm_value size={0},index={0},item={0};
  if(!collections_call(v,"java/util/List","size","()I",list,NULL,0,&size)||dvm_exception(v)||size.i<0||(size.i&1)||size.i>1024)return false;
  for(int i=0;i<size.i;i+=2){
   index.i=i;
   if(!collections_call(v,"java/util/List","get","(I)Ljava/lang/Object;",list,&index,1,&item)||dvm_exception(v))return false;
-  const char *s=dvm_string_utf8(v,item.l);if(!s)return false;
+  const char *s=({const dvm_ref gc_payload_ref_90=(item.l);if(!gc_operation_admit(v,gc_payload_ref_90))return 0;dvm_string_utf8(v,gc_payload_ref_90);});if(!s)return false;
   size_t len=dvm_string_utf8_length(v,item.l);bool same=len==key_len;
   for(size_t j=0;j<len;++j){unsigned char c=(unsigned char)s[j];if(c>=128)return false;if(same){unsigned char k=(unsigned char)key[j];if(c>='A'&&c<='Z')c+=32;if(k>='A'&&k<='Z')k+=32;if(c!=k)same=false;}}
   if(same)return false;
  }
  return true;
 }
+bool string_runtime_header_absent(struct dvm *v,dvm_ref list,dvm_ref name){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return false;
+ bool result=string_runtime_header_absent_operation(v,list,name);
+ return result;
+}
+
 void sdk_trace_missing_api(const char*,const char*,const char*);
 /* Strings follow the VM/DEX convention: U+0000 is carried as the MUTF-8
  * sequence C0 80, never as a raw 0 byte.  dex.c deliberately leaves C0 80 in
@@ -86,25 +109,40 @@ static int json_quote_end(const uint16_t *units,int length,int pos,int limit,uin
  if(!units||pos<0||limit<pos||limit>length)return -1;
  for(int i=pos;i<limit;i++){uint16_t c=units[i];if(c==quote)return i;if(c=='\\'||c=='\n')return -1;}return -1;
 }
-bool string_runtime_json_quoted(struct dvm *v,dvm_ref self,uint16_t quote,bool skip,union dvm_value *out){
+static bool string_runtime_json_quoted_operation(struct dvm *v,dvm_ref self,uint16_t quote,bool skip,union dvm_value *out){
  union dvm_value buffer={0},pos={0},limit={0};
  if(!dvm_get_field(v,self,"buffer","[C",&buffer)||!dvm_get_field(v,self,"pos","I",&pos)||!dvm_get_field(v,self,"limit","I",&limit))return false;
- struct dvm_object *array=dvm__obj(v,buffer.l);if(!array||array->kind!=DVM_OBJ_ARRAY||array->elem_kind!='C')return false;
- const uint16_t *units=dvm_array_data(v,buffer.l);int end=json_quote_end(units,array->length,pos.i,limit.i,quote);if(end<0)return false;
+ const dvm_ref gc_ref_array_93=(buffer.l); if(!gc_operation_admit(v,gc_ref_array_93))return false;if(!dvm__obj(v,gc_ref_array_93)||dvm__obj(v,gc_ref_array_93)->kind!=DVM_OBJ_ARRAY||dvm__obj(v,gc_ref_array_93)->elem_kind!='C')return false;
+ const uint16_t *units=({const dvm_ref gc_payload_ref_91=(buffer.l);if(!gc_operation_admit(v,gc_payload_ref_91))return 0;dvm_array_data(v,gc_payload_ref_91);});int end=json_quote_end(units,dvm__obj(v,gc_ref_array_93)->length,pos.i,limit.i,quote);if(end<0)return false;
  if(!skip){out->l=from_units(v,units+pos.i,end-pos.i);if(!out->l)return true;}
  pos.i=end+1;return dvm_set_field(v,self,"pos","I",pos);
 }
+bool string_runtime_json_quoted(struct dvm *v,dvm_ref self,uint16_t quote,bool skip,union dvm_value *out){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return false;
+ bool result=string_runtime_json_quoted_operation(v,self,quote,skip,out);
+ gc_operation_result(&operation,"()Ljava/lang/Object;",result&&!dvm_exception(v)&&out&&!skip?out->l:0);
+ return result;
+}
+
 static int json_nonwhite_index(const uint16_t *units,int length,int pos,int limit){
  if(!units||pos<0||limit<pos||limit>length)return -1;
  for(int i=pos;i<limit;i++){uint16_t c=units[i];if(c==' '||c=='\r'||c=='\t')continue;if(c=='\n'||c=='/'||c=='#')return -1;return i;}return -1;
 }
-bool string_runtime_json_nonwhite(struct dvm *v,dvm_ref self,union dvm_value *out){
+static bool string_runtime_json_nonwhite_operation(struct dvm *v,dvm_ref self,union dvm_value *out){
  union dvm_value buffer={0},pos={0},limit={0};
  if(!dvm_get_field(v,self,"buffer","[C",&buffer)||!dvm_get_field(v,self,"pos","I",&pos)||!dvm_get_field(v,self,"limit","I",&limit))return false;
- struct dvm_object *array=dvm__obj(v,buffer.l);if(!array||array->kind!=DVM_OBJ_ARRAY||array->elem_kind!='C')return false;
- const uint16_t *units=dvm_array_data(v,buffer.l);int index=json_nonwhite_index(units,array->length,pos.i,limit.i);if(index<0)return false;
+ const dvm_ref gc_ref_array_94=(buffer.l); if(!gc_operation_admit(v,gc_ref_array_94))return false;if(!dvm__obj(v,gc_ref_array_94)||dvm__obj(v,gc_ref_array_94)->kind!=DVM_OBJ_ARRAY||dvm__obj(v,gc_ref_array_94)->elem_kind!='C')return false;
+ const uint16_t *units=({const dvm_ref gc_payload_ref_92=(buffer.l);if(!gc_operation_admit(v,gc_payload_ref_92))return 0;dvm_array_data(v,gc_payload_ref_92);});int index=json_nonwhite_index(units,dvm__obj(v,gc_ref_array_94)->length,pos.i,limit.i);if(index<0)return false;
  out->i=units[index];pos.i=index+1;return dvm_set_field(v,self,"pos","I",pos);
 }
+bool string_runtime_json_nonwhite(struct dvm *v,dvm_ref self,union dvm_value *out){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return false;
+ bool result=string_runtime_json_nonwhite_operation(v,self,out);
+ return result;
+}
+
 /* Commit no state until a complete ordinary doPeek branch is proven. All
  * numeric/keyword, lenient syntax, comment, refill and error cases use DEX. */
 static int json_structure_token(const uint16_t *units,int length,int pos,int limit,int top,bool lenient,int *end,int *newtop){
@@ -123,15 +161,22 @@ static int json_structure_token(const uint16_t *units,int length,int pos,int lim
  int token=units[at]=='"'?9:units[at]=='['?3:units[at]=='{'?1:(units[at]==']'&&top==1)?4:0;
  if(token){*end=at+1;*newtop=state;}return token;
 }
-bool string_runtime_json_structure(struct dvm *v,dvm_ref self,union dvm_value *out){
+static bool string_runtime_json_structure_operation(struct dvm *v,dvm_ref self,union dvm_value *out){
  union dvm_value buffer={0},pos={0},limit={0},stack={0},size={0},lenient={0},peeked={0};
  if(!dvm_get_field(v,self,"buffer","[C",&buffer)||!dvm_get_field(v,self,"pos","I",&pos)||!dvm_get_field(v,self,"limit","I",&limit)||!dvm_get_field(v,self,"stack","[I",&stack)||!dvm_get_field(v,self,"stackSize","I",&size)||!dvm_get_field(v,self,"lenient","Z",&lenient)||!dvm_get_field(v,self,"peeked","I",&peeked))return false;
- struct dvm_object *chars=dvm__obj(v,buffer.l),*states=dvm__obj(v,stack.l);
- if(!chars||chars->kind!=DVM_OBJ_ARRAY||chars->elem_kind!='C'||!states||states->kind!=DVM_OBJ_ARRAY||states->elem_kind!='I'||size.i<=0||(uint32_t)size.i>states->length)return false;
- int32_t *tops=dvm_array_data(v,stack.l);int end=0,newtop=0;
- int token=json_structure_token(dvm_array_data(v,buffer.l),chars->length,pos.i,limit.i,tops[size.i-1],lenient.i!=0,&end,&newtop);if(!token)return false;
+ const dvm_ref gc_ref_chars_95=(buffer.l); if(!gc_operation_admit(v,gc_ref_chars_95))return false;const dvm_ref gc_ref_states_96=(stack.l); if(!gc_operation_admit(v,gc_ref_states_96))return false;
+ if(!dvm__obj(v,gc_ref_chars_95)||dvm__obj(v,gc_ref_chars_95)->kind!=DVM_OBJ_ARRAY||dvm__obj(v,gc_ref_chars_95)->elem_kind!='C'||!dvm__obj(v,gc_ref_states_96)||dvm__obj(v,gc_ref_states_96)->kind!=DVM_OBJ_ARRAY||dvm__obj(v,gc_ref_states_96)->elem_kind!='I'||size.i<=0||(uint32_t)size.i>dvm__obj(v,gc_ref_states_96)->length)return false;
+ int32_t *tops=({const dvm_ref gc_payload_ref_93=(stack.l);if(!gc_operation_admit(v,gc_payload_ref_93))return 0;dvm_array_data(v,gc_payload_ref_93);});int end=0,newtop=0;
+ int token=json_structure_token(({const dvm_ref gc_payload_ref_94=(buffer.l);if(!gc_operation_admit(v,gc_payload_ref_94))return 0;dvm_array_data(v,gc_payload_ref_94);}),dvm__obj(v,gc_ref_chars_95)->length,pos.i,limit.i,tops[size.i-1],lenient.i!=0,&end,&newtop);if(!token)return false;
  pos.i=end;peeked.i=token;dvm_set_field(v,self,"pos","I",pos);dvm_set_field(v,self,"peeked","I",peeked);tops[size.i-1]=newtop;out->i=token;return true;
 }
+bool string_runtime_json_structure(struct dvm *v,dvm_ref self,union dvm_value *out){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return false;
+ bool result=string_runtime_json_structure_operation(v,self,out);
+ return result;
+}
+
 /* Native bodies of the sampled reader hotspots. Private refill/escape/token
  * helpers retain the shipped reader's grammar; these bodies never dispatch
  * their own method back to DEX. All offsets are UTF-16 code-unit offsets. */
@@ -147,14 +192,14 @@ static bool jr_call(struct dvm *v,dvm_ref r,const char *name,const char *sig,con
  return dvm_call(v,m,r,a,n,out)&&!dvm_exception(v);
 }
 static int jr_peek_number(struct dvm *v,dvm_ref r){
- dvm_ref b=jr_get(v,r,"buffer","[C").l;uint16_t *u=dvm_array_data(v,b);
+ dvm_ref b=jr_get(v,r,"buffer","[C").l;uint16_t *u=({const dvm_ref gc_payload_ref_95=(b);if(!gc_operation_admit(v,gc_payload_ref_95))return 0;dvm_array_data(v,gc_payload_ref_95);});
  int pos=jr_get(v,r,"pos","I").i,limit=jr_get(v,r,"limit","I").i,last=0,i=0;
  int64_t value=0;bool negative=false,fits=true;union dvm_value out={0};
  for(;;i++){
   if(pos+i==limit){
    if((uint32_t)i==dvm_array_length(v,b))return 0;
    union dvm_value a={.i=i+1};if(!jr_call(v,r,"fillBuffer","(I)Z",&a,1,&out))return 0;
-   if(!out.i)break;pos=jr_get(v,r,"pos","I").i;limit=jr_get(v,r,"limit","I").i;u=dvm_array_data(v,b);
+   if(!out.i)break;pos=jr_get(v,r,"pos","I").i;limit=jr_get(v,r,"limit","I").i;u=({const dvm_ref gc_payload_ref_96=(b);if(!gc_operation_admit(v,gc_payload_ref_96))return 0;dvm_array_data(v,gc_payload_ref_96);});
   }
   uint16_t c=u[pos+i];
   if(c=='-'){if(last==0){negative=true;last=1;}else if(last==5)last=6;else return 0;}
@@ -181,7 +226,7 @@ static int jr_peek_number(struct dvm *v,dvm_ref r){
 static void jr_skip_quote(struct dvm *v,dvm_ref r,uint16_t quote){
  union dvm_value out={0};
  for(;;){
-  dvm_ref b=jr_get(v,r,"buffer","[C").l;uint16_t *u=dvm_array_data(v,b);
+  dvm_ref b=jr_get(v,r,"buffer","[C").l;uint16_t *u=({const dvm_ref gc_payload_ref_97=(b);if(!gc_operation_admit(v,gc_payload_ref_97))return ;dvm_array_data(v,gc_payload_ref_97);});
   int pos=jr_get(v,r,"pos","I").i,limit=jr_get(v,r,"limit","I").i;
   while(pos<limit){
    uint16_t c=u[pos++];
@@ -189,7 +234,7 @@ static void jr_skip_quote(struct dvm *v,dvm_ref r,uint16_t quote){
    if(c=='\\'){
     jr_int(v,r,"pos",pos);
     if(!jr_call(v,r,"readEscapeCharacter","()C",NULL,0,&out))return;
-    pos=jr_get(v,r,"pos","I").i;limit=jr_get(v,r,"limit","I").i;u=dvm_array_data(v,b);
+    pos=jr_get(v,r,"pos","I").i;limit=jr_get(v,r,"limit","I").i;u=({const dvm_ref gc_payload_ref_98=(b);if(!gc_operation_admit(v,gc_payload_ref_98))return ;dvm_array_data(v,gc_payload_ref_98);});
    }else if(c=='\n'){
     jr_int(v,r,"lineNumber",jr_get(v,r,"lineNumber","I").i+1);jr_int(v,r,"lineStart",pos);
    }
@@ -199,7 +244,7 @@ static void jr_skip_quote(struct dvm *v,dvm_ref r,uint16_t quote){
   if(!out.i){union dvm_value text={.l=dvm_new_string(v,"Unterminated string")};jr_call(v,r,"syntaxError","(Ljava/lang/String;)Ljava/io/IOException;",&text,1,&out);return;}
  }
 }
-bool string_runtime_json_core(struct dvm *v,dvm_ref r,const char *name,const char *sig,const uint32_t *slots,int n,union dvm_value *out){
+static bool string_runtime_json_core_operation(struct dvm *v,dvm_ref r,const char *name,const char *sig,const uint32_t *slots,int n,union dvm_value *out){
  bool skip=!strcmp(name,"skipValue")&&!strcmp(sig,"()V")&&n==0;
  bool next=!strcmp(name,"nextName")&&!strcmp(sig,"()Ljava/lang/String;")&&n==0;
  bool quote=!strcmp(name,"skipQuotedValue")&&!strcmp(sig,"(C)V")&&n==1;
@@ -219,7 +264,7 @@ bool string_runtime_json_core(struct dvm *v,dvm_ref r,const char *name,const cha
     if(!jr_call(v,r,"peek","()Lcopy/google/json/stream/JsonToken;",NULL,0,&t))return true;
     enum_runtime_call(v,"java/lang/Enum","toString","()Ljava/lang/String;",t.l,NULL,0,&s);
     if(dvm_exception(v)||!jr_call(v,r,"locationString","()Ljava/lang/String;",NULL,0,&loc))return true;
-    char message[1024];snprintf(message,sizeof message,"Expected a name but was %s%s",dvm_string_utf8(v,s.l),dvm_string_utf8(v,loc.l));
+    char message[1024];snprintf(message,sizeof message,"Expected a name but was %s%s",({const dvm_ref gc_payload_ref_99=(s.l);if(!gc_operation_admit(v,gc_payload_ref_99))return 0;dvm_string_utf8(v,gc_payload_ref_99);}),({const dvm_ref gc_payload_ref_100=(loc.l);if(!gc_operation_admit(v,gc_payload_ref_100))return 0;dvm_string_utf8(v,gc_payload_ref_100);}));
     dvm__throw(v,"java/lang/IllegalStateException",message);return true;
    }
   }else if(token==3||token==1){
@@ -235,11 +280,18 @@ bool string_runtime_json_core(struct dvm *v,dvm_ref r,const char *name,const cha
  if(index<0||(uint32_t)index>=dvm_array_length(v,names)){dvm__throw(v,"java/lang/ArrayIndexOutOfBoundsException","reader path");return true;}
  if(!next){
   dvm_ref indices=jr_get(v,r,"pathIndices","[I").l;
-  uint32_t *values=dvm_array_data(v,indices);values[index]++;out->l=dvm_new_string(v,"null");
+  uint32_t *values=({const dvm_ref gc_payload_ref_101=(indices);if(!gc_operation_admit(v,gc_payload_ref_101))return 0;dvm_array_data(v,gc_payload_ref_101);});values[index]++;out->l=dvm_new_string(v,"null");
  }
- dvm_ref *paths=dvm_array_data(v,names);paths[index]=out->l;
+ dvm_ref *paths=({const dvm_ref gc_payload_ref_102=(names);if(!gc_operation_admit(v,gc_payload_ref_102))return 0;dvm_array_data(v,gc_payload_ref_102);});paths[index]=out->l;
  return true;
 }
+bool string_runtime_json_core(struct dvm *v,dvm_ref r,const char *name,const char *sig,const uint32_t *slots,int n,union dvm_value *out){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return false;
+ bool result=string_runtime_json_core_operation(v,r,name,sig,slots,n,out);
+ return result;
+}
+
 static dvm_ref jr_fixture(struct dvm *v,const char *text,bool lenient){
  union dvm_value a={.l=dvm_new_string(v,text)},out={0};
  dvm_ref sr=dvm_new_object(v,dvm_find_class_or_external(v,"java/io/StringReader"));
@@ -258,11 +310,11 @@ static bool jr_selftest_body(struct dvm *v){
  dvm_ref r=jr_fixture(v,large,false);free(large);
 #define JR_CHECK(x) do{if(!(x)){char e[512]={0};if(dvm_exception(v))dvm_describe_exception(v,dvm_exception(v),e,sizeof e);sdk_trace_fprintf(stderr,"TASK4_JSON_SELFTEST FAIL line=%d checks=%u exception=%s\n",__LINE__,checks,e);return false;}checks++;}while(0)
  JR_CHECK(r&&jr_call(v,r,"beginObject","()V",NULL,0,&out));
- JR_CHECK(jr_call(v,r,"nextName","()Ljava/lang/String;",NULL,0,&out)&&!strcmp(dvm_string_utf8(v,out.l),"discard"));
+ JR_CHECK(jr_call(v,r,"nextName","()Ljava/lang/String;",NULL,0,&out)&&!strcmp(({const dvm_ref gc_payload_ref_103=(out.l);if(!gc_operation_admit(v,gc_payload_ref_103))return 0;dvm_string_utf8(v,gc_payload_ref_103);}),"discard"));
  JR_CHECK(jr_call(v,r,"skipValue","()V",NULL,0,&out));
  int ix=jr_get(v,r,"stackSize","I").i-1;
- JR_CHECK(((int32_t*)dvm_array_data(v,jr_get(v,r,"pathIndices","[I").l))[ix]==1);
- JR_CHECK(!strcmp(dvm_string_utf8(v,((dvm_ref*)dvm_array_data(v,jr_get(v,r,"pathNames","[Ljava/lang/String;").l))[ix]),"null"));
+ JR_CHECK(((int32_t*)({const dvm_ref gc_payload_ref_104=(jr_get(v,r,"pathIndices","[I").l);if(!gc_operation_admit(v,gc_payload_ref_104))return 0;dvm_array_data(v,gc_payload_ref_104);}))[ix]==1);
+ JR_CHECK(!strcmp(({const dvm_ref gc_payload_ref_106=(((dvm_ref*)({const dvm_ref gc_payload_ref_105=(jr_get(v,r,"pathNames","[Ljava/lang/String;").l);if(!gc_operation_admit(v,gc_payload_ref_105))return 0;dvm_array_data(v,gc_payload_ref_105);}))[ix]);if(!gc_operation_admit(v,gc_payload_ref_106))return 0;dvm_string_utf8(v,gc_payload_ref_106);}),"null"));
  JR_CHECK(jr_call(v,r,"nextName","()Ljava/lang/String;",NULL,0,&out));
  union dvm_value arg={0},ch={0};dvm_ref name=out.l;
  JR_CHECK(string_runtime_call(v,"java/lang/String","length","()I",name,NULL,0,&out)&&out.i==4);
@@ -272,13 +324,13 @@ static bool jr_selftest_body(struct dvm *v){
  JR_CHECK(jr_call(v,r,"endObject","()V",NULL,0,&out));
  r=jr_fixture(v,"{unquoted:['line\nnext',false], tail:3}",true);
  JR_CHECK(r&&jr_call(v,r,"beginObject","()V",NULL,0,&out));
- JR_CHECK(jr_call(v,r,"nextName","()Ljava/lang/String;",NULL,0,&out)&&!strcmp(dvm_string_utf8(v,out.l),"unquoted"));
+ JR_CHECK(jr_call(v,r,"nextName","()Ljava/lang/String;",NULL,0,&out)&&!strcmp(({const dvm_ref gc_payload_ref_107=(out.l);if(!gc_operation_admit(v,gc_payload_ref_107))return 0;dvm_string_utf8(v,gc_payload_ref_107);}),"unquoted"));
  JR_CHECK(jr_call(v,r,"skipValue","()V",NULL,0,&out)&&jr_get(v,r,"lineNumber","I").i==1);
- JR_CHECK(jr_call(v,r,"nextName","()Ljava/lang/String;",NULL,0,&out)&&!strcmp(dvm_string_utf8(v,out.l),"tail"));
+ JR_CHECK(jr_call(v,r,"nextName","()Ljava/lang/String;",NULL,0,&out)&&!strcmp(({const dvm_ref gc_payload_ref_108=(out.l);if(!gc_operation_admit(v,gc_payload_ref_108))return 0;dvm_string_utf8(v,gc_payload_ref_108);}),"tail"));
  JR_CHECK(jr_call(v,r,"nextInt","()I",NULL,0,&out)&&out.i==3);
  r=jr_fixture(v,"[1]",false);JR_CHECK(r&&jr_call(v,r,"beginArray","()V",NULL,0,&out));
  JR_CHECK(!jr_call(v,r,"nextName","()Ljava/lang/String;",NULL,0,&out)&&dvm_exception(v));
- struct dvm_object *e=dvm__obj(v,dvm_exception(v));JR_CHECK(e&&e->cls&&!strcmp(e->cls->name,"java/lang/IllegalStateException"));dvm_clear_exception(v);
+ const dvm_ref gc_ref_e_97=(dvm_exception(v)); if(!gc_operation_admit(v,gc_ref_e_97))return false;JR_CHECK(dvm__obj(v,gc_ref_e_97)&&dvm__obj(v,gc_ref_e_97)->cls&&!strcmp(dvm__obj(v,gc_ref_e_97)->cls->name,"java/lang/IllegalStateException"));dvm_clear_exception(v);
  r=jr_fixture(v,"{\"bad\":\"unterminated\\u12",false);
  JR_CHECK(r&&jr_call(v,r,"beginObject","()V",NULL,0,&out)&&jr_call(v,r,"nextName","()Ljava/lang/String;",NULL,0,&out));
  JR_CHECK(!jr_call(v,r,"skipValue","()V",NULL,0,&out)&&dvm_exception(v));dvm_clear_exception(v);
@@ -294,34 +346,41 @@ static bool jr_selftest_body(struct dvm *v){
 #undef JR_CHECK
  return true;
 }
-bool string_runtime_task4_json_selftest(struct dvm *v){
+static bool string_runtime_task4_json_selftest_operation(struct dvm *v){
  /* Test calls are nested within VM setup, not top-level application entry:
   * do not drain unrelated queued SDK tasks between reader assertions. */
  int depth=v->depth;uint64_t steps=v->call_steps;v->depth++;v->call_steps=0;
  bool ok=jr_selftest_body(v);v->depth=depth;v->call_steps=steps;return ok;
 }
+bool string_runtime_task4_json_selftest(struct dvm *v){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return false;
+ bool result=string_runtime_task4_json_selftest_operation(v);
+ return result;
+}
+
 static bool object_text(struct dvm *v,dvm_ref ref,const char **p,size_t *len){
  if(!ref){*p="null";*len=4;return true;}
- struct dvm_object *o=dvm__obj(v,ref);if(!o)return false;
- if(o->kind==DVM_OBJ_STRING){*p=o->utf8;*len=o->utf8_len;return true;}
+ const dvm_ref gc_ref_o_98=(ref); if(!gc_operation_admit(v,gc_ref_o_98))return false;if(!dvm__obj(v,gc_ref_o_98))return false;
+ if(dvm__obj(v,gc_ref_o_98)->kind==DVM_OBJ_STRING){*p=dvm__obj(v,gc_ref_o_98)->utf8;*len=dvm__obj(v,gc_ref_o_98)->utf8_len;return true;}
  union dvm_value out={0};
- bool ok=runtime_extra_call(v,o->cls->name,"toString","()Ljava/lang/String;",ref,NULL,0,&out)&&out.l;
- if(!ok)ok=java_basics_call(v,o->cls->name,"toString","()Ljava/lang/String;",ref,NULL,0,&out)&&out.l;
+ bool ok=runtime_extra_call(v,dvm__obj(v,gc_ref_o_98)->cls->name,"toString","()Ljava/lang/String;",ref,NULL,0,&out)&&out.l;
+ if(!ok)ok=java_basics_call(v,dvm__obj(v,gc_ref_o_98)->cls->name,"toString","()Ljava/lang/String;",ref,NULL,0,&out)&&out.l;
  if(!ok)return false;
- struct dvm_object *s=dvm__obj(v,out.l);if(!s||s->kind!=DVM_OBJ_STRING)return false;*p=s->utf8;*len=s->utf8_len;return true;
+ const dvm_ref gc_ref_s_99=(out.l); if(!gc_operation_admit(v,gc_ref_s_99))return false;if(!dvm__obj(v,gc_ref_s_99)||dvm__obj(v,gc_ref_s_99)->kind!=DVM_OBJ_STRING)return false;*p=dvm__obj(v,gc_ref_s_99)->utf8;*len=dvm__obj(v,gc_ref_s_99)->utf8_len;return true;
 }
 static bool object_int(struct dvm *v,dvm_ref ref,int32_t *out){
- if(!ref)return false;struct dvm_object *o=dvm__obj(v,ref);if(!o)return false;union dvm_value r={0};
- if(java_basics_call(v,o->cls->name,"intValue","()I",ref,NULL,0,&r)){*out=r.i;return true;}
- if(java_basics_call(v,o->cls->name,"longValue","()J",ref,NULL,0,&r)){*out=(int32_t)r.j;return true;}
+ if(!ref)return false;const dvm_ref gc_ref_o_100=(ref); if(!gc_operation_admit(v,gc_ref_o_100))return false;if(!dvm__obj(v,gc_ref_o_100))return false;union dvm_value r={0};
+ if(java_basics_call(v,dvm__obj(v,gc_ref_o_100)->cls->name,"intValue","()I",ref,NULL,0,&r)){*out=r.i;return true;}
+ if(java_basics_call(v,dvm__obj(v,gc_ref_o_100)->cls->name,"longValue","()J",ref,NULL,0,&r)){*out=(int32_t)r.j;return true;}
  return false;
 }
 static bool object_double(struct dvm *v,dvm_ref ref,double *out){
- if(!ref)return false;struct dvm_object *o=dvm__obj(v,ref);if(!o)return false;union dvm_value r={0};
- if(java_basics_call(v,o->cls->name,"doubleValue","()D",ref,NULL,0,&r)){*out=r.d;return true;}
- if(java_basics_call(v,o->cls->name,"floatValue","()F",ref,NULL,0,&r)){*out=r.f;return true;}
- if(java_basics_call(v,o->cls->name,"intValue","()I",ref,NULL,0,&r)){*out=r.i;return true;}
- if(java_basics_call(v,o->cls->name,"longValue","()J",ref,NULL,0,&r)){*out=(double)r.j;return true;}
+ if(!ref)return false;const dvm_ref gc_ref_o_101=(ref); if(!gc_operation_admit(v,gc_ref_o_101))return false;if(!dvm__obj(v,gc_ref_o_101))return false;union dvm_value r={0};
+ if(java_basics_call(v,dvm__obj(v,gc_ref_o_101)->cls->name,"doubleValue","()D",ref,NULL,0,&r)){*out=r.d;return true;}
+ if(java_basics_call(v,dvm__obj(v,gc_ref_o_101)->cls->name,"floatValue","()F",ref,NULL,0,&r)){*out=r.f;return true;}
+ if(java_basics_call(v,dvm__obj(v,gc_ref_o_101)->cls->name,"intValue","()I",ref,NULL,0,&r)){*out=r.i;return true;}
+ if(java_basics_call(v,dvm__obj(v,gc_ref_o_101)->cls->name,"longValue","()J",ref,NULL,0,&r)){*out=(double)r.j;return true;}
  return false;
 }
 #define STRING_FORMAT_OUTPUT_LIMIT ((size_t)1048576)
@@ -406,9 +465,9 @@ static enum fmt_status append_double(struct dvm *v,double d,fmt_output *o){
  return put(o,magnitude,length)?FMT_STATUS_OK:FMT_STATUS_MEMORY;
 }
 static bool java_format(struct dvm *v,dvm_ref format,dvm_ref args,union dvm_value *out){
- struct dvm_object *fo=dvm__obj(v,format);if(!fo||fo->kind!=DVM_OBJ_STRING){dvm__throw(v,"java/lang/NullPointerException","format string");return true;}
- uint32_t count=args?dvm_array_length(v,args):0;dvm_ref *items=args?(dvm_ref*)dvm_array_data(v,args):NULL;
- const char *f=fo->utf8;size_t n=fo->utf8_len,at=0,arg=0;fmt_output o={0};
+ const dvm_ref gc_ref_fo_102=(format); if(!gc_operation_admit(v,gc_ref_fo_102))return false;if(!dvm__obj(v,gc_ref_fo_102)||dvm__obj(v,gc_ref_fo_102)->kind!=DVM_OBJ_STRING){dvm__throw(v,"java/lang/NullPointerException","format string");return true;}
+ uint32_t count=args?dvm_array_length(v,args):0;dvm_ref *items=args?(dvm_ref*)({const dvm_ref gc_payload_ref_109=(args);if(!gc_operation_admit(v,gc_payload_ref_109))return 0;dvm_array_data(v,gc_payload_ref_109);}):NULL;
+ const char *f=dvm__obj(v,gc_ref_fo_102)->utf8;size_t n=dvm__obj(v,gc_ref_fo_102)->utf8_len,at=0,arg=0;fmt_output o={0};
  while(at<n){
   if(f[at]!='%'){if(!put(&o,f+at,1))goto memory;at++;continue;}
   if(at+1>=n){dvm__throw(v,"java/util/UnknownFormatConversionException","trailing percent");goto fail;}
@@ -457,9 +516,19 @@ memory:
 fail:
  free(o.data);return true;
 }
-static struct dvm_object* text(struct dvm* v,dvm_ref ref){struct dvm_object* o=dvm__obj(v,ref);return o&&o->cls&&!strcmp(o->cls->name,"java/lang/String")?o:NULL;}
+static struct dvm_object* text(struct dvm* v,dvm_ref ref){if(!gc_operation_admit(v,ref)){
+ static _Atomic unsigned rejected;
+ if(atomic_fetch_add_explicit(&rejected,1,memory_order_relaxed)<4)
+  sdk_trace_fprintf(stderr,"GC_TEXT_REJECT caller=%p gil=%d\n",__builtin_return_address(0),(int)dvm_gil_held(v));
+ return NULL;
+}
+struct dvm_object* o=dvm__obj(v,ref);return o&&o->cls&&!strcmp(o->cls->name,"java/lang/String")?o:NULL;}
 /* Internal VM strings may encode isolated UTF16 surrogates; preserve them. */
 static bool index_text(struct dvm* v,struct dvm_object* o){
+ struct gc_operation_pin gc_pin_o __attribute__((cleanup(gc_operation_pin_end)));
+ if(!gc_operation_pin_begin(v,&gc_pin_o,o))return false;
+ o=dvm__obj(v,gc_pin_o.ref);
+
  if(o->string_index_ready&&o->string_units)return true;
  size_t length=o->utf8_len;const unsigned char* bytes=(const unsigned char*)o->utf8;
  uint16_t* units=malloc((length+1)*sizeof *units);if(!units){dvm__throw(v,"java/lang/OutOfMemoryError","UTF16 index");return false;}
@@ -478,31 +547,39 @@ static bool index_text(struct dvm* v,struct dvm_object* o){
 }
 /* Okio's UTF-16 -> UTF-8 encoding loop, without interpreting each character.
  * Buffer.write(byte[],off,len) retains the original segment/storage behavior. */
-bool string_runtime_okio_utf8(struct dvm *v,dvm_ref self,const uint32_t *a,int n,union dvm_value *out){
+static bool string_runtime_okio_utf8_operation(struct dvm *v,dvm_ref self,const uint32_t *a,int n,union dvm_value *out){
  if(n!=3)return false;
- struct dvm_object *s=text(v,a[0]);
+ const dvm_ref gc_ref_s_103=(a[0]); if(!gc_operation_admit(v,gc_ref_s_103))return false;
  if(!a[0]){dvm__throw(v,"java/lang/IllegalArgumentException","string == null");return true;}
- if(!s||!index_text(v,s))return false;
+ if(!text(v,gc_ref_s_103)||!index_text(v,text(v,gc_ref_s_103)))return false;
  int32_t begin=(int32_t)a[1],end=(int32_t)a[2];
- if(begin<0||end<begin||(uint32_t)end>s->string_length){dvm__throw(v,"java/lang/IllegalArgumentException","UTF8 string range");return true;}
+ if(begin<0||end<begin||(uint32_t)end>text(v,gc_ref_s_103)->string_length){dvm__throw(v,"java/lang/IllegalArgumentException","UTF8 string range");return true;}
  if((uint64_t)(end-begin)*3>INT32_MAX){dvm__throw(v,"java/lang/OutOfMemoryError","UTF8 buffer");return true;}
  dvm_ref bytes=dvm_new_array(v,'B',"B",(uint32_t)(end-begin)*3);if(!bytes)return true;
- unsigned char *b=dvm_array_data(v,bytes);uint32_t count=0;
+ unsigned char *b=({const dvm_ref gc_payload_ref_110=(bytes);if(!gc_operation_admit(v,gc_payload_ref_110))return 0;dvm_array_data(v,gc_payload_ref_110);});uint32_t count=0;
  for(int32_t i=begin;i<end;i++){
-  uint32_t c=s->string_units[i];
+  uint32_t c=text(v,gc_ref_s_103)->string_units[i];
   if(c<0x80)b[count++]=(unsigned char)c;
   else if(c<0x800){b[count++]=0xc0|(c>>6);b[count++]=0x80|(c&63);}
   else if(c<0xd800||c>0xdfff){b[count++]=0xe0|(c>>12);b[count++]=0x80|((c>>6)&63);b[count++]=0x80|(c&63);}
-  else if(c<=0xdbff&&i+1<end&&s->string_units[i+1]>=0xdc00&&s->string_units[i+1]<=0xdfff){c=0x10000+((c-0xd800)<<10)+(s->string_units[++i]-0xdc00);b[count++]=0xf0|(c>>18);b[count++]=0x80|((c>>12)&63);b[count++]=0x80|((c>>6)&63);b[count++]=0x80|(c&63);}
+  else if(c<=0xdbff&&i+1<end&&text(v,gc_ref_s_103)->string_units[i+1]>=0xdc00&&text(v,gc_ref_s_103)->string_units[i+1]<=0xdfff){c=0x10000+((c-0xd800)<<10)+(text(v,gc_ref_s_103)->string_units[++i]-0xdc00);b[count++]=0xf0|(c>>18);b[count++]=0x80|((c>>12)&63);b[count++]=0x80|((c>>6)&63);b[count++]=0x80|(c&63);}
   else b[count++]='?';
  }
- struct dvm_object *o=dvm__obj(v,self);struct dvm_method *write=o?dvm_find_method(v,o->cls,"write","([BII)Lokio/Buffer;"):NULL;
+ const dvm_ref gc_ref_o_104=(self); if(!gc_operation_admit(v,gc_ref_o_104))return false;struct dvm_method *write=dvm__obj(v,gc_ref_o_104)?dvm_find_method(v,dvm__obj(v,gc_ref_o_104)->cls,"write","([BII)Lokio/Buffer;"):NULL;
  if(!write){dvm__throw(v,"java/lang/NoSuchMethodError","Buffer.write([BII)");return true;}
  union dvm_value args[3]={{.l=bytes},{.i=0},{.i=(int32_t)count}};
  dvm_pin(v,bytes);bool ok=dvm_call(v,write,self,args,3,out);dvm_unpin(v,bytes);
  if(!ok&&!dvm_exception(v))dvm__throw(v,"java/lang/InternalError","Buffer.write failed");
  return true;
 }
+bool string_runtime_okio_utf8(struct dvm *v,dvm_ref self,const uint32_t *a,int n,union dvm_value *out){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return false;
+ bool result=string_runtime_okio_utf8_operation(v,self,a,n,out);
+ gc_operation_result(&operation,"()Ljava/lang/Object;",result&&!dvm_exception(v)&&out?out->l:0);
+ return result;
+}
+
 /* Keep the original SegmentPool factory (including its monitor and recycle
  * accounting). Buffer allocation/linking/copying itself runs entirely here. */
 static dvm_ref okio_writable_segment(struct dvm *v,dvm_ref self,int minimum){
@@ -527,30 +604,30 @@ static dvm_ref okio_writable_segment(struct dvm *v,dvm_ref self,int minimum){
 }
 static bool okio_write_bytes(struct dvm *v,dvm_ref self,dvm_ref bytes,int32_t offset,int32_t count,union dvm_value *out){
  if(!bytes){dvm__throw(v,"java/lang/IllegalArgumentException","source == null");return true;}
- struct dvm_object *src=dvm__obj(v,bytes);
- if(!src||src->kind!=DVM_OBJ_ARRAY||src->elem_kind!='B'){dvm__throw(v,"java/lang/IllegalArgumentException","source is not byte[]");return true;}
- if(offset<0||count<0||(uint32_t)offset>src->length||(uint32_t)count>src->length-(uint32_t)offset){dvm__throw(v,"java/lang/ArrayIndexOutOfBoundsException","source offset/count");return true;}
+ const dvm_ref gc_ref_src_105=(bytes); if(!gc_operation_admit(v,gc_ref_src_105))return false;
+ if(!dvm__obj(v,gc_ref_src_105)||dvm__obj(v,gc_ref_src_105)->kind!=DVM_OBJ_ARRAY||dvm__obj(v,gc_ref_src_105)->elem_kind!='B'){dvm__throw(v,"java/lang/IllegalArgumentException","source is not byte[]");return true;}
+ if(offset<0||count<0||(uint32_t)offset>dvm__obj(v,gc_ref_src_105)->length||(uint32_t)count>dvm__obj(v,gc_ref_src_105)->length-(uint32_t)offset){dvm__throw(v,"java/lang/ArrayIndexOutOfBoundsException","source offset/count");return true;}
  int32_t remaining=count;union dvm_value size={0};
  if(!dvm_get_field(v,self,"size","J",&size))return true;
  while(remaining){
   dvm_ref tail=okio_writable_segment(v,self,1);union dvm_value limit={0},data={0};if(!tail)return true;
   if(!dvm_get_field(v,tail,"limit","I",&limit)||!dvm_get_field(v,tail,"data","[B",&data))return true;
-  struct dvm_object *dst=dvm__obj(v,data.l);
-  if(!dst||dst->kind!=DVM_OBJ_ARRAY||dst->elem_kind!='B'||dst->length!=8192||limit.i<0||limit.i>=8192){dvm__throw(v,"java/lang/IllegalStateException","invalid Okio segment storage");return true;}
+  const dvm_ref gc_ref_dst_106=(data.l); if(!gc_operation_admit(v,gc_ref_dst_106))return false;
+  if(!dvm__obj(v,gc_ref_dst_106)||dvm__obj(v,gc_ref_dst_106)->kind!=DVM_OBJ_ARRAY||dvm__obj(v,gc_ref_dst_106)->elem_kind!='B'||dvm__obj(v,gc_ref_dst_106)->length!=8192||limit.i<0||limit.i>=8192){dvm__throw(v,"java/lang/IllegalStateException","invalid Okio segment storage");return true;}
   int take=remaining<8192-limit.i?remaining:8192-limit.i;
-  memmove((unsigned char*)dvm_array_data(v,data.l)+limit.i,(unsigned char*)dvm_array_data(v,bytes)+offset,(size_t)take);
+  memmove((unsigned char*)({const dvm_ref gc_payload_ref_111=(data.l);if(!gc_operation_admit(v,gc_payload_ref_111))return 0;dvm_array_data(v,gc_payload_ref_111);})+limit.i,(unsigned char*)({const dvm_ref gc_payload_ref_112=(bytes);if(!gc_operation_admit(v,gc_payload_ref_112))return 0;dvm_array_data(v,gc_payload_ref_112);})+offset,(size_t)take);
   offset+=take;remaining-=take;limit.i+=take;if(!dvm_set_field(v,tail,"limit","I",limit))return true;
  }
  size.j=(int64_t)((uint64_t)size.j+(uint32_t)count);dvm_set_field(v,self,"size","J",size);out->l=self;return true;
 }
-bool string_runtime_okio_buffer(struct dvm *v,dvm_ref self,const char *name,const char *sig,const uint32_t *a,int n,union dvm_value *out){
+static bool string_runtime_okio_buffer_operation(struct dvm *v,dvm_ref self,const char *name,const char *sig,const uint32_t *a,int n,union dvm_value *out){
  if(!strcmp(name,"writeUtf8")&&!strcmp(sig,"(Ljava/lang/String;II)Lokio/Buffer;")&&n==3)return string_runtime_okio_utf8(v,self,a,n,out);
  if(!strcmp(name,"writableSegment")&&!strcmp(sig,"(I)Lokio/Segment;")&&n==1){out->l=okio_writable_segment(v,self,(int32_t)a[0]);return true;}
  if(!strcmp(name,"write")&&!strcmp(sig,"([BII)Lokio/Buffer;")&&n==3)return okio_write_bytes(v,self,a[0],(int32_t)a[1],(int32_t)a[2],out);
  if(!strcmp(name,"writeUtf8")&&!strcmp(sig,"(Ljava/lang/String;)Lokio/Buffer;")&&n==1){
   if(!a[0]){dvm__throw(v,"java/lang/NullPointerException","String.length receiver");return true;}
-  struct dvm_object *s=text(v,a[0]);if(!s||!index_text(v,s))return true;
-  uint32_t range[3]={a[0],0,s->string_length};return string_runtime_okio_utf8(v,self,range,3,out);
+  const dvm_ref gc_ref_s_107=(a[0]); if(!gc_operation_admit(v,gc_ref_s_107))return false;if(!text(v,gc_ref_s_107)||!index_text(v,text(v,gc_ref_s_107)))return true;
+  uint32_t range[3]={a[0],0,text(v,gc_ref_s_107)->string_length};return string_runtime_okio_utf8(v,self,range,3,out);
  }
  if(!strcmp(name,"writeUtf8CodePoint")&&!strcmp(sig,"(I)Lokio/Buffer;")&&n==1){
   int32_t cp=(int32_t)a[0];unsigned char bytes[4];int count;
@@ -561,7 +638,7 @@ bool string_runtime_okio_buffer(struct dvm *v,dvm_ref self,const char *name,cons
   else if(cp<=0x10ffff){bytes[0]=0xf0|(cp>>18);bytes[1]=0x80|((cp>>12)&63);bytes[2]=0x80|((cp>>6)&63);bytes[3]=0x80|(cp&63);count=4;}
   else{dvm__throw(v,"java/lang/IllegalArgumentException","Unexpected code point");return true;}
   dvm_ref array=dvm_new_array(v,'B',"B",(uint32_t)count);if(!array)return true;
-  memcpy(dvm_array_data(v,array),bytes,(size_t)count);return okio_write_bytes(v,self,array,0,count,out);
+  memcpy(({const dvm_ref gc_payload_ref_113=(array);if(!gc_operation_admit(v,gc_payload_ref_113))return 0;dvm_array_data(v,gc_payload_ref_113);}),bytes,(size_t)count);return okio_write_bytes(v,self,array,0,count,out);
  }
  if(!strcmp(name,"writeAll")&&!strcmp(sig,"(Lokio/Source;)J")&&n==1){
   if(!a[0]){dvm__throw(v,"java/lang/IllegalArgumentException","source == null");return true;}
@@ -584,17 +661,25 @@ bool string_runtime_okio_buffer(struct dvm *v,dvm_ref self,const char *name,cons
   do{
    union dvm_value pos={0},limit={0},data={0},next={0};
    if(!dvm_get_field(v,ref,"pos","I",&pos)||!dvm_get_field(v,ref,"limit","I",&limit)||!dvm_get_field(v,ref,"data","[B",&data)||!dvm_get_field(v,ref,"next","Lokio/Segment;",&next))return true;
-   struct dvm_object *array=dvm__obj(v,data.l);
-   if(!array||array->kind!=DVM_OBJ_ARRAY||array->elem_kind!='B'||pos.i<0||limit.i<pos.i||(uint32_t)limit.i>array->length){dvm__throw(v,"java/lang/IllegalStateException","invalid Okio segment bounds");return true;}
+   const dvm_ref gc_ref_array_108=(data.l); if(!gc_operation_admit(v,gc_ref_array_108))return false;
+   if(!dvm__obj(v,gc_ref_array_108)||dvm__obj(v,gc_ref_array_108)->kind!=DVM_OBJ_ARRAY||dvm__obj(v,gc_ref_array_108)->elem_kind!='B'||pos.i<0||limit.i<pos.i||(uint32_t)limit.i>dvm__obj(v,gc_ref_array_108)->length){dvm__throw(v,"java/lang/IllegalStateException","invalid Okio segment bounds");return true;}
    int64_t end=base+limit.i-pos.i;
-   if(from<end){int64_t begin=from>base?from:base,last=to<end?to:end;unsigned char *bytes=dvm_array_data(v,data.l);for(int64_t i=begin;i<last;i++)if(bytes[pos.i+(i-base)]==(unsigned char)a[0]){out->j=i;return true;}}
+   if(from<end){int64_t begin=from>base?from:base,last=to<end?to:end;unsigned char *bytes=({const dvm_ref gc_payload_ref_114=(data.l);if(!gc_operation_admit(v,gc_payload_ref_114))return 0;dvm_array_data(v,gc_payload_ref_114);});for(int64_t i=begin;i<last;i++)if(bytes[pos.i+(i-base)]==(unsigned char)a[0]){out->j=i;return true;}}
    base=end;ref=next.l;
   }while(ref&&ref!=head.l&&base<to);
   return true;
  }
  return false;
 }
-bool string_runtime_okio_byte(struct dvm *v,dvm_ref self,const uint32_t *a,int n,union dvm_value *out){
+bool string_runtime_okio_buffer(struct dvm *v,dvm_ref self,const char *name,const char *sig,const uint32_t *a,int n,union dvm_value *out){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return false;
+ bool result=string_runtime_okio_buffer_operation(v,self,name,sig,a,n,out);
+ gc_operation_result(&operation,"()Ljava/lang/Object;",result&&!dvm_exception(v)&&out&&sig&&strchr(sig,')')&&(strchr(sig,')')[1]=='L'||strchr(sig,')')[1]=='[')?out->l:0);
+ return result;
+}
+
+static bool string_runtime_okio_byte_operation(struct dvm *v,dvm_ref self,const uint32_t *a,int n,union dvm_value *out){
  if(n!=1)return false;
  union dvm_value head={0},tail={0},limit={0},owner={0},data={0},size={0};
  if(!dvm_get_field(v,self,"head","Lokio/Segment;",&head))return true;
@@ -602,16 +687,23 @@ bool string_runtime_okio_byte(struct dvm *v,dvm_ref self,const uint32_t *a,int n
   dvm_get_field(v,tail.l,"limit","I",&limit)&&dvm_get_field(v,tail.l,"owner","Z",&owner)&&owner.i&&limit.i<8192;
  if(dvm_exception(v))return true;
  if(!ready){
-  struct dvm_object *o=dvm__obj(v,self);struct dvm_method *allocate=o?dvm_find_method(v,o->cls,"writableSegment","(I)Lokio/Segment;"):NULL;
+  const dvm_ref gc_ref_o_109=(self); if(!gc_operation_admit(v,gc_ref_o_109))return false;struct dvm_method *allocate=dvm__obj(v,gc_ref_o_109)?dvm_find_method(v,dvm__obj(v,gc_ref_o_109)->cls,"writableSegment","(I)Lokio/Segment;"):NULL;
   union dvm_value one={.i=1};if(!allocate||!dvm_call(v,allocate,self,&one,1,&tail)||dvm_exception(v))return true;
   if(!dvm_get_field(v,tail.l,"limit","I",&limit))return true;
  }
  if(!dvm_get_field(v,tail.l,"data","[B",&data)||!dvm_get_field(v,self,"size","J",&size))return true;
- struct dvm_object *array=dvm__obj(v,data.l);
- if(!array||array->kind!=DVM_OBJ_ARRAY||array->elem_kind!='B'||limit.i<0||(uint32_t)limit.i>=array->length){dvm__throw(v,"java/lang/ArrayIndexOutOfBoundsException","Okio segment byte");return true;}
- ((unsigned char*)dvm_array_data(v,data.l))[limit.i]=(unsigned char)a[0];limit.i++;
+ const dvm_ref gc_ref_array_110=(data.l); if(!gc_operation_admit(v,gc_ref_array_110))return false;
+ if(!dvm__obj(v,gc_ref_array_110)||dvm__obj(v,gc_ref_array_110)->kind!=DVM_OBJ_ARRAY||dvm__obj(v,gc_ref_array_110)->elem_kind!='B'||limit.i<0||(uint32_t)limit.i>=dvm__obj(v,gc_ref_array_110)->length){dvm__throw(v,"java/lang/ArrayIndexOutOfBoundsException","Okio segment byte");return true;}
+ ((unsigned char*)({const dvm_ref gc_payload_ref_115=(data.l);if(!gc_operation_admit(v,gc_payload_ref_115))return 0;dvm_array_data(v,gc_payload_ref_115);}))[limit.i]=(unsigned char)a[0];limit.i++;
  dvm_set_field(v,tail.l,"limit","I",limit);size.j=(int64_t)((uint64_t)size.j+1);dvm_set_field(v,self,"size","J",size);out->l=self;return true;
 }
+bool string_runtime_okio_byte(struct dvm *v,dvm_ref self,const uint32_t *a,int n,union dvm_value *out){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return false;
+ bool result=string_runtime_okio_byte_operation(v,self,a,n,out);
+ return result;
+}
+
 /* Java String.regionMatches([ignoreCase,] toffset, other, ooffset, len)
  * compares UTF-16 code units, not UTF-8 bytes.  An out-of-range offset, or a
  * region longer than either string, returns false; that range check runs
@@ -643,6 +735,10 @@ static uint16_t ascii_lower(uint16_t unit){
  * is always produced, including for the empty input, and the receiver is
  * never mutated. */
 static bool string_lower_ascii(struct dvm *v,struct dvm_object *source,union dvm_value *out){
+ struct gc_operation_pin gc_pin_source __attribute__((cleanup(gc_operation_pin_end)));
+ if(!gc_operation_pin_begin(v,&gc_pin_source,source))return true;
+ source=dvm__obj(v,gc_pin_source.ref);
+
  if(!index_text(v,source))return true;
  uint32_t size=source->string_length;
  uint16_t* lower=size?malloc((size_t)size*sizeof *lower):NULL;
@@ -665,6 +761,10 @@ static bool string_lower_ascii(struct dvm *v,struct dvm_object *source,union dvm
  * a locale-specific mapping this runtime cannot reproduce, so the call fails
  * closed instead of silently returning "I". */
 static bool string_upper_ascii(struct dvm *v,struct dvm_object *source,bool turkic,union dvm_value *out){
+ struct gc_operation_pin gc_pin_source __attribute__((cleanup(gc_operation_pin_end)));
+ if(!gc_operation_pin_begin(v,&gc_pin_source,source))return true;
+ source=dvm__obj(v,gc_pin_source.ref);
+
  if(!index_text(v,source))return true;
  uint32_t size=source->string_length;
  if(size>0x7fffffffu){dvm__throw(v,"java/lang/OutOfMemoryError","String.toUpperCase result too long");return true;}
@@ -695,7 +795,7 @@ static int string_locale_language(struct dvm *v,dvm_ref locale,char lang[16]){
  if(!handled&&!dvm_exception(v))handled=platform_runtime_call(v,"java/util/Locale","getLanguage","()Ljava/lang/String;",locale,NULL,0,&result);
  if(dvm_exception(v))return -1;
  if(!handled||!result.l)return 0;
- const char *text=dvm_string_utf8(v,result.l);size_t length=dvm_string_utf8_length(v,result.l);
+ const char *text=({const dvm_ref gc_payload_ref_116=(result.l);if(!gc_operation_admit(v,gc_payload_ref_116))return 0;dvm_string_utf8(v,gc_payload_ref_116);});size_t length=dvm_string_utf8_length(v,result.l);
  if(!text||strlen(text)!=length||length>=16)return 0;
  memcpy(lang,text,length);lang[length]='\0';return 1;
 }
@@ -706,8 +806,12 @@ static int string_locale_language(struct dvm *v,dvm_ref locale,char lang[16]){
  * closed with UnsupportedOperationException rather than guessing an en_US
  * answer that could silently corrupt a caller's data. */
 static bool string_upper_locale(struct dvm *v,struct dvm_object *source,dvm_ref locale,union dvm_value *out){
- struct dvm_object *object=dvm__obj(v,locale);
- if(!object||!object->cls||!object->cls->name||strcmp(object->cls->name,"java/util/Locale")){
+ struct gc_operation_pin gc_pin_source __attribute__((cleanup(gc_operation_pin_end)));
+ if(!gc_operation_pin_begin(v,&gc_pin_source,source))return true;
+ source=dvm__obj(v,gc_pin_source.ref);
+
+ const dvm_ref gc_ref_object_111=(locale); if(!gc_operation_admit(v,gc_ref_object_111))return false;
+ if(!dvm__obj(v,gc_ref_object_111)||!dvm__obj(v,gc_ref_object_111)->cls||!dvm__obj(v,gc_ref_object_111)->cls->name||strcmp(dvm__obj(v,gc_ref_object_111)->cls->name,"java/util/Locale")){
   dvm__throw(v,"java/lang/ClassCastException","locale");return true;
  }
  char language[16];int known=string_locale_language(v,locale,language);
@@ -716,6 +820,13 @@ static bool string_upper_locale(struct dvm *v,struct dvm_object *source,dvm_ref 
  return string_upper_ascii(v,source,!strcmp(language,"tr")||!strcmp(language,"az"),out);
 }
 static bool region_matches_units(struct dvm *v,struct dvm_object *source,struct dvm_object *other,bool ignore_case,int32_t toffset,int32_t ooffset,int32_t len,union dvm_value *out){
+ struct gc_operation_pin gc_pin_source __attribute__((cleanup(gc_operation_pin_end)));
+ if(!gc_operation_pin_begin(v,&gc_pin_source,source))return true;
+ source=dvm__obj(v,gc_pin_source.ref);
+ struct gc_operation_pin gc_pin_other __attribute__((cleanup(gc_operation_pin_end)));
+ if(!gc_operation_pin_begin(v,&gc_pin_other,other))return true;
+ other=dvm__obj(v,gc_pin_other.ref);
+
  if(!index_text(v,source)||!index_text(v,other))return true;
  uint32_t source_length=source->string_length,other_length=other->string_length;
  if(toffset<0||ooffset<0||(int64_t)toffset+(int64_t)len>(int64_t)source_length||(int64_t)ooffset+(int64_t)len>(int64_t)other_length){out->i=0;return true;}
@@ -765,18 +876,18 @@ static bool is_charset_object(struct dvm_object *o){
 }
 static bool charset_object_name(struct dvm *v,dvm_ref charset,const char **name,size_t *length){
  if(!charset){dvm__throw(v,"java/lang/NullPointerException","charset");return false;}
- struct dvm_object *o=dvm__obj(v,charset);
- if(!is_charset_object(o)){dvm__throw(v,"java/lang/ClassCastException","charset");return false;}
+ const dvm_ref gc_ref_o_112=(charset); if(!gc_operation_admit(v,gc_ref_o_112))return false;
+ if(!is_charset_object(dvm__obj(v,gc_ref_o_112))){dvm__throw(v,"java/lang/ClassCastException","charset");return false;}
  struct dvm_class *cls=dvm_find_class_or_external(v,"java/nio/charset/Charset");
  if(!cls){dvm__throw(v,"java/lang/UnsupportedOperationException","Charset class unavailable");return false;}
  union dvm_value out={0};
  (void)dvm__call_out(v,cls,"name","()Ljava/lang/String;",false,false,charset,NULL,0,&out);
  if(dvm_exception(v))return false;
- struct dvm_object *n=out.l?dvm__obj(v,out.l):NULL;
- if(!n||n->kind!=DVM_OBJ_STRING||!n->utf8){
+ const dvm_ref gc_ref_n_113=((out.l)?(out.l):0); if(!gc_operation_admit(v,gc_ref_n_113))return false;
+ if(!dvm__obj(v,gc_ref_n_113)||dvm__obj(v,gc_ref_n_113)->kind!=DVM_OBJ_STRING||!dvm__obj(v,gc_ref_n_113)->utf8){
   dvm__throw(v,"java/lang/UnsupportedOperationException","Charset.name unavailable");return false;
  }
- *name=n->utf8;*length=n->utf8_len;return true;
+ *name=dvm__obj(v,gc_ref_n_113)->utf8;*length=dvm__obj(v,gc_ref_n_113)->utf8_len;return true;
 }
 /* The malformed-sequence rules below mirror OpenJDK's UTF_8.decodeArrayLoop:
  * a malformed sequence is replaced by one U+FFFD and only the bytes that
@@ -885,6 +996,10 @@ static bool get_bytes_surrogate_pair(const uint16_t *units,uint32_t count,uint32
  * characters).  The output array is sized exactly; the receiver's bytes are
  * never modified (index_text() only caches its immutable UTF-16 view). */
 static bool string_get_bytes(struct dvm *v,struct dvm_object *source,enum get_bytes_charset charset,union dvm_value *out){
+ struct gc_operation_pin gc_pin_source __attribute__((cleanup(gc_operation_pin_end)));
+ if(!gc_operation_pin_begin(v,&gc_pin_source,source))return true;
+ source=dvm__obj(v,gc_pin_source.ref);
+
  if(!index_text(v,source))return true;
  uint32_t count=source->string_length;const uint16_t *units=source->string_units;
  uint64_t total=(charset==GET_BYTES_UTF16&&count)?2u:0u;
@@ -901,7 +1016,7 @@ static bool string_get_bytes(struct dvm *v,struct dvm_object *source,enum get_by
  }
  dvm_ref array=dvm_new_array(v,'B',"B",(uint32_t)total);
  if(!array){dvm__throw(v,"java/lang/OutOfMemoryError","String.getBytes result");return true;}
- unsigned char *dst=total?(unsigned char*)dvm_array_data(v,array):NULL;
+ unsigned char *dst=total?(unsigned char*)({const dvm_ref gc_payload_ref_117=(array);if(!gc_operation_admit(v,gc_payload_ref_117))return 0;dvm_array_data(v,gc_payload_ref_117);}):NULL;
  if(total&&!dst){dvm__discard_temporary(v,array);dvm__throw(v,"java/lang/OutOfMemoryError","String.getBytes storage");return true;}
  uint64_t at=0;
  if(charset==GET_BYTES_UTF16&&count){dst[at++]=(unsigned char)0xfe;dst[at++]=(unsigned char)0xff;}
@@ -950,35 +1065,35 @@ static bool string_get_bytes(struct dvm *v,struct dvm_object *source,enum get_by
 }
 static bool string_init_bytes(struct dvm *v,dvm_ref self,const union dvm_value *a,bool ranged,bool named,union dvm_value *out){
  (void)out;
- struct dvm_object *o=dvm__obj(v,self);
- if(!o||!o->cls||!o->cls->name||strcmp(o->cls->name,"java/lang/String"))return false;
+ const dvm_ref gc_ref_o_114=(self); if(!gc_operation_admit(v,gc_ref_o_114))return false;
+ if(!dvm__obj(v,gc_ref_o_114)||!dvm__obj(v,gc_ref_o_114)->cls||!dvm__obj(v,gc_ref_o_114)->cls->name||strcmp(dvm__obj(v,gc_ref_o_114)->cls->name,"java/lang/String"))return false;
  dvm_ref charset=ranged?a[3].l:a[1].l;
  if(!charset){dvm__throw(v,"java/lang/NullPointerException","charset");return true;}
  dvm_ref bytes_ref=a[0].l;
  if(!bytes_ref){dvm__throw(v,"java/lang/NullPointerException","bytes");return true;}
- struct dvm_object *bytes=dvm__obj(v,bytes_ref);
- if(!bytes||bytes->kind!=DVM_OBJ_ARRAY||bytes->elem_kind!='B'){
+ const dvm_ref gc_ref_bytes_115=(bytes_ref); if(!gc_operation_admit(v,gc_ref_bytes_115))return false;
+ if(!dvm__obj(v,gc_ref_bytes_115)||dvm__obj(v,gc_ref_bytes_115)->kind!=DVM_OBJ_ARRAY||dvm__obj(v,gc_ref_bytes_115)->elem_kind!='B'){
   dvm__throw(v,"java/lang/IllegalArgumentException","not a byte array");return true;
  }
  int64_t offset=ranged?a[1].i:0;
- int64_t length=ranged?a[2].i:(int64_t)bytes->length;
- if(offset<0||length<0||(uint64_t)offset+(uint64_t)length>(uint64_t)bytes->length){
+ int64_t length=ranged?a[2].i:(int64_t)dvm__obj(v,gc_ref_bytes_115)->length;
+ if(offset<0||length<0||(uint64_t)offset+(uint64_t)length>(uint64_t)dvm__obj(v,gc_ref_bytes_115)->length){
   dvm__throw(v,"java/lang/StringIndexOutOfBoundsException","offset %lld length %lld",(long long)offset,(long long)length);return true;
  }
  const char *name;size_t name_length;
  if(named){
-  name=dvm_string_utf8(v,charset);
+  name=({const dvm_ref gc_payload_ref_118=(charset);if(!gc_operation_admit(v,gc_payload_ref_118))return 0;dvm_string_utf8(v,gc_payload_ref_118);});
   if(!name){dvm__throw(v,"java/lang/ClassCastException","charset name must be a String");return true;}
   name_length=dvm_string_utf8_length(v,charset);
  }else if(!charset_object_name(v,charset,&name,&name_length))return true;
  if(!(charset_alias(name,name_length,"utf-8")||charset_alias(name,name_length,"utf8")||charset_alias(name,name_length,"unicode-1-1-utf-8"))){
   dvm__throw(v,named?"java/io/UnsupportedEncodingException":"java/lang/UnsupportedOperationException","String.<init> charset %.*s",name_length>200?200:(int)name_length,name);return true;
  }
- if(length&&!bytes->data){dvm__throw(v,"java/lang/IllegalStateException","byte array has no storage");return true;}
+ if(length&&!dvm__obj(v,gc_ref_bytes_115)->data){dvm__throw(v,"java/lang/IllegalStateException","byte array has no storage");return true;}
  if((uint64_t)length>((uint64_t)SIZE_MAX-1)/3){dvm__throw(v,"java/lang/OutOfMemoryError","String.<init>");return true;}
  char *decoded=malloc((size_t)length*3+1);
  if(!decoded){dvm__throw(v,"java/lang/OutOfMemoryError","String.<init>");return true;}
- const unsigned char *source=length?(const unsigned char*)bytes->data+(size_t)offset:(const unsigned char*)"";
+ const unsigned char *source=length?(const unsigned char*)dvm__obj(v,gc_ref_bytes_115)->data+(size_t)offset:(const unsigned char*)"";
  size_t decoded_length=java_utf8_decode(source,(size_t)length,decoded);
  if(decoded_length>(size_t)UINT32_MAX){
   free(decoded);dvm__throw(v,"java/lang/OutOfMemoryError","String.<init> result too large");return true;
@@ -989,14 +1104,14 @@ static bool string_init_bytes(struct dvm *v,dvm_ref self,const union dvm_value *
   * receiver untouched.  host_handle (when a JNI bridge allocated a wrapper)
   * is deliberately preserved; this runner's new-instance produces PLAIN
   * objects, and the bridge owns its global reference. */
- free(o->utf8);free(o->string_units);
- o->kind=DVM_OBJ_STRING;
- o->utf8=decoded;
- o->utf8_len=(uint32_t)decoded_length;
- o->string_units=NULL;
- o->string_length=0;
- o->string_index_ready=false;
- o->builder_capacity=0;
+ free(dvm__obj(v,gc_ref_o_114)->utf8);free(dvm__obj(v,gc_ref_o_114)->string_units);
+ dvm__obj(v,gc_ref_o_114)->kind=DVM_OBJ_STRING;
+ dvm__obj(v,gc_ref_o_114)->utf8=decoded;
+ dvm__obj(v,gc_ref_o_114)->utf8_len=(uint32_t)decoded_length;
+ dvm__obj(v,gc_ref_o_114)->string_units=NULL;
+ dvm__obj(v,gc_ref_o_114)->string_length=0;
+ dvm__obj(v,gc_ref_o_114)->string_index_ready=false;
+ dvm__obj(v,gc_ref_o_114)->builder_capacity=0;
  return true;
 }
 /* String(char[]) and String(char[],int,int): copy a range of UTF-16 code
@@ -1010,46 +1125,46 @@ static bool string_init_bytes(struct dvm *v,dvm_ref self,const union dvm_value *
 static bool string_init_chars(struct dvm *v,dvm_ref self,const union dvm_value *a,bool ranged,union dvm_value *out){
  (void)out;
  if(!a)return false;
- struct dvm_object *o=dvm__obj(v,self);
- if(!o||!o->cls||!o->cls->name||strcmp(o->cls->name,"java/lang/String"))return false;
+ const dvm_ref gc_ref_o_116=(self); if(!gc_operation_admit(v,gc_ref_o_116))return false;
+ if(!dvm__obj(v,gc_ref_o_116)||!dvm__obj(v,gc_ref_o_116)->cls||!dvm__obj(v,gc_ref_o_116)->cls->name||strcmp(dvm__obj(v,gc_ref_o_116)->cls->name,"java/lang/String"))return false;
  dvm_ref chars_ref=a[0].l;
  if(!chars_ref){dvm__throw(v,"java/lang/NullPointerException","char array");return true;}
- struct dvm_object *chars=dvm__obj(v,chars_ref);
- if(!chars||chars->kind!=DVM_OBJ_ARRAY||chars->elem_kind!='C'){
+ const dvm_ref gc_ref_chars_117=(chars_ref); if(!gc_operation_admit(v,gc_ref_chars_117))return false;
+ if(!dvm__obj(v,gc_ref_chars_117)||dvm__obj(v,gc_ref_chars_117)->kind!=DVM_OBJ_ARRAY||dvm__obj(v,gc_ref_chars_117)->elem_kind!='C'){
   dvm__throw(v,"java/lang/IllegalArgumentException","not a char array");return true;
  }
  int64_t offset=ranged?a[1].i:0;
- int64_t count=ranged?a[2].i:(int64_t)chars->length;
- if(offset<0||count<0||(uint64_t)offset+(uint64_t)count>(uint64_t)chars->length){
+ int64_t count=ranged?a[2].i:(int64_t)dvm__obj(v,gc_ref_chars_117)->length;
+ if(offset<0||count<0||(uint64_t)offset+(uint64_t)count>(uint64_t)dvm__obj(v,gc_ref_chars_117)->length){
   dvm__throw(v,"java/lang/StringIndexOutOfBoundsException","offset %lld count %lld",(long long)offset,(long long)count);return true;
  }
  /* from_units() and Java arrays are int-sized. */
  if(count>(int64_t)INT32_MAX){dvm__throw(v,"java/lang/OutOfMemoryError","String.<init> chars too large");return true;}
- if(count&&!chars->data){dvm__throw(v,"java/lang/IllegalStateException","char array has no storage");return true;}
- dvm_ref temporary=from_units(v,count?(const uint16_t*)chars->data+(size_t)offset:NULL,(int)count);
+ if(count&&!dvm__obj(v,gc_ref_chars_117)->data){dvm__throw(v,"java/lang/IllegalStateException","char array has no storage");return true;}
+ dvm_ref temporary=from_units(v,count?(const uint16_t*)dvm__obj(v,gc_ref_chars_117)->data+(size_t)offset:NULL,(int)count);
  if(!temporary){
   if(!dvm_exception(v))dvm__throw(v,"java/lang/OutOfMemoryError","String.<init> char array");
   return true;
  }
- struct dvm_object *t=dvm__obj(v,temporary);
- if(!t||t->kind!=DVM_OBJ_STRING||!t->utf8){
+ const dvm_ref gc_ref_t_118=(temporary); if(!gc_operation_admit(v,gc_ref_t_118))return false;
+ if(!dvm__obj(v,gc_ref_t_118)||dvm__obj(v,gc_ref_t_118)->kind!=DVM_OBJ_STRING||!dvm__obj(v,gc_ref_t_118)->utf8){
   dvm__discard_temporary(v,temporary);
   if(!dvm_exception(v))dvm__throw(v,"java/lang/OutOfMemoryError","String.<init> char array");
   return true;
  }
- char *payload=t->utf8;uint32_t payload_length=t->utf8_len;
- t->utf8=NULL;t->utf8_len=0;
+ char *payload=dvm__obj(v,gc_ref_t_118)->utf8;uint32_t payload_length=dvm__obj(v,gc_ref_t_118)->utf8_len;
+ dvm__obj(v,gc_ref_t_118)->utf8=NULL;dvm__obj(v,gc_ref_t_118)->utf8_len=0;
  dvm__discard_temporary(v,temporary);
  /* Commit in place: identity stays self and the old payload is freed only
   * after every failure path above has been passed. */
- free(o->utf8);free(o->string_units);
- o->kind=DVM_OBJ_STRING;
- o->utf8=payload;
- o->utf8_len=payload_length;
- o->string_units=NULL;
- o->string_length=0;
- o->string_index_ready=false;
- o->builder_capacity=0;
+ free(dvm__obj(v,gc_ref_o_116)->utf8);free(dvm__obj(v,gc_ref_o_116)->string_units);
+ dvm__obj(v,gc_ref_o_116)->kind=DVM_OBJ_STRING;
+ dvm__obj(v,gc_ref_o_116)->utf8=payload;
+ dvm__obj(v,gc_ref_o_116)->utf8_len=payload_length;
+ dvm__obj(v,gc_ref_o_116)->string_units=NULL;
+ dvm__obj(v,gc_ref_o_116)->string_length=0;
+ dvm__obj(v,gc_ref_o_116)->string_index_ready=false;
+ dvm__obj(v,gc_ref_o_116)->builder_capacity=0;
  return true;
 }
 /* String.copyValueOf(char[]): static factory with the same copy semantics as
@@ -1059,13 +1174,13 @@ static bool string_copy_value_of_chars(struct dvm *v,const union dvm_value *a,in
  if(!a||n!=1)return false;
  dvm_ref chars_ref=a[0].l;
  if(!chars_ref){dvm__throw(v,"java/lang/NullPointerException","char array");return true;}
- struct dvm_object *chars=dvm__obj(v,chars_ref);
- if(!chars||chars->kind!=DVM_OBJ_ARRAY||chars->elem_kind!='C'){
+ const dvm_ref gc_ref_chars_119=(chars_ref); if(!gc_operation_admit(v,gc_ref_chars_119))return false;
+ if(!dvm__obj(v,gc_ref_chars_119)||dvm__obj(v,gc_ref_chars_119)->kind!=DVM_OBJ_ARRAY||dvm__obj(v,gc_ref_chars_119)->elem_kind!='C'){
   dvm__throw(v,"java/lang/IllegalArgumentException","not a char array");return true;
  }
- if(chars->length>(uint32_t)INT32_MAX){dvm__throw(v,"java/lang/OutOfMemoryError","String.copyValueOf chars too large");return true;}
- if(chars->length&&!chars->data){dvm__throw(v,"java/lang/IllegalStateException","char array has no storage");return true;}
- dvm_ref result=from_units(v,chars->length?(const uint16_t*)chars->data:NULL,(int)chars->length);
+ if(dvm__obj(v,gc_ref_chars_119)->length>(uint32_t)INT32_MAX){dvm__throw(v,"java/lang/OutOfMemoryError","String.copyValueOf chars too large");return true;}
+ if(dvm__obj(v,gc_ref_chars_119)->length&&!dvm__obj(v,gc_ref_chars_119)->data){dvm__throw(v,"java/lang/IllegalStateException","char array has no storage");return true;}
+ dvm_ref result=from_units(v,dvm__obj(v,gc_ref_chars_119)->length?(const uint16_t*)dvm__obj(v,gc_ref_chars_119)->data:NULL,(int)dvm__obj(v,gc_ref_chars_119)->length);
  if(!result){
   if(!dvm_exception(v))dvm__throw(v,"java/lang/OutOfMemoryError","String.copyValueOf char array");
   return true;
@@ -1083,18 +1198,22 @@ static bool split_span_add(struct split_span **spans,size_t *count,size_t *capac
  (*spans)[(*count)++]=(struct split_span){start,length};return true;
 }
 static bool string_split(struct dvm *v,struct dvm_object *source,dvm_ref pattern_ref,int limit,const char *signature,union dvm_value *out){
- (void)signature;struct dvm_object *pattern=text(v,pattern_ref);
+ struct gc_operation_pin gc_pin_source __attribute__((cleanup(gc_operation_pin_end)));
+ if(!gc_operation_pin_begin(v,&gc_pin_source,source))return true;
+ source=dvm__obj(v,gc_pin_source.ref);
+
+ (void)signature;const dvm_ref gc_ref_pattern_120=(pattern_ref); if(!gc_operation_admit(v,gc_ref_pattern_120))return false;
  if(!pattern_ref){dvm__throw(v,"java/lang/NullPointerException","split regex");return true;}
- if(!pattern){dvm__throw(v,"java/lang/ClassCastException","split regex");return true;}
- if(!index_text(v,source)||!index_text(v,pattern))return true;
+ if(!text(v,gc_ref_pattern_120)){dvm__throw(v,"java/lang/ClassCastException","split regex");return true;}
+ if(!index_text(v,source)||!index_text(v,text(v,gc_ref_pattern_120)))return true;
  /* Empty Java Pattern.find advances one UTF-16 code unit, even inside
   * a surrogate pair. A Unicode regex engine normally advances code points. */
- if(pattern->string_length==0){
+ if(text(v,gc_ref_pattern_120)->string_length==0){
   uint32_t size=source->string_length,count=size,tail_start=size;
-  if(!size||limit==1){out->l=dvm_new_array(v,'L',"Ljava/lang/String;",1);if(out->l)((dvm_ref*)dvm_array_data(v,out->l))[0]=from_units(v,source->string_units,(int)size);return true;}
+  if(!size||limit==1){out->l=dvm_new_array(v,'L',"Ljava/lang/String;",1);if(out->l)((dvm_ref*)({const dvm_ref gc_payload_ref_119=(out->l);if(!gc_operation_admit(v,gc_payload_ref_119))return 0;dvm_array_data(v,gc_payload_ref_119);}))[0]=from_units(v,source->string_units,(int)size);return true;}
   bool tail=limit!=0;
   if(limit!=0){count=size+1;if(limit>0&&count>(uint32_t)limit)count=(uint32_t)limit;tail_start=count-1;}
-  out->l=dvm_new_array(v,'L',"Ljava/lang/String;",count);if(!out->l)return true;dvm_ref *items=dvm_array_data(v,out->l);
+  out->l=dvm_new_array(v,'L',"Ljava/lang/String;",count);if(!out->l)return true;dvm_ref *items=({const dvm_ref gc_payload_ref_120=(out->l);if(!gc_operation_admit(v,gc_payload_ref_120))return 0;dvm_array_data(v,gc_payload_ref_120);});
   for(uint32_t j=0;j<count;j++){uint32_t start=tail&&j==count-1?tail_start:j,length=tail&&j==count-1?size-start:1;items[j]=from_units(v,source->string_units+start,(int)length);if(!items[j])break;}
   return true;
  }
@@ -1105,7 +1224,7 @@ static bool string_split(struct dvm *v,struct dvm_object *source,dvm_ref pattern
  /* Java default dot excludes all Java line terminators, not just LF. */
  pcre2_set_newline(cc,PCRE2_NEWLINE_ANY);pcre2_set_bsr(cc,PCRE2_BSR_UNICODE);
  int error=0;PCRE2_SIZE error_at=0;
- code=pcre2_compile(pattern->string_units,pattern->string_length,PCRE2_ALT_BSUX|PCRE2_UTF|PCRE2_MATCH_INVALID_UTF,&error,&error_at,cc);
+ code=pcre2_compile(text(v,gc_ref_pattern_120)->string_units,text(v,gc_ref_pattern_120)->string_length,PCRE2_ALT_BSUX|PCRE2_UTF|PCRE2_MATCH_INVALID_UTF,&error,&error_at,cc);
  if(!code){dvm__throw(v,"java/util/regex/PatternSyntaxException","regex error %d at UTF16 index %u",error,(unsigned)error_at);goto done;}
  md=pcre2_match_data_create_from_pattern(code,gc);if(!md)goto oom;
  uint32_t size=source->string_length,index=0,search=0;bool matched=false;
@@ -1124,7 +1243,7 @@ static bool string_split(struct dvm *v,struct dvm_object *source,dvm_ref pattern
  if(!matched){if(!split_span_add(&spans,&count,&capacity,0,size))goto oom;}
  else {if(!split_span_add(&spans,&count,&capacity,index,size-index))goto oom;if(limit==0)while(count&&spans[count-1].length==0)count--;}
  out->l=dvm_new_array(v,'L',"Ljava/lang/String;",(uint32_t)count);if(!out->l)goto oom;
- dvm_ref *items=dvm_array_data(v,out->l);
+ dvm_ref *items=({const dvm_ref gc_payload_ref_121=(out->l);if(!gc_operation_admit(v,gc_payload_ref_121))return 0;dvm_array_data(v,gc_payload_ref_121);});
  for(size_t i=0;i<count;i++){items[i]=from_units(v,source->string_units+spans[i].start,(int)spans[i].length);if(!items[i])goto oom;}
  goto done;
  oom:if(!dvm_exception(v))dvm__throw(v,"java/lang/OutOfMemoryError","regex split");
@@ -1158,36 +1277,36 @@ static bool string_split(struct dvm *v,struct dvm_object *source,dvm_ref pattern
 typedef struct {const uint16_t *units;size_t length;} replace_text;
 static bool replace_resolve_text(struct dvm *v,dvm_ref ref,const char *role,replace_text *out){
  if(!ref){dvm__throw(v,"java/lang/NullPointerException","String.replace %s",role);return false;}
- struct dvm_object *o=dvm__obj(v,ref);
- if(!o){dvm__throw(v,"java/lang/UnsupportedOperationException","String.replace %s unavailable",role);return false;}
- if(o->kind==DVM_OBJ_STRING){
-  if(!index_text(v,o))return false;
-  out->units=o->string_units;out->length=o->string_length;return true;
+ const dvm_ref gc_ref_o_121=(ref); if(!gc_operation_admit(v,gc_ref_o_121))return false;
+ if(!dvm__obj(v,gc_ref_o_121)){dvm__throw(v,"java/lang/UnsupportedOperationException","String.replace %s unavailable",role);return false;}
+ if(dvm__obj(v,gc_ref_o_121)->kind==DVM_OBJ_STRING){
+  if(!index_text(v,dvm__obj(v,gc_ref_o_121)))return false;
+  out->units=dvm__obj(v,gc_ref_o_121)->string_units;out->length=dvm__obj(v,gc_ref_o_121)->string_length;return true;
  }
  struct dvm_class *char_sequence=dvm_find_class_or_external(v,"java/lang/CharSequence");
- if(!o->cls||!char_sequence||!dvm__class_assignable(v,o->cls,char_sequence)){
+ if(!dvm__obj(v,gc_ref_o_121)->cls||!char_sequence||!dvm__class_assignable(v,dvm__obj(v,gc_ref_o_121)->cls,char_sequence)){
   dvm__throw(v,"java/lang/ClassCastException","String.replace %s is not a CharSequence",role);
   return false;
  }
  union dvm_value text={0};
  bool called=false;
- struct dvm_method *method=dvm_find_method(v,o->cls,"toString","()Ljava/lang/String;");
+ struct dvm_method *method=dvm_find_method(v,dvm__obj(v,gc_ref_o_121)->cls,"toString","()Ljava/lang/String;");
  if(method&&(method->has_code||method->builtin))called=dvm_call(v,method,ref,NULL,0,&text);
- else if(runtime_extra_call(v,o->cls->name,"toString","()Ljava/lang/String;",ref,NULL,0,&text))called=true;
- else if(java_basics_call(v,o->cls->name,"toString","()Ljava/lang/String;",ref,NULL,0,&text))called=true;
+ else if(runtime_extra_call(v,dvm__obj(v,gc_ref_o_121)->cls->name,"toString","()Ljava/lang/String;",ref,NULL,0,&text))called=true;
+ else if(java_basics_call(v,dvm__obj(v,gc_ref_o_121)->cls->name,"toString","()Ljava/lang/String;",ref,NULL,0,&text))called=true;
  if(dvm_exception(v))return false;
  if(!called){
   dvm__throw(v,"java/lang/UnsupportedOperationException","String.replace %s toString unavailable",role);
   return false;
  }
- struct dvm_object *s=text.l?dvm__obj(v,text.l):NULL;
- if(!s||s->kind!=DVM_OBJ_STRING){
+ const dvm_ref gc_ref_s_122=((text.l)?(text.l):0); if(!gc_operation_admit(v,gc_ref_s_122))return false;
+ if(!dvm__obj(v,gc_ref_s_122)||dvm__obj(v,gc_ref_s_122)->kind!=DVM_OBJ_STRING){
   dvm__throw(v,text.l?"java/lang/UnsupportedOperationException":"java/lang/NullPointerException",
              "String.replace %s toString did not return String",role);
   return false;
  }
- if(!index_text(v,s))return false;
- out->units=s->string_units;out->length=s->string_length;return true;
+ if(!index_text(v,dvm__obj(v,gc_ref_s_122)))return false;
+ out->units=dvm__obj(v,gc_ref_s_122)->string_units;out->length=dvm__obj(v,gc_ref_s_122)->string_length;return true;
 }
 /* Count literal, non-overlapping occurrences of target in source.  The
  * caller guarantees target_length>0. */
@@ -1218,6 +1337,10 @@ static bool replace_encoded_length(const uint16_t *units,size_t count){
 static bool string_replace_charsequence(struct dvm *v,struct dvm_object *source,
                                         dvm_ref target_ref,dvm_ref replacement_ref,
                                         union dvm_value *out){
+ struct gc_operation_pin gc_pin_source __attribute__((cleanup(gc_operation_pin_end)));
+ if(!gc_operation_pin_begin(v,&gc_pin_source,source))return true;
+ source=dvm__obj(v,gc_pin_source.ref);
+
  if(!index_text(v,source))return true;
  replace_text target={0},replacement={0};
  if(!replace_resolve_text(v,target_ref,"target",&target))return true;
@@ -1332,6 +1455,10 @@ static void builder_encode_unit(uint32_t unit,char out[3]){
  * setLength must extend the builder through the real backing buffer, never
  * report a length the payload does not hold. */
 static bool builder_reserve(struct dvm *v,struct dvm_object *o,size_t length){
+ struct gc_operation_pin gc_pin_o __attribute__((cleanup(gc_operation_pin_end)));
+ if(!gc_operation_pin_begin(v,&gc_pin_o,o))return false;
+ o=dvm__obj(v,gc_pin_o.ref);
+
  if(length>=1048576){dvm__throw(v,"java/lang/OutOfMemoryError","builder capacity");return false;}
  uint32_t need=(uint32_t)length+1;
  if(o->utf8&&need<=o->builder_capacity)return true;
@@ -1343,19 +1470,19 @@ static bool builder_reserve(struct dvm *v,struct dvm_object *o,size_t length){
 }
 static bool builder_set_length(struct dvm *v,dvm_ref self,const union dvm_value *a,int n,union dvm_value *out){
  (void)n;(void)out;
- struct dvm_object *o=dvm__obj(v,self);
- if(!o){dvm__throw(v,"java/lang/NullPointerException","StringBuilder");return true;}
+ const dvm_ref gc_ref_o_123=(self); if(!gc_operation_admit(v,gc_ref_o_123))return false;
+ if(!dvm__obj(v,gc_ref_o_123)){dvm__throw(v,"java/lang/NullPointerException","StringBuilder");return true;}
  int32_t want=a[0].i;
  if(want<0){dvm__throw(v,"java/lang/StringIndexOutOfBoundsException","setLength(%d)",want);return true;}
  uint32_t units=0;
- if(o->utf8_len&&(!o->utf8||!builder_units(o->utf8,o->utf8_len,&units))){
-  sdk_trace_fprintf(stderr,"STRING_RUNTIME_BUILDER_INVALID_UTF8 method=setLength bytes=%u\n",o->utf8_len);
+ if(dvm__obj(v,gc_ref_o_123)->utf8_len&&(!dvm__obj(v,gc_ref_o_123)->utf8||!builder_units(dvm__obj(v,gc_ref_o_123)->utf8,dvm__obj(v,gc_ref_o_123)->utf8_len,&units))){
+  sdk_trace_fprintf(stderr,"STRING_RUNTIME_BUILDER_INVALID_UTF8 method=setLength bytes=%u\n",dvm__obj(v,gc_ref_o_123)->utf8_len);
   dvm__throw(v,"java/lang/InternalError","StringBuilder internal UTF-8 is malformed");return true;
  }
  if((uint32_t)want<units){
   size_t start=0,width=0;uint32_t cp=0;bool trail=false;
-  if(!o->utf8||!builder_unit_at(o->utf8,o->utf8_len,(uint32_t)want,&start,&width,&cp,&trail)){
-   sdk_trace_fprintf(stderr,"STRING_RUNTIME_BUILDER_INVALID_UTF8 method=setLength index=%d bytes=%u\n",want,o->utf8_len);
+  if(!dvm__obj(v,gc_ref_o_123)->utf8||!builder_unit_at(dvm__obj(v,gc_ref_o_123)->utf8,dvm__obj(v,gc_ref_o_123)->utf8_len,(uint32_t)want,&start,&width,&cp,&trail)){
+   sdk_trace_fprintf(stderr,"STRING_RUNTIME_BUILDER_INVALID_UTF8 method=setLength index=%d bytes=%u\n",want,dvm__obj(v,gc_ref_o_123)->utf8_len);
    dvm__throw(v,"java/lang/InternalError","StringBuilder internal UTF-8 is malformed");return true;
   }
   size_t new_len=start;
@@ -1366,42 +1493,42 @@ static bool builder_set_length(struct dvm *v,dvm_ref self,const union dvm_value 
     * for an unpaired surrogate. */
    uint32_t base=cp-0x10000;char encoded[3];
    builder_encode_unit(0xd800u+(base>>10),encoded);
-   memcpy(o->utf8+start,encoded,3);
+   memcpy(dvm__obj(v,gc_ref_o_123)->utf8+start,encoded,3);
    new_len=start+3;
   }
-  o->utf8[new_len]='\0';
-  o->utf8_len=(uint32_t)new_len;
+  dvm__obj(v,gc_ref_o_123)->utf8[new_len]='\0';
+  dvm__obj(v,gc_ref_o_123)->utf8_len=(uint32_t)new_len;
   return true;
  }
  if((uint32_t)want>units){
   size_t delta=(size_t)((uint32_t)want-units);
-  size_t have=o->utf8_len;
+  size_t have=dvm__obj(v,gc_ref_o_123)->utf8_len;
   if(delta>SIZE_MAX-have){dvm__throw(v,"java/lang/OutOfMemoryError","builder capacity");return true;}
   size_t need=have+delta;
-  if(!builder_reserve(v,o,need))return true;
+  if(!builder_reserve(v,dvm__obj(v,gc_ref_o_123),need))return true;
   /* AOSP fills the new UTF-16 slots with '\0'; this builder stores U+0000 as
    * a raw NUL byte, exactly as append(char '\0') does.  The VM String decoder
    * accepts both raw 0 and the MUTF-8 C0 80 form as U+0000. */
-  memset(o->utf8+have,0,delta);
-  o->utf8[need]='\0';
-  o->utf8_len=(uint32_t)need;
+  memset(dvm__obj(v,gc_ref_o_123)->utf8+have,0,delta);
+  dvm__obj(v,gc_ref_o_123)->utf8[need]='\0';
+  dvm__obj(v,gc_ref_o_123)->utf8_len=(uint32_t)need;
  }
  return true;
 }
 static bool builder_char_at(struct dvm *v,dvm_ref self,const union dvm_value *a,int n,union dvm_value *out){
  (void)n;
- struct dvm_object *o=dvm__obj(v,self);
- if(!o){dvm__throw(v,"java/lang/NullPointerException","StringBuilder");return true;}
+ const dvm_ref gc_ref_o_124=(self); if(!gc_operation_admit(v,gc_ref_o_124))return false;
+ if(!dvm__obj(v,gc_ref_o_124)){dvm__throw(v,"java/lang/NullPointerException","StringBuilder");return true;}
  uint32_t units=0;
- if(o->utf8_len&&(!o->utf8||!builder_units(o->utf8,o->utf8_len,&units))){
-  sdk_trace_fprintf(stderr,"STRING_RUNTIME_BUILDER_INVALID_UTF8 method=charAt bytes=%u\n",o->utf8_len);
+ if(dvm__obj(v,gc_ref_o_124)->utf8_len&&(!dvm__obj(v,gc_ref_o_124)->utf8||!builder_units(dvm__obj(v,gc_ref_o_124)->utf8,dvm__obj(v,gc_ref_o_124)->utf8_len,&units))){
+  sdk_trace_fprintf(stderr,"STRING_RUNTIME_BUILDER_INVALID_UTF8 method=charAt bytes=%u\n",dvm__obj(v,gc_ref_o_124)->utf8_len);
   dvm__throw(v,"java/lang/InternalError","StringBuilder internal UTF-8 is malformed");return true;
  }
  int32_t index=a[0].i;
  if(index<0||(uint32_t)index>=units){dvm__throw(v,"java/lang/StringIndexOutOfBoundsException","charAt index %d length %u",index,units);return true;}
  size_t start=0,width=0;uint32_t cp=0;bool trail=false;
- if(!o->utf8||!builder_unit_at(o->utf8,o->utf8_len,(uint32_t)index,&start,&width,&cp,&trail)){
-  sdk_trace_fprintf(stderr,"STRING_RUNTIME_BUILDER_INVALID_UTF8 method=charAt index=%d bytes=%u\n",index,o->utf8_len);
+ if(!dvm__obj(v,gc_ref_o_124)->utf8||!builder_unit_at(dvm__obj(v,gc_ref_o_124)->utf8,dvm__obj(v,gc_ref_o_124)->utf8_len,(uint32_t)index,&start,&width,&cp,&trail)){
+  sdk_trace_fprintf(stderr,"STRING_RUNTIME_BUILDER_INVALID_UTF8 method=charAt index=%d bytes=%u\n",index,dvm__obj(v,gc_ref_o_124)->utf8_len);
   dvm__throw(v,"java/lang/InternalError","StringBuilder internal UTF-8 is malformed");return true;
  }
  if(cp>0xffff){uint32_t base=cp-0x10000;out->i=(int)(trail?(0xdc00u+(base&0x3ffu)):(0xd800u+(base>>10)));}
@@ -1410,32 +1537,32 @@ static bool builder_char_at(struct dvm *v,dvm_ref self,const union dvm_value *a,
 }
 /* Replace one UTF-16 unit, preserving the other half of a surrogate pair. */
 static bool builder_set_char_at(struct dvm *v,dvm_ref self,const union dvm_value *a){
- struct dvm_object *o=dvm__obj(v,self);uint32_t units=0;
- if(!o){dvm__throw(v,"java/lang/NullPointerException","StringBuilder");return true;}
- if(!builder_units(o->utf8,o->utf8_len,&units)){dvm__throw(v,"java/lang/InternalError","builder UTF-8");return true;}
+ const dvm_ref gc_ref_o_125=(self); if(!gc_operation_admit(v,gc_ref_o_125))return false;uint32_t units=0;
+ if(!dvm__obj(v,gc_ref_o_125)){dvm__throw(v,"java/lang/NullPointerException","StringBuilder");return true;}
+ if(!builder_units(dvm__obj(v,gc_ref_o_125)->utf8,dvm__obj(v,gc_ref_o_125)->utf8_len,&units)){dvm__throw(v,"java/lang/InternalError","builder UTF-8");return true;}
  if(a[0].i<0||(uint32_t)a[0].i>=units){dvm__throw(v,"java/lang/StringIndexOutOfBoundsException","setCharAt %d",a[0].i);return true;}
  size_t start=0,width=0;uint32_t cp=0;bool trail=false;
- if(!builder_unit_at(o->utf8,o->utf8_len,(uint32_t)a[0].i,&start,&width,&cp,&trail))return false;
+ if(!builder_unit_at(dvm__obj(v,gc_ref_o_125)->utf8,dvm__obj(v,gc_ref_o_125)->utf8_len,(uint32_t)a[0].i,&start,&width,&cp,&trail))return false;
  uint16_t value=(uint16_t)a[1].i;char replacement[9];size_t used=0;
  if(cp>0xffff&&trail){builder_encode_unit(0xd800+((cp-0x10000)>>10),replacement);used=3;}
  if(value<0x80)replacement[used++]=(char)value;
  else if(value<0x800){replacement[used++]=(char)(0xc0|(value>>6));replacement[used++]=(char)(0x80|(value&63));}
  else{builder_encode_unit(value,replacement+used);used+=3;}
  if(cp>0xffff&&!trail){builder_encode_unit(0xdc00+((cp-0x10000)&1023),replacement+used);used+=3;}
- size_t length=o->utf8_len-width+used;
- if(!builder_reserve(v,o,length))return true;
- memmove(o->utf8+start+used,o->utf8+start+width,o->utf8_len-start-width+1);
- memcpy(o->utf8+start,replacement,used);o->utf8_len=(uint32_t)length;return true;
+ size_t length=dvm__obj(v,gc_ref_o_125)->utf8_len-width+used;
+ if(!builder_reserve(v,dvm__obj(v,gc_ref_o_125),length))return true;
+ memmove(dvm__obj(v,gc_ref_o_125)->utf8+start+used,dvm__obj(v,gc_ref_o_125)->utf8+start+width,dvm__obj(v,gc_ref_o_125)->utf8_len-start-width+1);
+ memcpy(dvm__obj(v,gc_ref_o_125)->utf8+start,replacement,used);dvm__obj(v,gc_ref_o_125)->utf8_len=(uint32_t)length;return true;
 }
-bool prefpersist_builder_selftest(struct dvm *v){
+static bool prefpersist_builder_selftest_operation(struct dvm *v){
  dvm_ref b=dvm_new_object(v,dvm_find_class_or_external(v,"java/lang/StringBuilder"));union dvm_value o={0},a[2]={{0}};
  if(!b||!runtime_extra_call(v,"java/lang/StringBuilder","<init>","()V",b,NULL,0,&o))return false;
  a[0].l=dvm_new_string(v,"{\"probe\":1.1.2,");
  if(!runtime_extra_call(v,"java/lang/StringBuilder","append","(Ljava/lang/String;)Ljava/lang/StringBuilder;",b,a,1,&o))return false;
  a[0].i=14;a[1].i='}';
  if(!builder_set_char_at(v,b,a)||dvm_exception(v))return false;
- struct dvm_object *obj=dvm__obj(v,b);
- if(obj->utf8_len!=15||memcmp(obj->utf8,"{\"probe\":1.1.2}",15))return false;
+ const dvm_ref gc_ref_obj_126=(b); if(!gc_operation_admit(v,gc_ref_obj_126))return false;
+ if(dvm__obj(v,gc_ref_obj_126)->utf8_len!=15||memcmp(dvm__obj(v,gc_ref_obj_126)->utf8,"{\"probe\":1.1.2}",15))return false;
  a[0].i=-1;if(!builder_set_char_at(v,b,a)||!dvm_exception(v))return false;dvm_clear_exception(v);
  a[0].i=15;if(!builder_set_char_at(v,b,a)||!dvm_exception(v))return false;dvm_clear_exception(v);
  a[0].i=1;a[1].i=0x4e2d;if(!builder_set_char_at(v,b,a)||dvm_exception(v))return false;
@@ -1444,7 +1571,14 @@ bool prefpersist_builder_selftest(struct dvm *v){
  a[0].i=2;if(!builder_char_at(v,b,a,1,&o)||o.i!=0)return false;
  return true;
 }
-bool string_runtime_call(struct dvm* v,const char* c,const char* m,const char* sig,dvm_ref self,const union dvm_value* a,int n,union dvm_value* out){
+bool prefpersist_builder_selftest(struct dvm *v){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return false;
+ bool result=prefpersist_builder_selftest_operation(v);
+ return result;
+}
+
+static bool string_runtime_call_operation(struct dvm* v,const char* c,const char* m,const char* sig,dvm_ref self,const union dvm_value* a,int n,union dvm_value* out){
  /* StringBuilder shares this runtime's UTF-16 semantics, but its payload is
   * owned by runtime_extra.inc, which does not implement setLength/charAt.
   * Handle those two before the String/CharSequence owner gate; every other
@@ -1462,8 +1596,8 @@ bool string_runtime_call(struct dvm* v,const char* c,const char* m,const char* s
   * remain fail-closed instead of being treated as String. */
  if(strcmp(c,"java/lang/String")){
   if(strcmp(c,"java/lang/CharSequence")&&(strcmp(c,"java/lang/Comparable")||!IS("compareTo","(Ljava/lang/Object;)I")))return false;
-  struct dvm_object* receiver=dvm__obj(v,self);
-  if(!receiver||receiver->kind!=DVM_OBJ_STRING)return false;
+  const dvm_ref gc_ref_receiver_127=(self); if(!gc_operation_admit(v,gc_ref_receiver_127))return true;
+  if(!dvm__obj(v,gc_ref_receiver_127)||dvm__obj(v,gc_ref_receiver_127)->kind!=DVM_OBJ_STRING)return false;
  }
  if(IS("<init>","([B)V")&&n==1){
   union dvm_value utf8_args[2]={{.l=a[0].l},{.l=dvm_new_string(v,"UTF-8")}};
@@ -1476,12 +1610,12 @@ bool string_runtime_call(struct dvm* v,const char* c,const char* m,const char* s
   out->l=self;return true;
  }
  if(IS("equals","(Ljava/lang/Object;)Z")&&n==1){
-  struct dvm_object *left=text(v,self),*right=text(v,a[0].l);
-  if(!left)return false;
-  out->i=0;if(!right)return true;
-  if(!index_text(v,left)||!index_text(v,right))return true;
-  out->i=left->string_length==right->string_length&&
-   !memcmp(left->string_units,right->string_units,(size_t)left->string_length*sizeof(uint16_t));
+  const dvm_ref gc_ref_left_128=(self); if(!gc_operation_admit(v,gc_ref_left_128))return true;const dvm_ref gc_ref_right_129=(a[0].l); if(!gc_operation_admit(v,gc_ref_right_129))return true;
+  if(!text(v,gc_ref_left_128))return false;
+  out->i=0;if(!text(v,gc_ref_right_129))return true;
+  if(!index_text(v,text(v,gc_ref_left_128))||!index_text(v,text(v,gc_ref_right_129)))return true;
+  out->i=text(v,gc_ref_left_128)->string_length==text(v,gc_ref_right_129)->string_length&&
+   !memcmp(text(v,gc_ref_left_128)->string_units,text(v,gc_ref_right_129)->string_units,(size_t)text(v,gc_ref_left_128)->string_length*sizeof(uint16_t));
   return true;
  }
  if(IS("<init>","([BIILjava/nio/charset/Charset;)V")&&n==4)return string_init_bytes(v,self,a,true,false,out);
@@ -1500,13 +1634,13 @@ bool string_runtime_call(struct dvm* v,const char* c,const char* m,const char* s
   * rather than returning bytes in the wrong encoding.  Every success creates
   * a fresh byte[] and leaves the receiver untouched. */
  if(IS("getBytes","()[B")&&n==0){
-  struct dvm_object* source=text(v,self);if(!source)return false;
-  return string_get_bytes(v,source,GET_BYTES_UTF8,out);
+  const dvm_ref gc_ref_source_130=(self); if(!gc_operation_admit(v,gc_ref_source_130))return true;if(!text(v,gc_ref_source_130))return false;
+  return string_get_bytes(v,text(v,gc_ref_source_130),GET_BYTES_UTF8,out);
  }
  if(IS("getBytes","(Ljava/lang/String;)[B")&&n==1){
-  struct dvm_object* source=text(v,self);if(!source||!a)return false;
+  const dvm_ref gc_ref_source_131=(self); if(!gc_operation_admit(v,gc_ref_source_131))return true;if(!text(v,gc_ref_source_131)||!a)return false;
   if(!a[0].l){dvm__throw(v,"java/lang/NullPointerException","charsetName");return true;}
-  const char* name=dvm_string_utf8(v,a[0].l);
+  const char* name=({const dvm_ref gc_payload_ref_122=(a[0].l);if(!gc_operation_admit(v,gc_payload_ref_122))return true;dvm_string_utf8(v,gc_payload_ref_122);});
   if(!name){dvm__throw(v,"java/lang/ClassCastException","charsetName");return true;}
   size_t name_length=dvm_string_utf8_length(v,a[0].l);
   enum get_bytes_charset charset=GET_BYTES_UNKNOWN;
@@ -1515,10 +1649,10 @@ bool string_runtime_call(struct dvm* v,const char* c,const char* m,const char* s
    dvm__throw(v,"java/io/UnsupportedEncodingException","%.*s",name_length>200?200:(int)name_length,name);
    return true;
   }
-  return string_get_bytes(v,source,charset,out);
+  return string_get_bytes(v,text(v,gc_ref_source_131),charset,out);
  }
  if(IS("getBytes","(Ljava/nio/charset/Charset;)[B")&&n==1){
-  struct dvm_object* source=text(v,self);if(!source||!a)return false;
+  const dvm_ref gc_ref_source_132=(self); if(!gc_operation_admit(v,gc_ref_source_132))return true;if(!text(v,gc_ref_source_132)||!a)return false;
   const char* name;size_t name_length;
   if(!charset_object_name(v,a[0].l,&name,&name_length))return true;
   enum get_bytes_charset charset=get_bytes_charset_name(name,name_length);
@@ -1526,16 +1660,16 @@ bool string_runtime_call(struct dvm* v,const char* c,const char* m,const char* s
    dvm__throw(v,"java/lang/UnsupportedOperationException","String.getBytes charset %.*s",name_length>200?200:(int)name_length,name);
    return true;
   }
-  return string_get_bytes(v,source,charset,out);
+  return string_get_bytes(v,text(v,gc_ref_source_132),charset,out);
  }
  bool region4=IS("regionMatches","(ILjava/lang/String;II)Z");
  bool region5=IS("regionMatches","(ZILjava/lang/String;II)Z");
  if((region4&&n==4)||(region5&&n==5)){
   int base=region5?1:0;
-  struct dvm_object* source=text(v,self);if(!source)return false;
+  const dvm_ref gc_ref_source_133=(self); if(!gc_operation_admit(v,gc_ref_source_133))return true;if(!text(v,gc_ref_source_133))return false;
   if(!a[base+1].l){dvm__throw(v,"java/lang/NullPointerException","other");return true;}
-  struct dvm_object* other=text(v,a[base+1].l);if(!other)return false;
-  return region_matches_units(v,source,other,region5&&a[0].i!=0,a[base].i,a[base+2].i,a[base+3].i,out);
+  const dvm_ref gc_ref_other_134=(a[base+1].l); if(!gc_operation_admit(v,gc_ref_other_134))return true;if(!text(v,gc_ref_other_134))return false;
+  return region_matches_units(v,text(v,gc_ref_source_133),text(v,gc_ref_other_134),region5&&a[0].i!=0,a[base].i,a[base+2].i,a[base+3].i,out);
  }
  /* Java String.equalsIgnoreCase(String): HttpUrl$Builder.push canonicalizes
   * each path segment and then calls isDot/isDotDot to recognize "." and ".."
@@ -1549,12 +1683,12 @@ bool string_runtime_call(struct dvm* v,const char* c,const char* m,const char* s
   * closed.  ASCII A-Z/a-z fold symmetrically; non-ASCII code units only match
   * exactly, the same documented conservative subset as regionMatches. */
  if(IS("equalsIgnoreCase","(Ljava/lang/String;)Z")&&n==1){
-  struct dvm_object* source=text(v,self);if(!source)return false;
+  const dvm_ref gc_ref_source_135=(self); if(!gc_operation_admit(v,gc_ref_source_135))return true;if(!text(v,gc_ref_source_135))return false;
   if(!a[0].l){out->i=0;return true;}
-  struct dvm_object* other=text(v,a[0].l);if(!other)return false;
-  if(!index_text(v,source)||!index_text(v,other))return true;
-  if(source->string_length!=other->string_length){out->i=0;return true;}
-  return region_matches_units(v,source,other,true,0,0,(int32_t)source->string_length,out);
+  const dvm_ref gc_ref_other_136=(a[0].l); if(!gc_operation_admit(v,gc_ref_other_136))return true;if(!text(v,gc_ref_other_136))return false;
+  if(!index_text(v,text(v,gc_ref_source_135))||!index_text(v,text(v,gc_ref_other_136)))return true;
+  if(text(v,gc_ref_source_135)->string_length!=text(v,gc_ref_other_136)->string_length){out->i=0;return true;}
+  return region_matches_units(v,text(v,gc_ref_source_135),text(v,gc_ref_other_136),true,0,0,(int32_t)text(v,gc_ref_source_135)->string_length,out);
  }
  /* Java String.codePointAt(int): the index is a UTF-16 code-unit offset, not a
   * UTF-8 byte or code-point ordinal.  A high surrogate is combined with an
@@ -1563,15 +1697,15 @@ bool string_runtime_call(struct dvm* v,const char* c,const char* m,const char* s
   * and OpenJDK throw StringIndexOutOfBoundsException, the IndexOutOfBounds
   * subclass used by the other String index methods here, for either bound. */
  if(IS("codePointAt","(I)I")&&n==1){
-  struct dvm_object* source=text(v,self);if(!source)return false;
-  if(!index_text(v,source))return true;
+  const dvm_ref gc_ref_source_137=(self); if(!gc_operation_admit(v,gc_ref_source_137))return true;if(!text(v,gc_ref_source_137))return false;
+  if(!index_text(v,text(v,gc_ref_source_137)))return true;
   int32_t index=a[0].i;
-  if(index<0||(uint32_t)index>=source->string_length){
+  if(index<0||(uint32_t)index>=text(v,gc_ref_source_137)->string_length){
    dvm__throw(v,"java/lang/StringIndexOutOfBoundsException","codePointAt index");return true;
   }
-  uint16_t first=source->string_units[(uint32_t)index];
-  if(first>=0xd800&&first<=0xdbff&&(uint32_t)index+1<source->string_length){
-   uint16_t second=source->string_units[(uint32_t)index+1];
+  uint16_t first=text(v,gc_ref_source_137)->string_units[(uint32_t)index];
+  if(first>=0xd800&&first<=0xdbff&&(uint32_t)index+1<text(v,gc_ref_source_137)->string_length){
+   uint16_t second=text(v,gc_ref_source_137)->string_units[(uint32_t)index+1];
    if(second>=0xdc00&&second<=0xdfff){out->i=0x10000+((first-0xd800)<<10)+(second-0xdc00);return true;}
   }
   out->i=first;return true;
@@ -1591,9 +1725,9 @@ bool string_runtime_call(struct dvm* v,const char* c,const char* m,const char* s
   * untouched.  Any other signature is left unhandled and fails closed.  The
   * zero-argument overload is handled separately below with identical mapping. */
  if(IS("toLowerCase","(Ljava/util/Locale;)Ljava/lang/String;")&&n==1){
-  struct dvm_object* source=text(v,self);if(!source)return false;
+  const dvm_ref gc_ref_source_138=(self); if(!gc_operation_admit(v,gc_ref_source_138))return true;if(!text(v,gc_ref_source_138))return false;
   if(!a[0].l){dvm__throw(v,"java/lang/NullPointerException","locale");return true;}
-  return string_lower_ascii(v,source,out);
+  return string_lower_ascii(v,text(v,gc_ref_source_138),out);
  }
  /* Java String.toLowerCase() with no Locale argument: Request$3.onFailure
   * lowercases IOException.getMessage() and then looks for the literal
@@ -1607,8 +1741,8 @@ bool string_runtime_call(struct dvm* v,const char* c,const char* m,const char* s
   * the receiver is never mutated.  A mismatched arity or signature stays
   * unhandled and fails closed. */
  if(IS("toLowerCase","()Ljava/lang/String;")&&n==0){
-  struct dvm_object* source=text(v,self);if(!source)return false;
-  return string_lower_ascii(v,source,out);
+  const dvm_ref gc_ref_source_139=(self); if(!gc_operation_admit(v,gc_ref_source_139))return true;if(!text(v,gc_ref_source_139))return false;
+  return string_lower_ascii(v,text(v,gc_ref_source_139),out);
  }
  /* Java String.toUpperCase(Locale): CommonTools.params2BodyMap upper-cases
   * the first character of a @RequestParam name to build a bean getter name,
@@ -1624,49 +1758,49 @@ bool string_runtime_call(struct dvm* v,const char* c,const char* m,const char* s
   * left unhandled, and every success returns a fresh String without mutating
   * the receiver. */
  if(IS("toUpperCase","(Ljava/util/Locale;)Ljava/lang/String;")&&n==1){
-  struct dvm_object* source=text(v,self);if(!source)return false;
+  const dvm_ref gc_ref_source_140=(self); if(!gc_operation_admit(v,gc_ref_source_140))return true;if(!text(v,gc_ref_source_140))return false;
   if(!a[0].l){dvm__throw(v,"java/lang/NullPointerException","locale");return true;}
-  return string_upper_locale(v,source,a[0].l,out);
+  return string_upper_locale(v,text(v,gc_ref_source_140),a[0].l,out);
  }
  /* Java String.toUpperCase() with no Locale argument is specified in terms
   * of Locale.getDefault().  Resolve that singleton through the platform
   * runtime (en_US) and run the same locale checks; if it cannot be resolved
   * the call fails closed rather than assuming a locale. */
  if(IS("toUpperCase","()Ljava/lang/String;")&&n==0){
-  struct dvm_object* source=text(v,self);if(!source)return false;
+  const dvm_ref gc_ref_source_141=(self); if(!gc_operation_admit(v,gc_ref_source_141))return true;if(!text(v,gc_ref_source_141))return false;
   union dvm_value locale_value={0};
   bool have_default=platform_runtime_call(v,"java/util/Locale","getDefault","()Ljava/util/Locale;",0,NULL,0,&locale_value);
   if(!have_default||!locale_value.l){
    if(!dvm_exception(v))dvm__throw(v,"java/lang/UnsupportedOperationException","String.toUpperCase default Locale unavailable");
    return true;
   }
-  return string_upper_locale(v,source,locale_value.l,out);
+  return string_upper_locale(v,text(v,gc_ref_source_141),locale_value.l,out);
  }
  if(IS("valueOf","(Ljava/lang/Object;)Ljava/lang/String;")&&n==1){
   if(!a[0].l){out->l=dvm_new_string(v,"null");return true;}
   if(text(v,a[0].l)){out->l=a[0].l;return true;}
-  struct dvm_object* o=dvm__obj(v,a[0].l);if(!o)return false;
-  struct dvm_method* method=dvm_find_method(v,o->cls,"toString","()Ljava/lang/String;");
+  const dvm_ref gc_ref_o_142=(a[0].l); if(!gc_operation_admit(v,gc_ref_o_142))return true;if(!dvm__obj(v,gc_ref_o_142))return false;
+  struct dvm_method* method=dvm_find_method(v,dvm__obj(v,gc_ref_o_142)->cls,"toString","()Ljava/lang/String;");
   if(method&&(method->has_code||method->builtin)){dvm_call(v,method,a[0].l,NULL,0,out);return true;}
   if(enum_runtime_call(v,"java/lang/Enum","toString","()Ljava/lang/String;",a[0].l,NULL,0,out))return true;
-  return java_basics_call(v,o->cls->name,"toString","()Ljava/lang/String;",a[0].l,NULL,0,out);
+  return java_basics_call(v,dvm__obj(v,gc_ref_o_142)->cls->name,"toString","()Ljava/lang/String;",a[0].l,NULL,0,out);
  }
  /* Java String.concat(String): a new String holding this string's UTF-16
   * units followed by the argument's.  concat never returns the receiver
   * itself, so a fresh String is always allocated even when the argument is
   * empty (Bugly's ay.g called it in 72br). */
  if(IS("concat","(Ljava/lang/String;)Ljava/lang/String;")&&n==1){
-  struct dvm_object* source=text(v,self);if(!source)return false;
+  const dvm_ref gc_ref_source_143=(self); if(!gc_operation_admit(v,gc_ref_source_143))return true;if(!text(v,gc_ref_source_143))return false;
   if(!a||!a[0].l){dvm__throw(v,"java/lang/NullPointerException","concat String");return true;}
-  struct dvm_object* tail=text(v,a[0].l);
-  if(!tail){dvm__throw(v,"java/lang/ClassCastException","concat argument");return true;}
-  if(!index_text(v,source)||!index_text(v,tail))return true;
-  uint64_t total=(uint64_t)source->string_length+tail->string_length;
+  const dvm_ref gc_ref_tail_144=(a[0].l); if(!gc_operation_admit(v,gc_ref_tail_144))return true;
+  if(!text(v,gc_ref_tail_144)){dvm__throw(v,"java/lang/ClassCastException","concat argument");return true;}
+  if(!index_text(v,text(v,gc_ref_source_143))||!index_text(v,text(v,gc_ref_tail_144)))return true;
+  uint64_t total=(uint64_t)text(v,gc_ref_source_143)->string_length+text(v,gc_ref_tail_144)->string_length;
   if(total>(uint64_t)INT32_MAX){dvm__throw(v,"java/lang/OutOfMemoryError","String.concat result");return true;}
   uint16_t* buffer=total?malloc((size_t)total*sizeof *buffer):NULL;
   if(total&&!buffer){dvm__throw(v,"java/lang/OutOfMemoryError","String.concat buffer");return true;}
-  if(source->string_length)memcpy(buffer,source->string_units,(size_t)source->string_length*sizeof *buffer);
-  if(tail->string_length)memcpy(buffer+source->string_length,tail->string_units,(size_t)tail->string_length*sizeof *buffer);
+  if(text(v,gc_ref_source_143)->string_length)memcpy(buffer,text(v,gc_ref_source_143)->string_units,(size_t)text(v,gc_ref_source_143)->string_length*sizeof *buffer);
+  if(text(v,gc_ref_tail_144)->string_length)memcpy(buffer+text(v,gc_ref_source_143)->string_length,text(v,gc_ref_tail_144)->string_units,(size_t)text(v,gc_ref_tail_144)->string_length*sizeof *buffer);
   out->l=from_units(v,buffer,(int)total);free(buffer);return true;
  }
  /* java.lang.String.compareTo(String): lexicographic comparison of UTF-16
@@ -1674,46 +1808,46 @@ bool string_runtime_call(struct dvm* v,const char* c,const char* m,const char* s
   * difference.  Used by Collections.sort on the parameter lists built from
   * the original request map. */
  if((IS("compareTo","(Ljava/lang/String;)I")||IS("compareTo","(Ljava/lang/Object;)I"))&&n==1){
-  struct dvm_object* source=text(v,self);if(!source)return false;
+  const dvm_ref gc_ref_source_145=(self); if(!gc_operation_admit(v,gc_ref_source_145))return true;if(!text(v,gc_ref_source_145))return false;
   if(!a[0].l){dvm__throw(v,"java/lang/NullPointerException","compareTo String");return true;}
-  struct dvm_object* other=text(v,a[0].l);
-  if(!other){dvm__throw(v,"java/lang/ClassCastException","compareTo argument");return true;}
-  if(!index_text(v,source)||!index_text(v,other))return true;
-  uint32_t count=source->string_length<other->string_length?source->string_length:other->string_length;
+  const dvm_ref gc_ref_other_146=(a[0].l); if(!gc_operation_admit(v,gc_ref_other_146))return true;
+  if(!text(v,gc_ref_other_146)){dvm__throw(v,"java/lang/ClassCastException","compareTo argument");return true;}
+  if(!index_text(v,text(v,gc_ref_source_145))||!index_text(v,text(v,gc_ref_other_146)))return true;
+  uint32_t count=text(v,gc_ref_source_145)->string_length<text(v,gc_ref_other_146)->string_length?text(v,gc_ref_source_145)->string_length:text(v,gc_ref_other_146)->string_length;
   for(uint32_t i=0;i<count;++i){
-   uint16_t left=source->string_units[i],right=other->string_units[i];
+   uint16_t left=text(v,gc_ref_source_145)->string_units[i],right=text(v,gc_ref_other_146)->string_units[i];
    if(left!=right){out->i=(int32_t)left-(int32_t)right;return true;}
   }
-  out->i=(int32_t)source->string_length-(int32_t)other->string_length;return true;
+  out->i=(int32_t)text(v,gc_ref_source_145)->string_length-(int32_t)text(v,gc_ref_other_146)->string_length;return true;
  }
  if(IS("toCharArray","()[C")&&n==0){
-  struct dvm_object *source=text(v,self);if(!source)return false;
-  if(!index_text(v,source))return true;
-  out->l=dvm_new_array(v,'C',NULL,source->string_length);
-  if(out->l&&source->string_length)memcpy(dvm_array_data(v,out->l),source->string_units,source->string_length*sizeof(uint16_t));
+  const dvm_ref gc_ref_source_147=(self); if(!gc_operation_admit(v,gc_ref_source_147))return true;if(!text(v,gc_ref_source_147))return false;
+  if(!index_text(v,text(v,gc_ref_source_147)))return true;
+  out->l=dvm_new_array(v,'C',NULL,text(v,gc_ref_source_147)->string_length);
+  if(out->l&&text(v,gc_ref_source_147)->string_length)memcpy(({const dvm_ref gc_payload_ref_123=(out->l);if(!gc_operation_admit(v,gc_payload_ref_123))return true;dvm_array_data(v,gc_payload_ref_123);}),text(v,gc_ref_source_147)->string_units,text(v,gc_ref_source_147)->string_length*sizeof(uint16_t));
   return true;
  }
  if(IS("charAt","(I)C")&&n==1){
-  struct dvm_object* source=text(v,self);if(!source)return false;
-  if(!index_text(v,source))return true;
+  const dvm_ref gc_ref_source_148=(self); if(!gc_operation_admit(v,gc_ref_source_148))return true;if(!text(v,gc_ref_source_148))return false;
+  if(!index_text(v,text(v,gc_ref_source_148)))return true;
   int32_t index=a[0].i;
-  if(index<0||(uint32_t)index>=source->string_length){dvm__throw(v,"java/lang/StringIndexOutOfBoundsException","charAt index");return true;}
-  out->i=source->string_units[(uint32_t)index];return true;
+  if(index<0||(uint32_t)index>=text(v,gc_ref_source_148)->string_length){dvm__throw(v,"java/lang/StringIndexOutOfBoundsException","charAt index");return true;}
+  out->i=text(v,gc_ref_source_148)->string_units[(uint32_t)index];return true;
  }
  if(IS("subSequence","(II)Ljava/lang/CharSequence;")&&n==2){
-  struct dvm_object* source=text(v,self);if(!source)return false;
-  if(!index_text(v,source))return true;
+  const dvm_ref gc_ref_source_149=(self); if(!gc_operation_admit(v,gc_ref_source_149))return true;if(!text(v,gc_ref_source_149))return false;
+  if(!index_text(v,text(v,gc_ref_source_149)))return true;
   int32_t begin=a[0].i,end=a[1].i;
-  if(begin<0||end<begin||(uint32_t)end>source->string_length){dvm__throw(v,"java/lang/StringIndexOutOfBoundsException","subSequence bounds");return true;}
-  out->l=from_units(v,source->string_units+begin,end-begin);return true;
+  if(begin<0||end<begin||(uint32_t)end>text(v,gc_ref_source_149)->string_length){dvm__throw(v,"java/lang/StringIndexOutOfBoundsException","subSequence bounds");return true;}
+  out->l=from_units(v,text(v,gc_ref_source_149)->string_units+begin,end-begin);return true;
  }
  if(IS("trim","()Ljava/lang/String;")){
-  struct dvm_object* source=text(v,self);if(!source)return false;
-  if(!index_text(v,source))return true;
-  uint32_t start=0,end=source->string_length;
-  while(start<end&&source->string_units[start]<=0x20)start++;
-  while(end>start&&source->string_units[end-1]<=0x20)end--;
-  out->l=from_units(v,source->string_units+start,(int)(end-start));return true;
+  const dvm_ref gc_ref_source_150=(self); if(!gc_operation_admit(v,gc_ref_source_150))return true;if(!text(v,gc_ref_source_150))return false;
+  if(!index_text(v,text(v,gc_ref_source_150)))return true;
+  uint32_t start=0,end=text(v,gc_ref_source_150)->string_length;
+  while(start<end&&text(v,gc_ref_source_150)->string_units[start]<=0x20)start++;
+  while(end>start&&text(v,gc_ref_source_150)->string_units[end-1]<=0x20)end--;
+  out->l=from_units(v,text(v,gc_ref_source_150)->string_units+start,(int)(end-start));return true;
  }
  /* Java String.replace(CharSequence,CharSequence): literal, non-regex
   * replacement.  The receiver must be a genuine VM String; the two arguments
@@ -1721,24 +1855,24 @@ bool string_runtime_call(struct dvm* v,const char* c,const char* m,const char* s
   * NullPointerException for null and ClassCastException for an object that is
   * not a CharSequence under the VM's class metadata. */
  if(IS("replace","(Ljava/lang/CharSequence;Ljava/lang/CharSequence;)Ljava/lang/String;")&&n==2){
-  struct dvm_object* source=text(v,self);if(!source)return false;
+  const dvm_ref gc_ref_source_151=(self); if(!gc_operation_admit(v,gc_ref_source_151))return true;if(!text(v,gc_ref_source_151))return false;
   if(!a)return false;
-  return string_replace_charsequence(v,source,a[0].l,a[1].l,out);
+  return string_replace_charsequence(v,text(v,gc_ref_source_151),a[0].l,a[1].l,out);
  }
  /* Java String.replace(char,char): literal single-unit replacement.  Java
   * returns this when oldChar == newChar or when no unit matches; otherwise
   * the result is a fresh String built from the replaced units. */
  if(IS("replace","(CC)Ljava/lang/String;")&&n==2){
-  struct dvm_object* source=text(v,self);if(!source)return false;
-  if(!index_text(v,source))return true;
+  const dvm_ref gc_ref_source_152=(self); if(!gc_operation_admit(v,gc_ref_source_152))return true;if(!text(v,gc_ref_source_152))return false;
+  if(!index_text(v,text(v,gc_ref_source_152)))return true;
   uint16_t old_unit=(uint16_t)a[0].i,new_unit=(uint16_t)a[1].i;
   if(old_unit==new_unit){out->l=self;return true;}
-  uint32_t length=source->string_length;
+  uint32_t length=text(v,gc_ref_source_152)->string_length;
   uint16_t* units=malloc((size_t)(length?length:1)*sizeof *units);
   if(!units){dvm__throw(v,"java/lang/OutOfMemoryError","String.replace");return true;}
   bool changed=false;
   for(uint32_t i=0;i<length;++i){
-   units[i]=source->string_units[i];
+   units[i]=text(v,gc_ref_source_152)->string_units[i];
    if(units[i]==old_unit){units[i]=new_unit;changed=true;}
   }
   out->l=changed?from_units(v,units,(int)length):self;
@@ -1748,15 +1882,15 @@ bool string_runtime_call(struct dvm* v,const char* c,const char* m,const char* s
  bool split1=IS("split","(Ljava/lang/String;)[Ljava/lang/String;");
  bool split2=IS("split","(Ljava/lang/String;I)[Ljava/lang/String;");
  if((split1&&n==1)||(split2&&n==2)){
-  struct dvm_object* source=text(v,self);if(!source){
+  const dvm_ref gc_ref_source_153=(self); if(!gc_operation_admit(v,gc_ref_source_153))return true;if(!text(v,gc_ref_source_153)){
    sdk_trace_fprintf(stderr,"STRING_SPLIT_NON_STRING receiver=%s\n",self&&dvm__obj(v,self)&&dvm__obj(v,self)->cls&&dvm__obj(v,self)->cls->name?dvm__obj(v,self)->cls->name:"?");
    return false;
   }
   if(!a)return false;
   if(!a[0].l){dvm__throw(v,"java/lang/NullPointerException","regex");return true;}
-  const char* split_pattern=dvm_string_utf8(v,a[0].l);
+  const char* split_pattern=({const dvm_ref gc_payload_ref_124=(a[0].l);if(!gc_operation_admit(v,gc_payload_ref_124))return true;dvm_string_utf8(v,gc_payload_ref_124);});
   sdk_trace_fprintf(stderr,"STRING_SPLIT pattern=%s limit=%d\n",split_pattern?split_pattern:"?",split2?a[1].i:0);
-  return string_split(v,source,a[0].l,split2?a[1].i:0,sig,out);
+  return string_split(v,text(v,gc_ref_source_153),a[0].l,split2?a[1].i:0,sig,out);
  }
  if(IS("format","(Ljava/util/Locale;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/String;")&&n==3)return java_format(v,a[1].l,a[2].l,out);
  if(IS("format","(Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/String;")&&n==2)return java_format(v,a[0].l,a[1].l,out);
@@ -1767,43 +1901,52 @@ bool string_runtime_call(struct dvm* v,const char* c,const char* m,const char* s
  bool indexof=IS("indexOf","(Ljava/lang/String;)I")||IS("indexOf","(Ljava/lang/String;I)I");
  bool lastindexof=IS("lastIndexOf","(Ljava/lang/String;)I")||IS("lastIndexOf","(Ljava/lang/String;I)I");
  if(!length&&!empty&&!hash&&!starts&&!ends&&!contains&&!substring&&!indexof&&!lastindexof)return false;
- struct dvm_object* source=text(v,self);if(!source)return false;
+ const dvm_ref gc_ref_source_154=(self); if(!gc_operation_admit(v,gc_ref_source_154))return true;if(!text(v,gc_ref_source_154))return false;
  if(substring){
-  if(!index_text(v,source))return true;
-  uint32_t size=source->string_length;int64_t begin=a[0].i,end=n==2?(int64_t)a[1].i:(int64_t)size;
+  if(!index_text(v,text(v,gc_ref_source_154)))return true;
+  uint32_t size=text(v,gc_ref_source_154)->string_length;int64_t begin=a[0].i,end=n==2?(int64_t)a[1].i:(int64_t)size;
   if(begin<0||begin>(int64_t)size||end<begin||end>(int64_t)size){dvm__throw(v,"java/lang/StringIndexOutOfBoundsException","substring range");return true;}
-  out->l=from_units(v,source->string_units+begin,(int)(end-begin));return true;
+  out->l=from_units(v,text(v,gc_ref_source_154)->string_units+begin,(int)(end-begin));return true;
  }
- struct dvm_object* needle=NULL;
- if(starts||ends||contains||indexof||lastindexof){if(!a[0].l){dvm__throw(v,"java/lang/NullPointerException","String argument");return true;}needle=text(v,a[0].l);if(!needle)return false;}
- if(!index_text(v,source))return true;
- uint32_t size=source->string_length;
+ dvm_ref needle_ref=0;
+ if(starts||ends||contains||indexof||lastindexof){if(!a[0].l){dvm__throw(v,"java/lang/NullPointerException","String argument");return true;}needle_ref=a[0].l;if(!text(v,needle_ref))return false;}
+ if(!index_text(v,text(v,gc_ref_source_154)))return true;
+ uint32_t size=text(v,gc_ref_source_154)->string_length;
  if(length){out->i=(int32_t)size;return true;}if(empty){out->i=size==0;return true;}
- if(hash){uint32_t h=0;for(uint32_t i=0;i<size;i++)h=h*31+source->string_units[i];out->i=(int32_t)h;return true;}
- if(!index_text(v,needle))return true;
- uint32_t count=needle->string_length;
+ if(hash){uint32_t h=0;for(uint32_t i=0;i<size;i++)h=h*31+text(v,gc_ref_source_154)->string_units[i];out->i=(int32_t)h;return true;}
+ if(!index_text(v,text(v,needle_ref)))return true;
+ uint32_t count=text(v,needle_ref)->string_length;
  if(indexof){
   int64_t start=n==2?a[1].i:0;if(start<0)start=0;
   if(!count){out->i=(int32_t)((uint64_t)start>size?size:start);return true;}
   if(count>size||(uint64_t)start>size-count){out->i=-1;return true;}
-  out->i=-1;for(uint32_t i=(uint32_t)start;i<=size-count;i++)if(!memcmp(source->string_units+i,needle->string_units,(size_t)count*2)){out->i=(int32_t)i;break;}return true;
+  out->i=-1;for(uint32_t i=(uint32_t)start;i<=size-count;i++)if(!memcmp(text(v,gc_ref_source_154)->string_units+i,text(v,needle_ref)->string_units,(size_t)count*2)){out->i=(int32_t)i;break;}return true;
  }
  if(lastindexof){
   /* Java String.lastIndexOf: a negative fromIndex is -1 even for an empty
-   * needle; otherwise search backward from min(fromIndex, length-count). */
+   * text(v,needle_ref); otherwise search backward from min(fromIndex, length-count). */
   int64_t start=n==2?a[1].i:(int64_t)size;
   if(start<0){out->i=-1;return true;}
   if(!count){out->i=(int32_t)((uint64_t)start>size?size:start);return true;}
   if(count>size){out->i=-1;return true;}
   if((uint64_t)start>size-count)start=(int64_t)(size-count);
-  out->i=-1;for(int64_t i=start;i>=0;--i)if(!memcmp(source->string_units+i,needle->string_units,(size_t)count*2)){out->i=(int32_t)i;break;}return true;
+  out->i=-1;for(int64_t i=start;i>=0;--i)if(!memcmp(text(v,gc_ref_source_154)->string_units+i,text(v,needle_ref)->string_units,(size_t)count*2)){out->i=(int32_t)i;break;}return true;
  }
  out->i=0;if(count>size)return true;
- if(contains){for(uint32_t i=0;i<=size-count;i++)if(!memcmp(source->string_units+i,needle->string_units,(size_t)count*2)){out->i=1;break;}return true;}
+ if(contains){for(uint32_t i=0;i<=size-count;i++)if(!memcmp(text(v,gc_ref_source_154)->string_units+i,text(v,needle_ref)->string_units,(size_t)count*2)){out->i=1;break;}return true;}
  int64_t offset=ends?(int64_t)size-count:(n==2?a[1].i:0);
  if(offset<0||(uint64_t)offset>size-count)return true;
- out->i=!memcmp(source->string_units+(size_t)offset,needle->string_units,(size_t)count*2);return true;
+ out->i=!memcmp(text(v,gc_ref_source_154)->string_units+(size_t)offset,text(v,needle_ref)->string_units,(size_t)count*2);return true;
 }
+bool string_runtime_call(struct dvm* v,const char* c,const char* m,const char* sig,dvm_ref self,const union dvm_value* a,int n,union dvm_value* out){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return true;
+ bool result=string_runtime_call_operation(v,c,m,sig,self,a,n,out);
+ const char *return_type=sig?strchr(sig,')'):NULL;
+ gc_operation_result(&operation,sig,result&&!dvm_exception(v)&&out&&return_type&&(return_type[1]=='L'||return_type[1]=='[')?out->l:0);
+ return result;
+}
+
 /* The integration answers java.lang.String.format through the VM's external
  * hook (strict_runtime.c external() -> string_runtime_call).  The selftest VM
  * has no host hooks, so install the same routing for the duration of one call
@@ -1837,7 +1980,7 @@ static bool selftest_format_dispatch(struct dvm *v,dvm_ref format,dvm_ref args,d
 }
 static dvm_ref selftest_object_array1(struct dvm *v,dvm_ref item){
  dvm_ref array=dvm_new_array(v,'L',"Ljava/lang/Object;",1);if(!array)return 0;
- dvm_ref *items=dvm_array_data(v,array);if(!items)return 0;items[0]=item;return array;
+ dvm_ref *items=({const dvm_ref gc_payload_ref_125=(array);if(!gc_operation_admit(v,gc_payload_ref_125))return 0;dvm_array_data(v,gc_payload_ref_125);});if(!items)return 0;items[0]=item;return array;
 }
 static dvm_ref selftest_double_object(struct dvm *v,double value){
  struct dvm_class *cls=dvm_find_class_or_external(v,"java/lang/Double");if(!cls)return 0;
@@ -1854,7 +1997,7 @@ static bool selftest_format_value(struct dvm *v,double value,const char *want){
  if(!args||!format){sdk_trace_fprintf(stderr,"STRING_RUNTIME_SELFTEST_FAIL format_double_setup=1\n");return false;}
  if(!selftest_format_dispatch(v,format,args,&result)){sdk_trace_fprintf(stderr,"STRING_RUNTIME_SELFTEST_FAIL format_double_dispatch=1\n");return false;}
  if(dvm_exception(v)){dvm_clear_exception(v);sdk_trace_fprintf(stderr,"STRING_RUNTIME_SELFTEST_FAIL format_double_exception=1\n");return false;}
- const char *text=dvm_string_utf8(v,result);
+ const char *text=({const dvm_ref gc_payload_ref_126=(result);if(!gc_operation_admit(v,gc_payload_ref_126))return 0;dvm_string_utf8(v,gc_payload_ref_126);});
  if(!text||strcmp(text,want)){sdk_trace_fprintf(stderr,"STRING_RUNTIME_SELFTEST_FAIL format_double_value want=%s got=%s\n",want,text?text:"<null>");return false;}
  return true;
 }
@@ -1957,7 +2100,7 @@ static bool selftest_equals_ignore_case(struct dvm *v,const char *label,dvm_ref 
 static dvm_ref selftest_byte_array(struct dvm *v,const unsigned char *bytes,size_t length){
  dvm_ref ref=dvm_new_array(v,'B',"B",(uint32_t)length);
  if(!ref)return 0;
- unsigned char *data=dvm_array_data(v,ref);
+ unsigned char *data=({const dvm_ref gc_payload_ref_127=(ref);if(!gc_operation_admit(v,gc_payload_ref_127))return 0;dvm_array_data(v,gc_payload_ref_127);});
  if(length&&!data)return 0;
  if(length)memcpy(data,bytes,length);
  return ref;
@@ -1981,20 +2124,20 @@ static bool selftest_string_init_call(struct dvm *v,dvm_ref self,dvm_ref bytes,d
 }
 static bool selftest_init_ok(struct dvm *v,const char *label,dvm_ref self,dvm_ref bytes,dvm_ref charset,int32_t offset,int32_t length,bool ranged,const char *want,size_t want_len){
  if(!self){self=dvm_new_object(v,dvm_find_class_or_external(v,"java/lang/String"));if(!self)return false;}
- struct dvm_object *bo=dvm__obj(v,bytes);uint32_t bl=bo?bo->length:0;unsigned char *before=NULL;
- if(bl){before=malloc(bl);if(!before)return false;memcpy(before,bo->data,bl);}
+ const dvm_ref gc_ref_bo_155=(bytes); if(!gc_operation_admit(v,gc_ref_bo_155))return false;uint32_t bl=dvm__obj(v,gc_ref_bo_155)?dvm__obj(v,gc_ref_bo_155)->length:0;unsigned char *before=NULL;
+ if(bl){before=malloc(bl);if(!before)return false;memcpy(before,dvm__obj(v,gc_ref_bo_155)->data,bl);}
  union dvm_value out={0};
  bool handled=selftest_string_init_call(v,self,bytes,charset,offset,length,ranged,&out);
  bool ok=handled&&!dvm_exception(v);
- struct dvm_object *o=ok?dvm__obj(v,self):NULL;
- if(!ok||!o||o->kind!=DVM_OBJ_STRING||o->utf8_len!=want_len||(want_len&&memcmp(o->utf8,want,want_len))){
+ const dvm_ref gc_ref_o_156=((ok)?(self):0); if(!gc_operation_admit(v,gc_ref_o_156))return false;
+ if(!ok||!dvm__obj(v,gc_ref_o_156)||dvm__obj(v,gc_ref_o_156)->kind!=DVM_OBJ_STRING||dvm__obj(v,gc_ref_o_156)->utf8_len!=want_len||(want_len&&memcmp(dvm__obj(v,gc_ref_o_156)->utf8,want,want_len))){
   if(dvm_exception(v)){
    char why[256];dvm_describe_exception(v,dvm_exception(v),why,sizeof why);dvm_clear_exception(v);
    sdk_trace_fprintf(stderr,"STRING_RUNTIME_SELFTEST_FAIL string_init_%s handled=%d exception=%s\n",label,handled,why);
-  }else sdk_trace_fprintf(stderr,"STRING_RUNTIME_SELFTEST_FAIL string_init_%s handled=%d got_len=%u want_len=%u\n",label,handled,o?o->utf8_len:0,(unsigned)want_len);
+  }else sdk_trace_fprintf(stderr,"STRING_RUNTIME_SELFTEST_FAIL string_init_%s handled=%d got_len=%u want_len=%u\n",label,handled,dvm__obj(v,gc_ref_o_156)?dvm__obj(v,gc_ref_o_156)->utf8_len:0,(unsigned)want_len);
   free(before);return false;
  }
- if(bo&&(bo->length!=bl||(bl&&memcmp(bo->data,before,bl)))){
+ if(dvm__obj(v,gc_ref_bo_155)&&(dvm__obj(v,gc_ref_bo_155)->length!=bl||(bl&&memcmp(dvm__obj(v,gc_ref_bo_155)->data,before,bl)))){
   sdk_trace_fprintf(stderr,"STRING_RUNTIME_SELFTEST_FAIL string_init_%s input_bytes_modified=1\n",label);free(before);return false;
  }
  free(before);return true;
@@ -2025,7 +2168,7 @@ static bool selftest_init_error(struct dvm *v,const char *label,dvm_ref self,dvm
 static dvm_ref selftest_char_array(struct dvm *v,const uint16_t *units,size_t count){
  dvm_ref ref=dvm_new_array(v,'C',"C",(uint32_t)count);
  if(!ref)return 0;
- uint16_t *data=count?(uint16_t*)dvm_array_data(v,ref):NULL;
+ uint16_t *data=count?(uint16_t*)({const dvm_ref gc_payload_ref_128=(ref);if(!gc_operation_admit(v,gc_payload_ref_128))return 0;dvm_array_data(v,gc_payload_ref_128);}):NULL;
  if(count&&!data)return 0;
  if(count)memcpy(data,units,count*sizeof *units);
  return ref;
@@ -2039,24 +2182,24 @@ static bool selftest_char_init_call(struct dvm *v,dvm_ref self,dvm_ref chars,int
  * unchanged input array and an initialized receiver at the same ref. */
 static bool selftest_char_init_ok(struct dvm *v,const char *label,dvm_ref self,dvm_ref chars,int32_t offset,int32_t count,bool ranged,const uint16_t *want,int want_count,const char *want_utf8,size_t want_utf8_len){
  if(!self){self=dvm_new_object(v,dvm_find_class_or_external(v,"java/lang/String"));if(!self)return false;}
- struct dvm_object *ao=dvm__obj(v,chars);uint32_t alen=ao?ao->length:0;
+ const dvm_ref gc_ref_ao_157=(chars); if(!gc_operation_admit(v,gc_ref_ao_157))return false;uint32_t alen=dvm__obj(v,gc_ref_ao_157)?dvm__obj(v,gc_ref_ao_157)->length:0;
  uint16_t *before=NULL;
- if(alen){before=malloc((size_t)alen*sizeof *before);if(!before)return false;memcpy(before,ao->data,(size_t)alen*sizeof *before);}
+ if(alen){before=malloc((size_t)alen*sizeof *before);if(!before)return false;memcpy(before,dvm__obj(v,gc_ref_ao_157)->data,(size_t)alen*sizeof *before);}
  union dvm_value out={0};
  bool handled=selftest_char_init_call(v,self,chars,offset,count,ranged,&out);
  bool okay=handled&&!dvm_exception(v);
- struct dvm_object *o=okay?dvm__obj(v,self):NULL;
- if(okay&&(!o||o->kind!=DVM_OBJ_STRING||o->utf8_len!=want_utf8_len||(want_utf8_len&&(!o->utf8||memcmp(o->utf8,want_utf8,want_utf8_len))))){
+ const dvm_ref gc_ref_o_158=((okay)?(self):0); if(!gc_operation_admit(v,gc_ref_o_158))return false;
+ if(okay&&(!dvm__obj(v,gc_ref_o_158)||dvm__obj(v,gc_ref_o_158)->kind!=DVM_OBJ_STRING||dvm__obj(v,gc_ref_o_158)->utf8_len!=want_utf8_len||(want_utf8_len&&(!dvm__obj(v,gc_ref_o_158)->utf8||memcmp(dvm__obj(v,gc_ref_o_158)->utf8,want_utf8,want_utf8_len))))){
   sdk_trace_fprintf(stderr,"STRING_RUNTIME_SELFTEST_FAIL char_init_%s payload mismatch\n",label);okay=false;
  }
- if(okay&&(!index_text(v,o)||o->string_length!=(uint32_t)want_count||(want_count&&memcmp(o->string_units,want,(size_t)want_count*sizeof *want)))){
+ if(okay&&(!index_text(v,dvm__obj(v,gc_ref_o_158))||dvm__obj(v,gc_ref_o_158)->string_length!=(uint32_t)want_count||(want_count&&memcmp(dvm__obj(v,gc_ref_o_158)->string_units,want,(size_t)want_count*sizeof *want)))){
   if(dvm_exception(v)){
    char why[256];dvm_describe_exception(v,dvm_exception(v),why,sizeof why);dvm_clear_exception(v);
    sdk_trace_fprintf(stderr,"STRING_RUNTIME_SELFTEST_FAIL char_init_%s index exception=%s\n",label,why);
-  }else sdk_trace_fprintf(stderr,"STRING_RUNTIME_SELFTEST_FAIL char_init_%s units mismatch got=%u want=%d\n",label,o->string_length,want_count);
+  }else sdk_trace_fprintf(stderr,"STRING_RUNTIME_SELFTEST_FAIL char_init_%s units mismatch got=%u want=%d\n",label,dvm__obj(v,gc_ref_o_158)->string_length,want_count);
   okay=false;
  }
- if(okay&&ao&&(ao->length!=alen||(alen&&memcmp(ao->data,before,(size_t)alen*sizeof *before)))){
+ if(okay&&dvm__obj(v,gc_ref_ao_157)&&(dvm__obj(v,gc_ref_ao_157)->length!=alen||(alen&&memcmp(dvm__obj(v,gc_ref_ao_157)->data,before,(size_t)alen*sizeof *before)))){
   sdk_trace_fprintf(stderr,"STRING_RUNTIME_SELFTEST_FAIL char_init_%s input_chars_modified=1\n",label);okay=false;
  }
  if(!okay&&dvm_exception(v)){
@@ -2070,13 +2213,13 @@ static bool selftest_char_init_ok(struct dvm *v,const char *label,dvm_ref self,d
  * failure is atomic rather than a partially applied initialization. */
 static bool selftest_char_init_error(struct dvm *v,const char *label,dvm_ref self,dvm_ref chars,int32_t offset,int32_t count,bool ranged,const char *want_class){
  if(!self){self=dvm_new_object(v,dvm_find_class_or_external(v,"java/lang/String"));if(!self)return false;}
- struct dvm_object *ro=dvm__obj(v,self);
- bool was_string=ro&&ro->kind==DVM_OBJ_STRING;
+ const dvm_ref gc_ref_ro_159=(self); if(!gc_operation_admit(v,gc_ref_ro_159))return false;
+ bool was_string=dvm__obj(v,gc_ref_ro_159)&&dvm__obj(v,gc_ref_ro_159)->kind==DVM_OBJ_STRING;
  char *saved=NULL;uint32_t saved_len=0,saved_count=0,saved_capacity=0;uint16_t *saved_units=NULL;bool saved_ready=false;
  if(was_string){
-  saved_len=ro->utf8_len;saved_units=ro->string_units;saved_count=ro->string_length;
-  saved_ready=ro->string_index_ready;saved_capacity=ro->builder_capacity;
-  if(saved_len){saved=malloc(saved_len);if(!saved)return false;memcpy(saved,ro->utf8,saved_len);}
+  saved_len=dvm__obj(v,gc_ref_ro_159)->utf8_len;saved_units=dvm__obj(v,gc_ref_ro_159)->string_units;saved_count=dvm__obj(v,gc_ref_ro_159)->string_length;
+  saved_ready=dvm__obj(v,gc_ref_ro_159)->string_index_ready;saved_capacity=dvm__obj(v,gc_ref_ro_159)->builder_capacity;
+  if(saved_len){saved=malloc(saved_len);if(!saved)return false;memcpy(saved,dvm__obj(v,gc_ref_ro_159)->utf8,saved_len);}
  }
  union dvm_value out={0};
  bool handled=selftest_char_init_call(v,self,chars,offset,count,ranged,&out);
@@ -2090,10 +2233,10 @@ static bool selftest_char_init_error(struct dvm *v,const char *label,dvm_ref sel
   sdk_trace_fprintf(stderr,"STRING_RUNTIME_SELFTEST_FAIL char_init_%s handled=%d want=%s got=%s\n",label,handled,want_class,why);
  }
  if(exception)dvm_clear_exception(v);
- if(okay&&was_string&&(ro->kind!=DVM_OBJ_STRING||ro->utf8_len!=saved_len||
-    (saved_len&&(!ro->utf8||memcmp(ro->utf8,saved,saved_len)))||
-    ro->string_units!=saved_units||ro->string_length!=saved_count||
-    ro->string_index_ready!=saved_ready||ro->builder_capacity!=saved_capacity)){
+ if(okay&&was_string&&(dvm__obj(v,gc_ref_ro_159)->kind!=DVM_OBJ_STRING||dvm__obj(v,gc_ref_ro_159)->utf8_len!=saved_len||
+    (saved_len&&(!dvm__obj(v,gc_ref_ro_159)->utf8||memcmp(dvm__obj(v,gc_ref_ro_159)->utf8,saved,saved_len)))||
+    dvm__obj(v,gc_ref_ro_159)->string_units!=saved_units||dvm__obj(v,gc_ref_ro_159)->string_length!=saved_count||
+    dvm__obj(v,gc_ref_ro_159)->string_index_ready!=saved_ready||dvm__obj(v,gc_ref_ro_159)->builder_capacity!=saved_capacity)){
   sdk_trace_fprintf(stderr,"STRING_RUNTIME_SELFTEST_FAIL char_init_%s receiver_mutated=1\n",label);okay=false;
  }
  free(saved);return okay;
@@ -2110,11 +2253,11 @@ static bool selftest_copy_value_of_chars(struct dvm *v,const char *label,dvm_ref
   okay=okay&&cls&&cls->name&&!strcmp(cls->name,want_class)&&!out.l;
  }else{
   okay=okay&&!exception&&out.l;
-  struct dvm_object *o=okay?dvm__obj(v,out.l):NULL;
-  if(okay&&(!o||o->kind!=DVM_OBJ_STRING||o->utf8_len!=want_utf8_len||
-     (want_utf8_len&&(!o->utf8||memcmp(o->utf8,want_utf8,want_utf8_len)))||
-     !index_text(v,o)||o->string_length!=(uint32_t)want_count||
-     (want_count&&memcmp(o->string_units,want,(size_t)want_count*sizeof *want)))){
+  const dvm_ref gc_ref_o_160=((okay)?(out.l):0); if(!gc_operation_admit(v,gc_ref_o_160))return false;
+  if(okay&&(!dvm__obj(v,gc_ref_o_160)||dvm__obj(v,gc_ref_o_160)->kind!=DVM_OBJ_STRING||dvm__obj(v,gc_ref_o_160)->utf8_len!=want_utf8_len||
+     (want_utf8_len&&(!dvm__obj(v,gc_ref_o_160)->utf8||memcmp(dvm__obj(v,gc_ref_o_160)->utf8,want_utf8,want_utf8_len)))||
+     !index_text(v,dvm__obj(v,gc_ref_o_160))||dvm__obj(v,gc_ref_o_160)->string_length!=(uint32_t)want_count||
+     (want_count&&memcmp(dvm__obj(v,gc_ref_o_160)->string_units,want,(size_t)want_count*sizeof *want)))){
    if(dvm_exception(v)){
     char why[256];dvm_describe_exception(v,dvm_exception(v),why,sizeof why);dvm_clear_exception(v);
     sdk_trace_fprintf(stderr,"STRING_RUNTIME_SELFTEST_FAIL copy_value_of_%s index exception=%s\n",label,why);
@@ -2146,9 +2289,9 @@ static bool selftest_get_bytes_ok(struct dvm *v,const char *label,dvm_ref self,c
   char why[256];dvm_describe_exception(v,exception,why,sizeof why);dvm_clear_exception(v);
   sdk_trace_fprintf(stderr,"STRING_RUNTIME_SELFTEST_FAIL get_bytes_%s exception=%s\n",label,why);return false;
  }
- struct dvm_object *o=handled&&out.l?dvm__obj(v,out.l):NULL;
- if(!handled||!o||o->kind!=DVM_OBJ_ARRAY||o->elem_kind!='B'||o->length!=want_len||(want_len&&(!o->data||memcmp(o->data,want,want_len)))){
-  sdk_trace_fprintf(stderr,"STRING_RUNTIME_SELFTEST_FAIL get_bytes_%s handled=%d len=%u want_len=%u\n",label,handled,o?o->length:0,(unsigned)want_len);
+ const dvm_ref gc_ref_o_161=((handled&&out.l)?(out.l):0); if(!gc_operation_admit(v,gc_ref_o_161))return false;
+ if(!handled||!dvm__obj(v,gc_ref_o_161)||dvm__obj(v,gc_ref_o_161)->kind!=DVM_OBJ_ARRAY||dvm__obj(v,gc_ref_o_161)->elem_kind!='B'||dvm__obj(v,gc_ref_o_161)->length!=want_len||(want_len&&(!dvm__obj(v,gc_ref_o_161)->data||memcmp(dvm__obj(v,gc_ref_o_161)->data,want,want_len)))){
+  sdk_trace_fprintf(stderr,"STRING_RUNTIME_SELFTEST_FAIL get_bytes_%s handled=%d len=%u want_len=%u\n",label,handled,dvm__obj(v,gc_ref_o_161)?dvm__obj(v,gc_ref_o_161)->length:0,(unsigned)want_len);
   return false;
  }
  return true;
@@ -2189,11 +2332,11 @@ static bool selftest_split_expect(struct dvm *v,const char *input,const char *pa
   uint32_t length=dvm_array_length(v,out.l);
   okay=length==(uint32_t)want_count;
   if(okay&&want_count>0){
-   dvm_ref *items=(dvm_ref*)dvm_array_data(v,out.l);
+   dvm_ref *items=(dvm_ref*)({const dvm_ref gc_payload_ref_129=(out.l);if(!gc_operation_admit(v,gc_payload_ref_129))return 0;dvm_array_data(v,gc_payload_ref_129);});
    okay=items!=NULL;
    for(int i=0;okay&&i<want_count;++i){
     dvm_ref item=items[i];
-    const char *text=item?dvm_string_utf8(v,item):NULL;
+    const char *text=item?({const dvm_ref gc_payload_ref_130=(item);if(!gc_operation_admit(v,gc_payload_ref_130))return 0;dvm_string_utf8(v,gc_payload_ref_130);}):NULL;
     size_t want_length=strlen(want[i]);
     okay=text&&dvm_string_utf8_length(v,item)==want_length&&!memcmp(text,want[i],want_length);
    }
@@ -2235,11 +2378,11 @@ static bool selftest_replace_expect(struct dvm *v,const char *label,
  bool handled=string_runtime_call(v,"java/lang/String","replace","(Ljava/lang/CharSequence;Ljava/lang/CharSequence;)Ljava/lang/String;",s,args,2,&out);
  dvm_ref exception=dvm_exception(v);
  bool okay=handled&&!exception&&out.l&&out.l!=s;
- struct dvm_object *o=okay?dvm__obj(v,out.l):NULL;
- okay=okay&&o&&o->kind==DVM_OBJ_STRING&&o->utf8_len==want_len&&(!want_len||(o->utf8&&!memcmp(o->utf8,want,want_len)));
- struct dvm_object *so=okay?dvm__obj(v,s):NULL;
- okay=okay&&so&&so->kind==DVM_OBJ_STRING&&so->utf8_len==source_len&&(!source_len||(so->utf8&&!memcmp(so->utf8,source,source_len)));
- if(!okay)sdk_trace_fprintf(stderr,"STRING_RUNTIME_SELFTEST_FAIL replace_%s handled=%d exception=%d result_len=%u want_len=%u fresh=%d\n",label,handled,exception!=0,okay&&o?o->utf8_len:0,(unsigned)want_len,out.l!=s);
+ const dvm_ref gc_ref_o_162=((okay)?(out.l):0); if(!gc_operation_admit(v,gc_ref_o_162))return false;
+ okay=okay&&dvm__obj(v,gc_ref_o_162)&&dvm__obj(v,gc_ref_o_162)->kind==DVM_OBJ_STRING&&dvm__obj(v,gc_ref_o_162)->utf8_len==want_len&&(!want_len||(dvm__obj(v,gc_ref_o_162)->utf8&&!memcmp(dvm__obj(v,gc_ref_o_162)->utf8,want,want_len)));
+ const dvm_ref gc_ref_so_163=((okay)?(s):0); if(!gc_operation_admit(v,gc_ref_so_163))return false;
+ okay=okay&&dvm__obj(v,gc_ref_so_163)&&dvm__obj(v,gc_ref_so_163)->kind==DVM_OBJ_STRING&&dvm__obj(v,gc_ref_so_163)->utf8_len==source_len&&(!source_len||(dvm__obj(v,gc_ref_so_163)->utf8&&!memcmp(dvm__obj(v,gc_ref_so_163)->utf8,source,source_len)));
+ if(!okay)sdk_trace_fprintf(stderr,"STRING_RUNTIME_SELFTEST_FAIL replace_%s handled=%d exception=%d result_len=%u want_len=%u fresh=%d\n",label,handled,exception!=0,okay&&dvm__obj(v,gc_ref_o_162)?dvm__obj(v,gc_ref_o_162)->utf8_len:0,(unsigned)want_len,out.l!=s);
  if(exception)dvm_clear_exception(v);
  return okay;
 }
@@ -2262,11 +2405,11 @@ static bool selftest_replace_error(struct dvm *v,const char *label,dvm_ref sourc
  * behind identical Java-visible metadata. */
 static bool selftest_builder_state(struct dvm *v,dvm_ref builder,const char *label,
  int32_t want_length,const uint16_t *want,uint32_t want_count,uint32_t want_bytes){
- struct dvm_object *o=dvm__obj(v,builder);
+ const dvm_ref gc_ref_o_164=(builder); if(!gc_operation_admit(v,gc_ref_o_164))return false;
  union dvm_value out={0},arg={0};
- if(!o){sdk_trace_fprintf(stderr,"STRING_RUNTIME_SELFTEST_FAIL builder_%s missing=1\n",label);return false;}
- if(o->utf8_len!=want_bytes||(want_bytes&&!o->utf8)){
-  sdk_trace_fprintf(stderr,"STRING_RUNTIME_SELFTEST_FAIL builder_%s bytes=%u want=%u\n",label,o->utf8_len,want_bytes);return false;
+ if(!dvm__obj(v,gc_ref_o_164)){sdk_trace_fprintf(stderr,"STRING_RUNTIME_SELFTEST_FAIL builder_%s missing=1\n",label);return false;}
+ if(dvm__obj(v,gc_ref_o_164)->utf8_len!=want_bytes||(want_bytes&&!dvm__obj(v,gc_ref_o_164)->utf8)){
+  sdk_trace_fprintf(stderr,"STRING_RUNTIME_SELFTEST_FAIL builder_%s bytes=%u want=%u\n",label,dvm__obj(v,gc_ref_o_164)->utf8_len,want_bytes);return false;
  }
  if(!runtime_extra_call(v,"java/lang/StringBuilder","length","()I",builder,NULL,0,&out)||dvm_exception(v)||out.i!=want_length){
   sdk_trace_fprintf(stderr,"STRING_RUNTIME_SELFTEST_FAIL builder_%s length=%d want=%d exception=%d\n",label,out.i,want_length,dvm_exception(v)!=0);
@@ -2293,8 +2436,8 @@ static bool selftest_builder_to_string(struct dvm *v,dvm_ref builder,const char 
   sdk_trace_fprintf(stderr,"STRING_RUNTIME_SELFTEST_FAIL builder_%s to_string exception=%d\n",label,dvm_exception(v)!=0);
   if(dvm_exception(v))dvm_clear_exception(v);return false;
  }
- struct dvm_object *s=dvm__obj(v,out.l);
- if(!s||s->kind!=DVM_OBJ_STRING){
+ const dvm_ref gc_ref_s_165=(out.l); if(!gc_operation_admit(v,gc_ref_s_165))return false;
+ if(!dvm__obj(v,gc_ref_s_165)||dvm__obj(v,gc_ref_s_165)->kind!=DVM_OBJ_STRING){
   sdk_trace_fprintf(stderr,"STRING_RUNTIME_SELFTEST_FAIL builder_%s to_string_type=1\n",label);return false;
  }
  if(!string_runtime_call(v,"java/lang/String","length","()I",out.l,NULL,0,&sout)||dvm_exception(v)||sout.i!=want_length){
@@ -2332,31 +2475,31 @@ static bool selftest_builder_error(struct dvm *v,dvm_ref builder,int32_t value,c
 }
 /* Use the installed production external hook (Object precedes String), not
  * the reduced charset test hook, so dispatch-order regressions fail here. */
-bool string_runtime_dispatch_selftest(struct dvm *v){
+static bool string_runtime_dispatch_selftest_operation(struct dvm *v){
  if(!v->hooks.call_external){sdk_trace_fprintf(stderr,"TASK2_STRING_DISPATCH_SELFTEST FAIL missing_external_hook\n");return false;}
  const uint16_t unicode[]={'A',0,0x4e2d,0xd83d,0xde00};
  dvm_ref samples[]={dvm_new_string(v,"{\"a\":1}"),from_units(v,unicode,5),dvm_new_string(v,"")};
  const char *owners[]={"java/lang/String","java/lang/Object","java/lang/CharSequence"};
  for(int i=0;i<3;i++){
   dvm_ref ref=samples[i];if(!ref)return false;
-  uint32_t expected_hash=0;struct dvm_object *source=text(v,ref);
-  if(!source||!index_text(v,source))return false;
-  for(uint32_t j=0;j<source->string_length;j++)expected_hash=31*expected_hash+source->string_units[j];
+  uint32_t expected_hash=0;const dvm_ref gc_ref_source_166=(ref); if(!gc_operation_admit(v,gc_ref_source_166))return false;
+  if(!text(v,gc_ref_source_166)||!index_text(v,text(v,gc_ref_source_166)))return false;
+  for(uint32_t j=0;j<text(v,gc_ref_source_166)->string_length;j++)expected_hash=31*expected_hash+text(v,gc_ref_source_166)->string_units[j];
   for(int owner=0;owner<3;owner++){
    struct dvm_class *cls=dvm_find_class_or_external(v,owners[owner]);union dvm_value out={0};
    if(!dvm__call_out(v,cls,"toString","()Ljava/lang/String;",false,false,ref,NULL,0,&out)||dvm_exception(v)||out.l!=ref)return false;
    if(owner<2){
     if(!dvm__call_out(v,cls,"hashCode","()I",false,false,ref,NULL,0,&out)||dvm_exception(v)||(uint32_t)out.i!=expected_hash)return false;
-    uint32_t same=from_units(v,source->string_units,source->string_length);
+    uint32_t same=from_units(v,text(v,gc_ref_source_166)->string_units,text(v,gc_ref_source_166)->string_length);
     if(!same||!dvm__call_out(v,cls,"equals","(Ljava/lang/Object;)Z",false,false,ref,&same,1,&out)||dvm_exception(v)||out.i!=1)return false;
     uint32_t different=dvm_new_string(v,"different");
     if(!dvm__call_out(v,cls,"equals","(Ljava/lang/Object;)Z",false,false,ref,&different,1,&out)||dvm_exception(v)||out.i)return false;
     uint32_t nil=0;
     if(!dvm__call_out(v,cls,"equals","(Ljava/lang/Object;)Z",false,false,ref,&nil,1,&out)||dvm_exception(v)||out.i)return false;
    }
-   if(!dvm__call_out(v,cls,"length","()I",false,false,ref,NULL,0,&out)||dvm_exception(v)||(uint32_t)out.i!=source->string_length)return false;
-   for(uint32_t j=0;j<source->string_length;j++)
-    if(!dvm__call_out(v,cls,"charAt","(I)C",false,false,ref,&j,1,&out)||dvm_exception(v)||out.i!=source->string_units[j])return false;
+   if(!dvm__call_out(v,cls,"length","()I",false,false,ref,NULL,0,&out)||dvm_exception(v)||(uint32_t)out.i!=text(v,gc_ref_source_166)->string_length)return false;
+   for(uint32_t j=0;j<text(v,gc_ref_source_166)->string_length;j++)
+    if(!dvm__call_out(v,cls,"charAt","(I)C",false,false,ref,&j,1,&out)||dvm_exception(v)||out.i!=text(v,gc_ref_source_166)->string_units[j])return false;
   }
   struct dvm_method *method=dvm_find_method(v,dvm_object_class(v,ref),"toString","()Ljava/lang/String;");
   union dvm_value out={0};
@@ -2374,10 +2517,17 @@ bool string_runtime_dispatch_selftest(struct dvm *v){
  struct dvm_class *class_type=dvm_find_class_or_external(v,"java/lang/Class");
  struct dvm_method *class_text=dvm_find_method(v,class_type,"toString","()Ljava/lang/String;");
  union dvm_value class_result={0};
- if(!class_text||class_text->cls!=class_type||!dvm_call(v,class_text,dvm_class_object(v,dvm_find_class_or_external(v,"java/lang/String")),NULL,0,&class_result)||dvm_exception(v)||!class_result.l||strcmp(dvm_string_utf8(v,class_result.l),"class java.lang.String"))return false;
+ if(!class_text||class_text->cls!=class_type||!dvm_call(v,class_text,dvm_class_object(v,dvm_find_class_or_external(v,"java/lang/String")),NULL,0,&class_result)||dvm_exception(v)||!class_result.l||strcmp(({const dvm_ref gc_payload_ref_131=(class_result.l);if(!gc_operation_admit(v,gc_payload_ref_131))return 0;dvm_string_utf8(v,gc_payload_ref_131);}),"class java.lang.String"))return false;
  sdk_trace_fprintf(stderr,"TASK2_STRING_DISPATCH_SELFTEST PASS owners=String,Object,CharSequence methods=toString,hashCode,equals,length,charAt,valueOf builder_json=ok utf16=NUL,CJK,surrogate empty=ok Class_toString_dispatch=ok\n");
  return true;
 }
+bool string_runtime_dispatch_selftest(struct dvm *v){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return false;
+ bool result=string_runtime_dispatch_selftest_operation(v);
+ return result;
+}
+
 #include "task5_split_cases.inc"
 static bool task5_split_oracle_selftest(struct dvm *v){
  unsigned checks=0;
@@ -2386,15 +2536,15 @@ static bool task5_split_oracle_selftest(struct dvm *v){
   dvm_ref input=from_units(v,c->input,c->ilen),regex=from_units(v,c->regex,c->rlen);
   union dvm_value args[2]={{.l=regex},{.i=c->limit}},out={0};
   bool ok=string_runtime_call(v,"java/lang/String","split","(Ljava/lang/String;I)[Ljava/lang/String;",input,args,2,&out);
-  if(c->count<0){struct dvm_object *e=dvm__obj(v,dvm_exception(v));ok=ok&&e&&!strcmp(e->cls->name,"java/util/regex/PatternSyntaxException");dvm_clear_exception(v);}
+  if(c->count<0){const dvm_ref gc_ref_e_167=(dvm_exception(v)); if(!gc_operation_admit(v,gc_ref_e_167))return false;ok=ok&&dvm__obj(v,gc_ref_e_167)&&!strcmp(dvm__obj(v,gc_ref_e_167)->cls->name,"java/util/regex/PatternSyntaxException");dvm_clear_exception(v);}
   else {ok=ok&&!dvm_exception(v)&&out.l&&dvm_array_length(v,out.l)==(uint32_t)c->count;
-   if(ok){dvm_ref *items=dvm_array_data(v,out.l);for(int j=0;ok&&j<c->count;j++){struct dvm_object *item=text(v,items[j]);ok=item&&index_text(v,item)&&item->string_length==(uint32_t)c->lengths[j]&&!memcmp(item->string_units,c->want[j],(size_t)c->lengths[j]*2);}}
+   if(ok){dvm_ref *items=({const dvm_ref gc_payload_ref_132=(out.l);if(!gc_operation_admit(v,gc_payload_ref_132))return 0;dvm_array_data(v,gc_payload_ref_132);});for(int j=0;ok&&j<c->count;j++){const dvm_ref gc_ref_item_168=(items[j]); if(!gc_operation_admit(v,gc_ref_item_168))return false;ok=text(v,gc_ref_item_168)&&index_text(v,text(v,gc_ref_item_168))&&text(v,gc_ref_item_168)->string_length==(uint32_t)c->lengths[j]&&!memcmp(text(v,gc_ref_item_168)->string_units,c->want[j],(size_t)c->lengths[j]*2);}}
   }
   if(!ok){char error[512]={0};if(dvm_exception(v))dvm_describe_exception(v,dvm_exception(v),error,sizeof error);sdk_trace_fprintf(stderr,"TASK5_SPLIT_ORACLE FAIL case=%zu count=%u want=%d error=%s\n",i,out.l?dvm_array_length(v,out.l):999,c->count,error);return false;}checks++;
  }
  sdk_trace_fprintf(stderr,"TASK5_SPLIT_ORACLE PASS checks=%u oracle=JDK utf16=1 regex=1 limits=1 errors=1\n",checks);return true;
 }
-bool string_runtime_selftest(struct dvm* v){
+static bool string_runtime_selftest_operation(struct dvm* v){
  if(!task5_split_oracle_selftest(v))return false;
  static const uint16_t json_plain[]={'a',0x4e2d,0xd83d,0xde00,'"','x'},json_escape[]={'a','\\','"','b','"'},json_newline[]={'a','\n','"'};
  if(json_quote_end(json_plain,6,0,6,'"')!=4||json_quote_end(json_plain,6,4,6,'"')!=4||json_quote_end(json_plain,6,0,4,'"')!=-1||json_quote_end(json_plain,6,-1,6,'"')!=-1||json_quote_end(json_escape,5,0,5,'"')!=-1||json_quote_end(json_newline,3,0,3,'"')!=-1)return false;
@@ -2420,7 +2570,7 @@ bool string_runtime_selftest(struct dvm* v){
  header[0]=dvm_new_string(v,"\xC3\xA9");if(string_runtime_header_value_ascii(v,header,2))return false;
  header[0]=0;if(string_runtime_header_value_ascii(v,header,2)||dvm_exception(v))return false;
  union dvm_value canon_out={0};uint32_t canon[9]={dvm_new_string(v,"xxabc%20+yy"),2,9,dvm_new_string(v," &"),1,1,0,1,0};
- if(!string_runtime_httpurl_ascii(v,canon,9,&canon_out)||dvm_exception(v)||strcmp(dvm_string_utf8(v,canon_out.l),"abc%20+"))return false;
+ if(!string_runtime_httpurl_ascii(v,canon,9,&canon_out)||dvm_exception(v)||strcmp(({const dvm_ref gc_payload_ref_133=(canon_out.l);if(!gc_operation_admit(v,gc_payload_ref_133))return 0;dvm_string_utf8(v,gc_payload_ref_133);}),"abc%20+"))return false;
  canon[6]=1;if(string_runtime_httpurl_ascii(v,canon,9,&canon_out)||dvm_exception(v))return false;
  canon[6]=0;canon[4]=0;if(string_runtime_httpurl_ascii(v,canon,9,&canon_out)||dvm_exception(v))return false;
  canon[4]=1;canon[0]=dvm_new_string(v,"abc%QQ");canon[1]=0;canon[2]=6;if(string_runtime_httpurl_ascii(v,canon,9,&canon_out)||dvm_exception(v))return false;
@@ -2445,7 +2595,7 @@ bool string_runtime_selftest(struct dvm* v){
  a[0].l=dvm_new_string(v,"b");
  if(!string_runtime_call(v,"java/lang/String","endsWith","(Ljava/lang/String;)Z",value,a,1,&out)||!out.i)return false;
  dvm_ref padded=dvm_new_string(v,"  abc \t");
- if(!string_runtime_call(v,"java/lang/String","trim","()Ljava/lang/String;",padded,NULL,0,&out)||!out.l||strcmp(dvm_string_utf8(v,out.l),"abc"))return false;
+ if(!string_runtime_call(v,"java/lang/String","trim","()Ljava/lang/String;",padded,NULL,0,&out)||!out.l||strcmp(({const dvm_ref gc_payload_ref_134=(out.l);if(!gc_operation_admit(v,gc_payload_ref_134))return 0;dvm_string_utf8(v,gc_payload_ref_134);}),"abc"))return false;
  dvm_ref hay=dvm_new_string(v,"/a/b");
  a[0].l=dvm_new_string(v,"/");a[1].i=1;
  if(!string_runtime_call(v,"java/lang/String","indexOf","(Ljava/lang/String;I)I",hay,a,2,&out)||out.i!=2)return false;
@@ -2472,12 +2622,12 @@ bool string_runtime_selftest(struct dvm* v){
  a[0].l=dvm_new_string(v,"/");a[1].i=1;
  if(!string_runtime_call(v,"java/lang/String","lastIndexOf","(Ljava/lang/String;I)I",hay,a,2,&out)||out.i!=0)return false;
  a[0].i=1;a[1].i=2;
- if(!string_runtime_call(v,"java/lang/String","substring","(II)Ljava/lang/String;",hay,a,2,&out)||!out.l||strcmp(dvm_string_utf8(v,out.l),"a"))return false;
+ if(!string_runtime_call(v,"java/lang/String","substring","(II)Ljava/lang/String;",hay,a,2,&out)||!out.l||strcmp(({const dvm_ref gc_payload_ref_135=(out.l);if(!gc_operation_admit(v,gc_payload_ref_135))return 0;dvm_string_utf8(v,gc_payload_ref_135);}),"a"))return false;
  a[0].i=3;
- if(!string_runtime_call(v,"java/lang/String","substring","(I)Ljava/lang/String;",hay,a,1,&out)||!out.l||strcmp(dvm_string_utf8(v,out.l),"b"))return false;
+ if(!string_runtime_call(v,"java/lang/String","substring","(I)Ljava/lang/String;",hay,a,1,&out)||!out.l||strcmp(({const dvm_ref gc_payload_ref_136=(out.l);if(!gc_operation_admit(v,gc_payload_ref_136))return 0;dvm_string_utf8(v,gc_payload_ref_136);}),"b"))return false;
  dvm_ref fmt=dvm_new_string(v,"%s:%d:%x");
  dvm_ref values=dvm_new_array(v,'L',"Ljava/lang/Object;",3);
- dvm_ref *items=dvm_array_data(v,values);
+ dvm_ref *items=({const dvm_ref gc_payload_ref_137=(values);if(!gc_operation_admit(v,gc_payload_ref_137))return 0;dvm_array_data(v,gc_payload_ref_137);});
  items[0]=dvm_new_string(v,"a");
  dvm_ref integer=dvm_new_object(v,dvm_find_class_or_external(v,"java/lang/Integer"));
  union dvm_value iv={.i=7},iv2={.i=255},box={0};
@@ -2487,10 +2637,10 @@ bool string_runtime_selftest(struct dvm* v){
  if(!java_basics_call(v,"java/lang/Integer","<init>","(I)V",integer2,&iv2,1,&box))return false;
  items[2]=integer2;
  union dvm_value fa[2]={{.l=fmt},{.l=values}};
- if(!string_runtime_call(v,"java/lang/String","format","(Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/String;",0,fa,2,&out)||!out.l||strcmp(dvm_string_utf8(v,out.l),"a:7:ff"))return false;
+ if(!string_runtime_call(v,"java/lang/String","format","(Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/String;",0,fa,2,&out)||!out.l||strcmp(({const dvm_ref gc_payload_ref_138=(out.l);if(!gc_operation_admit(v,gc_payload_ref_138))return 0;dvm_string_utf8(v,gc_payload_ref_138);}),"a:7:ff"))return false;
  dvm_ref locale=dvm_new_object(v,dvm_find_class_or_external(v,"java/util/Locale"));
  union dvm_value fl[3]={{.l=locale},{.l=fmt},{.l=values}};
- if(!string_runtime_call(v,"java/lang/String","format","(Ljava/util/Locale;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/String;",0,fl,3,&out)||!out.l||strcmp(dvm_string_utf8(v,out.l),"a:7:ff"))return false;
+ if(!string_runtime_call(v,"java/lang/String","format","(Ljava/util/Locale;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/String;",0,fl,3,&out)||!out.l||strcmp(({const dvm_ref gc_payload_ref_139=(out.l);if(!gc_operation_admit(v,gc_payload_ref_139))return 0;dvm_string_utf8(v,gc_payload_ref_139);}),"a:7:ff"))return false;
  /* Double values go through the actual external dispatch path
   * (dvm__call_out -> hooks.call_external -> string_runtime_call), not a
   * direct java_format() call.  The 1e100 cases are 108/109 bytes, so the old
@@ -2499,7 +2649,7 @@ bool string_runtime_selftest(struct dvm* v){
  for(int i=0;i<3;i++){int32_t value=i==0?10:i==1?0x12345:-1;union dvm_value boxed_arg={.i=value},boxed={0},hex_result={0};
   if(!java_basics_call(v,"java/lang/Integer","valueOf","(I)Ljava/lang/Integer;",0,&boxed_arg,1,&boxed))return false;
   dvm_ref array=selftest_object_array1(v,boxed.l);if(!java_format(v,dvm_new_string(v,"\\u%04x"),array,&hex_result)||dvm_exception(v))return false;
-  const char *expected=i==0?"\\u000a":i==1?"\\u12345":"\\uffffffff";if(strcmp(dvm_string_utf8(v,hex_result.l),expected))return false;
+  const char *expected=i==0?"\\u000a":i==1?"\\u12345":"\\uffffffff";if(strcmp(({const dvm_ref gc_payload_ref_140=(hex_result.l);if(!gc_operation_admit(v,gc_payload_ref_140))return 0;dvm_string_utf8(v,gc_payload_ref_140);}),expected))return false;
  }
  if(!selftest_format_value(v,-2.25,"-2.250000"))return false;
  if(!selftest_format_value(v,1e100,double_1e100))return false;
@@ -2630,16 +2780,16 @@ bool string_runtime_selftest(struct dvm* v){
  if(!mixed_host)return false;
  if(!string_runtime_call(v,"java/lang/String","toLowerCase","(Ljava/util/Locale;)Ljava/lang/String;",mixed_host,&locale_arg,1,&out)||!out.l)return false;
  if(out.l==mixed_host)return false;
- const char *lowered=dvm_string_utf8(v,out.l);
+ const char *lowered=({const dvm_ref gc_payload_ref_141=(out.l);if(!gc_operation_admit(v,gc_payload_ref_141))return 0;dvm_string_utf8(v,gc_payload_ref_141);});
  if(!lowered||strcmp(lowered,"game.bilibili.com"))return false;
- const char *mixed_original=dvm_string_utf8(v,mixed_host);
+ const char *mixed_original=({const dvm_ref gc_payload_ref_142=(mixed_host);if(!gc_operation_admit(v,gc_payload_ref_142))return 0;dvm_string_utf8(v,gc_payload_ref_142);});
  if(!mixed_original||strcmp(mixed_original,"Game.BiliBili.COM"))return false;
  dvm_ref empty_source=dvm_new_string(v,"");
  if(!empty_source)return false;
  if(!string_runtime_call(v,"java/lang/String","toLowerCase","(Ljava/util/Locale;)Ljava/lang/String;",empty_source,&locale_arg,1,&out)||!out.l||out.l==empty_source||dvm_string_utf8_length(v,out.l)!=0)return false;
  dvm_ref accent_source=dvm_new_string(v,"\xC3\x89" "A");
  if(!accent_source)return false;
- if(!string_runtime_call(v,"java/lang/String","toLowerCase","(Ljava/util/Locale;)Ljava/lang/String;",accent_source,&locale_arg,1,&out)||!out.l||strcmp(dvm_string_utf8(v,out.l),"\xC3\x89" "a"))return false;
+ if(!string_runtime_call(v,"java/lang/String","toLowerCase","(Ljava/util/Locale;)Ljava/lang/String;",accent_source,&locale_arg,1,&out)||!out.l||strcmp(({const dvm_ref gc_payload_ref_143=(out.l);if(!gc_operation_admit(v,gc_payload_ref_143))return 0;dvm_string_utf8(v,gc_payload_ref_143);}),"\xC3\x89" "a"))return false;
  union dvm_value null_locale={0};
  bool null_handled=string_runtime_call(v,"java/lang/String","toLowerCase","(Ljava/util/Locale;)Ljava/lang/String;",mixed_host,&null_locale,1,&out);
  dvm_ref null_exception=dvm_exception(v);
@@ -2654,14 +2804,14 @@ bool string_runtime_selftest(struct dvm* v){
   * non-ASCII text (U+00C9 and a surrogate pair) is preserved exactly. */
  if(!string_runtime_call(v,"java/lang/String","toLowerCase","()Ljava/lang/String;",mixed_host,NULL,0,&out)||!out.l)return false;
  if(out.l==mixed_host)return false;
- const char *default_lowered=dvm_string_utf8(v,out.l);
+ const char *default_lowered=({const dvm_ref gc_payload_ref_144=(out.l);if(!gc_operation_admit(v,gc_payload_ref_144))return 0;dvm_string_utf8(v,gc_payload_ref_144);});
  if(!default_lowered||strcmp(default_lowered,"game.bilibili.com"))return false;
- if(!mixed_original||strcmp(dvm_string_utf8(v,mixed_host),"Game.BiliBili.COM"))return false;
+ if(!mixed_original||strcmp(({const dvm_ref gc_payload_ref_145=(mixed_host);if(!gc_operation_admit(v,gc_payload_ref_145))return 0;dvm_string_utf8(v,gc_payload_ref_145);}),"Game.BiliBili.COM"))return false;
  if(!string_runtime_call(v,"java/lang/String","toLowerCase","()Ljava/lang/String;",empty_source,NULL,0,&out)||!out.l||out.l==empty_source||dvm_string_utf8_length(v,out.l)!=0)return false;
- if(!string_runtime_call(v,"java/lang/String","toLowerCase","()Ljava/lang/String;",accent_source,NULL,0,&out)||!out.l||out.l==accent_source||strcmp(dvm_string_utf8(v,out.l),"\xC3\x89" "a"))return false;
+ if(!string_runtime_call(v,"java/lang/String","toLowerCase","()Ljava/lang/String;",accent_source,NULL,0,&out)||!out.l||out.l==accent_source||strcmp(({const dvm_ref gc_payload_ref_146=(out.l);if(!gc_operation_admit(v,gc_payload_ref_146))return 0;dvm_string_utf8(v,gc_payload_ref_146);}),"\xC3\x89" "a"))return false;
  dvm_ref emoji_source=dvm_new_string(v,"\xF0\x9F\x98\x80" "A");
  if(!emoji_source)return false;
- if(!string_runtime_call(v,"java/lang/String","toLowerCase","()Ljava/lang/String;",emoji_source,NULL,0,&out)||!out.l||out.l==emoji_source||strcmp(dvm_string_utf8(v,out.l),"\xF0\x9F\x98\x80" "a"))return false;
+ if(!string_runtime_call(v,"java/lang/String","toLowerCase","()Ljava/lang/String;",emoji_source,NULL,0,&out)||!out.l||out.l==emoji_source||strcmp(({const dvm_ref gc_payload_ref_147=(out.l);if(!gc_operation_admit(v,gc_payload_ref_147))return 0;dvm_string_utf8(v,gc_payload_ref_147);}),"\xF0\x9F\x98\x80" "a"))return false;
  /* Wrong arity/signature and a non-String receiver stay unhandled. */
  union dvm_value lower_int_arg={.i=0};
  if(string_runtime_call(v,"java/lang/String","toLowerCase","(I)Ljava/lang/String;",mixed_host,&lower_int_arg,1,&out))return false;
@@ -2692,12 +2842,12 @@ bool string_runtime_selftest(struct dvm* v){
  if(!upper_mixed)return false;
  union dvm_value upper_locale_arg={.l=upper_us.l};
  if(!string_runtime_call(v,"java/lang/String","toUpperCase","(Ljava/util/Locale;)Ljava/lang/String;",upper_mixed,&upper_locale_arg,1,&out)||!out.l)return false;
- if(out.l==upper_mixed||strcmp(dvm_string_utf8(v,out.l),"GAME.BILIBILI.COM"))return false;
- if(strcmp(dvm_string_utf8(v,upper_mixed),"Game.BiliBili.COM"))return false;
+ if(out.l==upper_mixed||strcmp(({const dvm_ref gc_payload_ref_148=(out.l);if(!gc_operation_admit(v,gc_payload_ref_148))return 0;dvm_string_utf8(v,gc_payload_ref_148);}),"GAME.BILIBILI.COM"))return false;
+ if(strcmp(({const dvm_ref gc_payload_ref_149=(upper_mixed);if(!gc_operation_admit(v,gc_payload_ref_149))return 0;dvm_string_utf8(v,gc_payload_ref_149);}),"Game.BiliBili.COM"))return false;
  upper_locale_arg.l=upper_root.l;
- if(!string_runtime_call(v,"java/lang/String","toUpperCase","(Ljava/util/Locale;)Ljava/lang/String;",upper_mixed,&upper_locale_arg,1,&out)||!out.l||out.l==upper_mixed||strcmp(dvm_string_utf8(v,out.l),"GAME.BILIBILI.COM"))return false;
+ if(!string_runtime_call(v,"java/lang/String","toUpperCase","(Ljava/util/Locale;)Ljava/lang/String;",upper_mixed,&upper_locale_arg,1,&out)||!out.l||out.l==upper_mixed||strcmp(({const dvm_ref gc_payload_ref_150=(out.l);if(!gc_operation_admit(v,gc_payload_ref_150))return 0;dvm_string_utf8(v,gc_payload_ref_150);}),"GAME.BILIBILI.COM"))return false;
  upper_locale_arg.l=upper_english.l;
- if(!string_runtime_call(v,"java/lang/String","toUpperCase","(Ljava/util/Locale;)Ljava/lang/String;",upper_mixed,&upper_locale_arg,1,&out)||!out.l||out.l==upper_mixed||strcmp(dvm_string_utf8(v,out.l),"GAME.BILIBILI.COM"))return false;
+ if(!string_runtime_call(v,"java/lang/String","toUpperCase","(Ljava/util/Locale;)Ljava/lang/String;",upper_mixed,&upper_locale_arg,1,&out)||!out.l||out.l==upper_mixed||strcmp(({const dvm_ref gc_payload_ref_151=(out.l);if(!gc_operation_admit(v,gc_payload_ref_151))return 0;dvm_string_utf8(v,gc_payload_ref_151);}),"GAME.BILIBILI.COM"))return false;
  upper_locale_arg.l=upper_root.l;
  if(!string_runtime_call(v,"java/lang/String","toUpperCase","(Ljava/util/Locale;)Ljava/lang/String;",empty_source,&upper_locale_arg,1,&out)||!out.l||out.l==empty_source||dvm_string_utf8_length(v,out.l)!=0)return false;
  dvm_ref upper_accent=dvm_new_string(v,"\xC3\xA9" "a");
@@ -2705,8 +2855,8 @@ bool string_runtime_selftest(struct dvm* v){
  static const char upper_nul_bytes[]={'a',(char)0xC0,(char)0x80,'b'};
  dvm_ref upper_nul=dvm_new_string_n(v,upper_nul_bytes,sizeof upper_nul_bytes);
  if(!upper_accent||!upper_emoji||!upper_nul)return false;
- if(!string_runtime_call(v,"java/lang/String","toUpperCase","(Ljava/util/Locale;)Ljava/lang/String;",upper_accent,&upper_locale_arg,1,&out)||!out.l||out.l==upper_accent||strcmp(dvm_string_utf8(v,out.l),"\xC3\xA9" "A"))return false;
- if(!string_runtime_call(v,"java/lang/String","toUpperCase","(Ljava/util/Locale;)Ljava/lang/String;",upper_emoji,&upper_locale_arg,1,&out)||!out.l||out.l==upper_emoji||strcmp(dvm_string_utf8(v,out.l),"\xF0\x9F\x98\x80" "A"))return false;
+ if(!string_runtime_call(v,"java/lang/String","toUpperCase","(Ljava/util/Locale;)Ljava/lang/String;",upper_accent,&upper_locale_arg,1,&out)||!out.l||out.l==upper_accent||strcmp(({const dvm_ref gc_payload_ref_152=(out.l);if(!gc_operation_admit(v,gc_payload_ref_152))return 0;dvm_string_utf8(v,gc_payload_ref_152);}),"\xC3\xA9" "A"))return false;
+ if(!string_runtime_call(v,"java/lang/String","toUpperCase","(Ljava/util/Locale;)Ljava/lang/String;",upper_emoji,&upper_locale_arg,1,&out)||!out.l||out.l==upper_emoji||strcmp(({const dvm_ref gc_payload_ref_153=(out.l);if(!gc_operation_admit(v,gc_payload_ref_153))return 0;dvm_string_utf8(v,gc_payload_ref_153);}),"\xF0\x9F\x98\x80" "A"))return false;
  if(!string_runtime_call(v,"java/lang/String","toUpperCase","(Ljava/util/Locale;)Ljava/lang/String;",upper_nul,&upper_locale_arg,1,&out)||!out.l||out.l==upper_nul)return false;
  union dvm_value upper_index={.i=0},upper_cp={0};
  if(!string_runtime_call(v,"java/lang/String","length","()I",out.l,NULL,0,&upper_cp)||upper_cp.i!=3)return false;
@@ -2745,10 +2895,10 @@ bool string_runtime_selftest(struct dvm* v){
  /* String.toUpperCase() (no Locale): resolve the platform runtime's fixed
   * en_US default and apply the same mapping; a fresh String is returned for
   * the empty input and non-ASCII text is preserved exactly. */
- if(!string_runtime_call(v,"java/lang/String","toUpperCase","()Ljava/lang/String;",upper_mixed,NULL,0,&out)||!out.l||out.l==upper_mixed||strcmp(dvm_string_utf8(v,out.l),"GAME.BILIBILI.COM"))return false;
+ if(!string_runtime_call(v,"java/lang/String","toUpperCase","()Ljava/lang/String;",upper_mixed,NULL,0,&out)||!out.l||out.l==upper_mixed||strcmp(({const dvm_ref gc_payload_ref_154=(out.l);if(!gc_operation_admit(v,gc_payload_ref_154))return 0;dvm_string_utf8(v,gc_payload_ref_154);}),"GAME.BILIBILI.COM"))return false;
  if(!string_runtime_call(v,"java/lang/String","toUpperCase","()Ljava/lang/String;",empty_source,NULL,0,&out)||!out.l||out.l==empty_source||dvm_string_utf8_length(v,out.l)!=0)return false;
- if(!string_runtime_call(v,"java/lang/String","toUpperCase","()Ljava/lang/String;",upper_accent,NULL,0,&out)||!out.l||out.l==upper_accent||strcmp(dvm_string_utf8(v,out.l),"\xC3\xA9" "A"))return false;
- if(!string_runtime_call(v,"java/lang/String","toUpperCase","()Ljava/lang/String;",upper_emoji,NULL,0,&out)||!out.l||out.l==upper_emoji||strcmp(dvm_string_utf8(v,out.l),"\xF0\x9F\x98\x80" "A"))return false;
+ if(!string_runtime_call(v,"java/lang/String","toUpperCase","()Ljava/lang/String;",upper_accent,NULL,0,&out)||!out.l||out.l==upper_accent||strcmp(({const dvm_ref gc_payload_ref_155=(out.l);if(!gc_operation_admit(v,gc_payload_ref_155))return 0;dvm_string_utf8(v,gc_payload_ref_155);}),"\xC3\xA9" "A"))return false;
+ if(!string_runtime_call(v,"java/lang/String","toUpperCase","()Ljava/lang/String;",upper_emoji,NULL,0,&out)||!out.l||out.l==upper_emoji||strcmp(({const dvm_ref gc_payload_ref_156=(out.l);if(!gc_operation_admit(v,gc_payload_ref_156))return 0;dvm_string_utf8(v,gc_payload_ref_156);}),"\xF0\x9F\x98\x80" "A"))return false;
  /* Wrong arity/signature and a non-String receiver stay unhandled. */
  union dvm_value upper_int_arg={.i=0};
  if(string_runtime_call(v,"java/lang/String","toUpperCase","(I)Ljava/lang/String;",upper_mixed,&upper_int_arg,1,&out))return false;
@@ -2909,8 +3059,8 @@ bool string_runtime_selftest(struct dvm* v){
  /* A non-UTF-8 charset must fail closed and must not touch the receiver. */
  dvm_ref keep=dvm_new_string(v,"keep");
  if(!keep||!selftest_init_error(v,"unsupported_charset",keep,b_ascii,utf16_charset,0,3,true,"java/lang/UnsupportedOperationException",true))return false;
- struct dvm_object *keep_o=dvm__obj(v,keep);
- if(!keep_o||keep_o->kind!=DVM_OBJ_STRING||keep_o->utf8_len!=4||memcmp(keep_o->utf8,"keep",4)){
+ const dvm_ref gc_ref_keep_o_169=(keep); if(!gc_operation_admit(v,gc_ref_keep_o_169))return false;
+ if(!dvm__obj(v,gc_ref_keep_o_169)||dvm__obj(v,gc_ref_keep_o_169)->kind!=DVM_OBJ_STRING||dvm__obj(v,gc_ref_keep_o_169)->utf8_len!=4||memcmp(dvm__obj(v,gc_ref_keep_o_169)->utf8,"keep",4)){
   sdk_trace_fprintf(stderr,"STRING_RUNTIME_SELFTEST_FAIL string_init_unsupported_charset receiver_mutated=1\n");return false;
  }
  dvm_ref object_self=dvm_new_object(v,dvm_find_class_or_external(v,"java/lang/Object"));
@@ -2919,7 +3069,7 @@ bool string_runtime_selftest(struct dvm* v){
  dvm_ref sig_self=dvm_new_object(v,dvm_find_class_or_external(v,"java/lang/String"));
  union dvm_value sig_args[4]={{.l=b_ascii},{.i=0},{.i=3},{.l=utf8_charset}},sig_out={0};
  if(!sig_self)return false;
- if(!string_runtime_call(v,"java/lang/String","<init>","([B)V",sig_self,sig_args,1,&sig_out)||dvm_exception(v)||strcmp(dvm_string_utf8(v,sig_self),"abc"))return false;
+ if(!string_runtime_call(v,"java/lang/String","<init>","([B)V",sig_self,sig_args,1,&sig_out)||dvm_exception(v)||strcmp(({const dvm_ref gc_payload_ref_157=(sig_self);if(!gc_operation_admit(v,gc_payload_ref_157))return 0;dvm_string_utf8(v,gc_payload_ref_157);}),"abc"))return false;
  sig_args[0].l=0;
  if(!string_runtime_call(v,"java/lang/String","<init>","([B)V",sig_self,sig_args,1,&sig_out)||!dvm_exception(v))return false;
  dvm_clear_exception(v);sig_args[0].l=b_ascii;
@@ -3024,7 +3174,7 @@ bool string_runtime_selftest(struct dvm* v){
  if(selftest_get_bytes_call(v,gb_object,"()[B",NULL,0,&out)){sdk_trace_fprintf(stderr,"STRING_RUNTIME_SELFTEST_FAIL get_bytes_non_string_receiver handled=1\n");return false;}
  if(dvm_exception(v)){sdk_trace_fprintf(stderr,"STRING_RUNTIME_SELFTEST_FAIL get_bytes_non_string_receiver exception=1\n");return false;}
  /* getBytes must not rewrite the receiver; the UTF-16 index is a cache. */
- if(dvm_string_utf8_length(v,gb_chinese_s)!=3||memcmp(dvm_string_utf8(v,gb_chinese_s),gb_chinese,3)){
+ if(dvm_string_utf8_length(v,gb_chinese_s)!=3||memcmp(({const dvm_ref gc_payload_ref_158=(gb_chinese_s);if(!gc_operation_admit(v,gc_payload_ref_158))return 0;dvm_string_utf8(v,gc_payload_ref_158);}),gb_chinese,3)){
   sdk_trace_fprintf(stderr,"STRING_RUNTIME_SELFTEST_FAIL get_bytes_receiver_mutated=1\n");return false;
  }
  sdk_trace_fprintf(stderr,"STRING_RUNTIME_SELFTEST PRESTAGE exception=%d\n",dvm_exception(v)!=0);
@@ -3210,7 +3360,7 @@ bool string_runtime_selftest(struct dvm* v){
    "(Ljava/lang/CharSequence;Ljava/lang/CharSequence;)Ljava/lang/String;",rp_source,
    rp_interface_args,2,&rp_interface_out);
   if(!rp_interface_handled||dvm_exception(v)||!rp_interface_out.l||
-     strcmp(dvm_string_utf8(v,rp_interface_out.l),"aXc")){
+     strcmp(({const dvm_ref gc_payload_ref_159=(rp_interface_out.l);if(!gc_operation_admit(v,gc_payload_ref_159))return 0;dvm_string_utf8(v,gc_payload_ref_159);}),"aXc")){
    sdk_trace_fprintf(stderr,"STRING_RUNTIME_SELFTEST_FAIL replace_interface handled=%d exception=%d\n",rp_interface_handled,dvm_exception(v)!=0);return false;
   }
  }
@@ -3275,9 +3425,40 @@ bool string_runtime_selftest(struct dvm* v){
  sdk_trace_fprintf(stderr,"STRING_RUNTIME_SELFTEST PASS charAt=1 charAt_interface=1 UTF16_nonBMP_NUL=1 prefix_offset=1 hash=1 trim=1 substring=1 index_of=1 last_index_of=1 code_point_at=1 region_matches=1 format=1 format_double_dispatch=1 format_double_large=1 format_double_negative=1 format_double_shortest_digits=1 format_double_round_half_up=1 format_double_nan_inf=1 format_double_errors=1 format_output_limit=1 toLowerCase_locale=1 toLowerCase_new_string=1 toLowerCase_npe=1 toLowerCase_signature=1 toLowerCase_unicode_boundary=1 toLowerCase_default=1 toLowerCase_default_new_string=1 toLowerCase_default_empty=1 toLowerCase_default_unicode_boundary=1 toLowerCase_default_signature=1 toLowerCase_default_non_string=1 toUpperCase_locale=1 toUpperCase_root=1 toUpperCase_english=1 toUpperCase_new_string=1 toUpperCase_non_ascii=1 toUpperCase_empty=1 toUpperCase_nul=1 toUpperCase_npe=1 toUpperCase_unknown_locale=1 toUpperCase_locale_type=1 toUpperCase_default=1 toUpperCase_signature=1 toUpperCase_non_string=1 equals_ignore_case=1 equals_ignore_case_null=1 equals_ignore_case_unicode_boundary=1 equals_ignore_case_non_string=1 string_init_charset=1 string_init_2arg=1 string_init_offset=1 string_init_unicode=1 string_init_nul_nonbmp=1 string_init_aliases=1 string_init_errors=1 string_init_malformed_fffd=1 get_bytes=1 get_bytes_default=1 get_bytes_utf8=1 get_bytes_utf16=1 get_bytes_utf16le_be=1 get_bytes_surrogate_replacement=1 get_bytes_nul=1 get_bytes_empty=1 get_bytes_alias=1 get_bytes_charset_object=1 get_bytes_errors=1 get_bytes_signature=1 split=1 split_limit=1 split_escape=1 split_errors=1 strict_unknown=1 char_array_ctor=1 char_array_copy_value_of=1 replace_charsequence=1 string_builder_setLength_charAt=1\n");
  return !dvm_exception(v);
 }
+bool string_runtime_selftest(struct dvm* v){
+ struct gc_operation operation __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&operation))return false;
+ bool result=string_runtime_selftest_operation(v);
+ return result;
+}
+
 
 #include "okio_buffer_read.inc"
+#define string_runtime_okio_selftest string_runtime_okio_selftest_operation
 #include "okio_buffer_selftest.inc"
+#undef string_runtime_okio_selftest
+#define string_runtime_okio_read_selftest string_runtime_okio_read_selftest_operation
 #include "okio_buffer_read_selftest.inc"
+#undef string_runtime_okio_read_selftest
 #include "okio_response_read.inc"
+#define string_runtime_response_read_selftest string_runtime_response_read_selftest_operation
 #include "okio_response_read_selftest.inc"
+#undef string_runtime_response_read_selftest
+
+/* Included startup tests call private text/payload helpers directly, outside
+ * builtin dispatch. Give the complete test operation the same borrow lifetime. */
+bool string_runtime_okio_selftest(struct dvm *v){
+ struct gc_operation op __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&op))return false;
+ return string_runtime_okio_selftest_operation(v);
+}
+bool string_runtime_okio_read_selftest(struct dvm *v){
+ struct gc_operation op __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&op))return false;
+ return string_runtime_okio_read_selftest_operation(v);
+}
+bool string_runtime_response_read_selftest(struct dvm *v){
+ struct gc_operation op __attribute__((cleanup(gc_operation_end)));
+ if(!gc_operation_begin(v,&op))return false;
+ return string_runtime_response_read_selftest_operation(v);
+}

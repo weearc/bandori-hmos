@@ -1,4 +1,5 @@
 #include "platform_runtime.h"
+#include "gc_operation.h"
 #include <regex.h>
 #include <stdlib.h>
 #include <string.h>
@@ -23,7 +24,7 @@ static void pattern_free(void *p) { pattern_data *d=p; if(d){if(d->compiled)regf
 static void matcher_free(void *p) { matcher_data *d=p; if(d){dvm_unpin(d->vm,d->pattern);dvm_unpin(d->vm,d->input);free(d);} }
 bool platform_runtime_vm_start(struct dvm *v) { active=v;gmt=utc=0;return true; }
 #define IS(a,b) (!strcmp(m,a)&&!strcmp(sig,b))
-bool platform_runtime_call(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int n,union dvm_value *out) {
+static bool platform_runtime_call_step8_operation(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int n,union dvm_value *out) {
  if(v!=active)return false;
  if(!strcmp(c,"java/util/TimeZone")) {
   if(IS("getTimeZone","(Ljava/lang/String;)Ljava/util/TimeZone;")&&n==1){
@@ -137,4 +138,15 @@ bool platform_runtime_selftest(struct dvm *v){
  if(!platform_runtime_call(v,"java/util/regex/Pattern","compile","(Ljava/lang/String;I)Ljava/util/regex/Pattern;",0,arg,2,&out)||!dvm_exception(v))return false;dvm_clear_exception(v);
  sdk_trace_fprintf(stderr,"PLATFORM_SELFTEST PASS GMT_UTC=1 exact_IP_regex=1 matches_find=1 VM_version_regex_captures=1 unsupported_rejected=1\n");
  return true;
+}
+
+bool platform_runtime_call(struct dvm *v,const char *c,const char *m,const char *sig,dvm_ref self,const union dvm_value *a,int n,union dvm_value *out){
+ if(v!=active)return false;
+ if(strcmp(c,"java/util/TimeZone")&&strcmp(c,"java/util/regex/Pattern")&&strcmp(c,"java/util/regex/Matcher"))
+  return platform_runtime_call_step8_operation(v,c,m,sig,self,a,n,out);
+ struct gc_operation op __attribute__((cleanup(gc_operation_end)))={0};
+ if(!gc_operation_begin(v,&op)||!gc_operation_admit(v,self))return true;
+ bool handled=platform_runtime_call_step8_operation(v,c,m,sig,self,a,n,out);
+ if(handled&&!dvm_exception(v))gc_operation_result(&op,sig,out->l);
+ return handled;
 }

@@ -1087,6 +1087,7 @@ static void Changed(OH_NativeXComponent* c, void* w) {
     }
     Created(c,w);
 }
+#include "touch_record.inc"
 static void Touch(OH_NativeXComponent* c, void* w) {
     // Game-owned XComponent forwards real input only. Per-MOVE diagnostic
     // strings/hilog/ArkTS state notifications compete with the same UI loop.
@@ -1099,6 +1100,7 @@ static void Touch(OH_NativeXComponent* c, void* w) {
      * maps OH DOWN/UP to Android POINTER_DOWN/UP for additional fingers.
      * Coordinates are local pixels; only an explicitly disabled switch uses
      * the legacy first-pointer path. */
+    RecordTouch(e,seq,(uint64_t)now.tv_sec*1000000000ull+now.tv_nsec);
     int multiResult=-38;
     int deliveryResult=-38;
     if(queueMultiTouch) {
@@ -1231,6 +1233,25 @@ struct SdkTraceJob {
 };
 static std::atomic<bool> sdkTraceBusy{false};
 static std::atomic<bool> appVmBusy{false},appWindowReady{false},appForeground{false},appDestroyRequested{false};
+static std::atomic<int> loadingStage{0}; // 1: dlopen entered, 2: runtime loaded / engine entered.
+static napi_value LoadingStatus(napi_env env,napi_callback_info) {
+    unsigned long long submissions=0;
+    void* runtime=loginRuntime.load();
+    if(runtime){auto count=reinterpret_cast<unsigned long long(*)()>(dlsym(runtime,"egl_window_runtime_successful_submissions"));if(count)submissions=count();}
+    return Str(env,"stage="+std::to_string(loadingStage.load())+" submissions="+std::to_string(submissions)+" mono_ms="+std::to_string(PayloadMs()));
+}
+// Read-only attachment: RTLD_NOLOAD must not instantiate a diagnostic stream
+// or substitute its callbacks for evidence of the game's BGM output.
+static napi_value AudioLatencyStatus(napi_env env,napi_callback_info) {
+    std::string result="pid="+std::to_string(getpid())+" mono_ms="+std::to_string(PayloadMs());
+    result+=" oh_burst_symbol="+std::to_string(dlsym(RTLD_DEFAULT,"OH_AudioRenderer_GetFrameSizeInCallback")!=nullptr);
+    result+=" oh_buffer_get_symbol="+std::to_string(dlsym(RTLD_DEFAULT,"OH_AudioRenderer_GetBufferSizeInFrames")!=nullptr);
+    result+=" oh_buffer_set_symbol="+std::to_string(dlsym(RTLD_DEFAULT,"OH_AudioRenderer_SetBufferSizeInFrames")!=nullptr);
+    void*h=dlopen("libgame_aaudio_bridge.so",RTLD_NOW|RTLD_NOLOAD);
+    if(!h)result+=" bridge_loaded=0 reason=no_game_bridge_handle";
+    else {result+=" bridge_loaded=1 ";auto summary=reinterpret_cast<const char*(*)()>(dlsym(h,"AAudioBridge_diagnosticsSummary"));result+=summary?summary():"reason=summary_symbol_absent";dlclose(h);}
+    return Str(env,result);
+}
 
 static void AppVmSignal(const char* symbol,int value=0) {
     void* runtime=loginRuntime.load();
@@ -1418,6 +1439,9 @@ static std::string CheckAudioBridge() {
     auto rate=reinterpret_cast<Get>(dlsym(handle,"AAudioStream_getSampleRate"));
     auto channels=reinterpret_cast<Get>(dlsym(handle,"AAudioStream_getChannelCount"));
     auto mode=reinterpret_cast<Get>(dlsym(handle,"AAudioStream_getPerformanceMode"));
+    auto burst=reinterpret_cast<Get>(dlsym(handle,"AAudioStream_getFramesPerBurst"));
+    auto buffer=reinterpret_cast<Get>(dlsym(handle,"AAudioStream_getBufferSizeInFrames"));
+    auto setBuffer=reinterpret_cast<int32_t(*)(void*,int32_t)>(dlsym(handle,"AAudioStream_setBufferSizeInFrames"));
     if(!create||!destroy||!setMode||!setUsage||!setCallback||!open||!close||!rate||!channels||!mode) return report+"RESULT required export missing";
     void* builder=nullptr; int result=create(&builder);
     if(result||!builder) return report+"RESULT builder failed code="+std::to_string(result);
@@ -1426,8 +1450,11 @@ static std::string CheckAudioBridge() {
     report+="OPEN code="+std::to_string(result)+"\n";
     if(result||!stream) return report+"RESULT game FAST renderer creation failed; no start requested";
     int actualRate=rate(stream),actualChannels=channels(stream),actualMode=mode(stream);
+    int actualBurst=burst?burst(stream):-890,actualBuffer=buffer?buffer(stream):-890;
+    int setResult=(setBuffer&&actualBurst>0&&actualBurst<=INT32_MAX/2)?setBuffer(stream,2*actualBurst):-890;
     int closed=close(stream);
     report+="FORMAT rate="+std::to_string(actualRate)+" channels="+std::to_string(actualChannels)+" performance="+std::to_string(actualMode)+"\n";
+    report+="PREPARED_PROBE_ONLY frames_per_burst="+std::to_string(actualBurst)+" buffer_frames="+std::to_string(actualBuffer)+" set_2_bursts="+std::to_string(setResult)+" closed_burst="+std::to_string(burst?burst(stream):-890)+"\n";
     report+="RESULT close="+std::to_string(closed)+" callbacks="+std::to_string(bridgeCallbacks.load())+"; renderer never started; game audio and latency unverified";
     return report;
 }
@@ -1475,6 +1502,7 @@ static void ExecuteSdkTrace(napi_env,void* data) {
         // Keep this diagnostic runtime resident for its static report storage.
         static void* runtime=nullptr;
         if(!runtime) {
+            if(job->appOwner)loadingStage.store(1);
             dlerror(); runtime=dlopen("libsdktrace.so",RTLD_NOW|RTLD_LOCAL);
             const char* error=dlerror();
             if(!runtime) { job->output=std::string("SDK trace runtime unavailable: ")+(error?error:"unknown"); return; }
@@ -1482,6 +1510,9 @@ static void ExecuteSdkTrace(napi_env,void* data) {
         auto configurePages=reinterpret_cast<void(*)(const char*)>(dlsym(runtime,"page_geometry_configure"));
         if(!configurePages){job->output="E-PAGE-GEOMETRY-ABI missing";return;}
         configurePages(job->directory.c_str());
+        auto setApkAssets=reinterpret_cast<void(*)(int(*)(const char*))>(dlsym(runtime,"sdk_apk_set_asset_open"));
+        if(!setApkAssets){job->output="APK runtime asset ABI unavailable";return;}
+        setApkAssets(PayloadOpenAsset);
         dlerror();
         using Run=const char*(*)(const char*);
         auto setLoginEvent=reinterpret_cast<void(*)(void(*)(const char*))>(dlsym(runtime,"login_panel_set_event_host"));
@@ -1601,6 +1632,7 @@ static void ExecuteSdkTrace(napi_env,void* data) {
         auto run=reinterpret_cast<Run>(dlsym(runtime,job->appOwner?"sdk_app_vm_run":job->login?"sdk_login_trace_run":"sdk_trace_run"));
         const char* error=dlerror();
         if(error || !run) { job->output=std::string("SDK trace entry unavailable: ")+(error?error:"null function"); return; }
+        if(job->appOwner)loadingStage.store(2);
         const char* report=run(job->directory.c_str());
         job->output=report?report:"SDK trace returned no report; initialization NOT verified";
     } catch(const std::exception& error) {
@@ -1808,12 +1840,14 @@ static napi_value PageMapProbe(napi_env env,napi_callback_info info) {
     return Str(env,report);
 }
 static napi_value Init(napi_env env,napi_value exports) {
+    RecStart(env);
     napi_property_descriptor payload[]={
         {"pageMapProbe",nullptr,PageMapProbe,nullptr,nullptr,nullptr,napi_default,nullptr},
         {"pageGeometry",nullptr,PageGeometry,nullptr,nullptr,nullptr,napi_default,nullptr},
         {"prepareNativeAssets",nullptr,PrepareNativeAssets,nullptr,nullptr,nullptr,napi_default,nullptr},
+        {"apkVersionInfo",nullptr,ApkVersionInfo,nullptr,nullptr,nullptr,napi_default,nullptr},
         {"nativeAssetsStatus",nullptr,NativeAssetsStatus,nullptr,nullptr,nullptr,napi_default,nullptr}};
-    napi_define_properties(env,exports,4,payload);
+    napi_define_properties(env,exports,sizeof(payload)/sizeof(payload[0]),payload);
     napi_property_descriptor batteryUpdate={"batteryUpdate",nullptr,BatteryUpdate,nullptr,nullptr,nullptr,napi_default,nullptr};
     napi_define_properties(env,exports,1,&batteryUpdate);
     napi_property_descriptor ack={"ackGuestView",nullptr,AckGuestView,nullptr,nullptr,nullptr,napi_default,nullptr};
@@ -1853,6 +1887,8 @@ static napi_value Init(napi_env env,napi_value exports) {
         {"sdkTrace",nullptr,SdkTrace,nullptr,nullptr,nullptr,napi_default,nullptr},
         {"appVmWindowReady",nullptr,AppVmWindowReady,nullptr,nullptr,nullptr,napi_default,nullptr},
         {"appVmHeartbeat",nullptr,AppVmHeartbeat,nullptr,nullptr,nullptr,napi_default,nullptr},
+        {"loadingStatus",nullptr,LoadingStatus,nullptr,nullptr,nullptr,napi_default,nullptr},
+        {"audioLatencyStatus",nullptr,AudioLatencyStatus,nullptr,nullptr,nullptr,napi_default,nullptr},
         {"appVmForeground",nullptr,AppVmForeground,nullptr,nullptr,nullptr,napi_default,nullptr},
         {"appVmDestroy",nullptr,AppVmDestroy,nullptr,nullptr,nullptr,napi_default,nullptr},
         {"nativeDependencies",nullptr,NativeDependencies,nullptr,nullptr,nullptr,napi_default,nullptr},

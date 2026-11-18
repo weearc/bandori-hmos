@@ -70,6 +70,7 @@ static atomic_uint_fast64_t play_drains,play_drained,play_unpaired;
 typedef struct { int action,pointer_id; float x,y; int64_t event_ms;uint64_t host_ns,drain_ns; int multi;unsigned trace_slot;mt_packet packet; } queued_touch;
 static atomic_int multitouch_enabled;
 #include "input_pipeline_observer.inc"
+#include "touch_drain_budget.inc"
 static void multitouch_poll(void);
 static void multitouch_native_done(struct dvm *,dvm_ref,int);
 #if defined(LUNARIA_TASK6F_PREFLIGHT) || defined(LUNARIA_TASK6K_OBSERVER)
@@ -103,6 +104,7 @@ static void input_obs_queue_snapshot(uint64_t *q){
  pthread_mutex_lock(&touch_lock);q[0]=touch_queued;q[3]=touch_dropped;q[4]=(touch_tail+TOUCH_QUEUE_CAP-touch_head)%TOUCH_QUEUE_CAP;q[5]=TOUCH_QUEUE_CAP;q[6]=touch_full_count;pthread_mutex_unlock(&touch_lock);
  q[1]=atomic_load(&touch_injected);q[2]=atomic_load(&touch_failed);q[7]=__atomic_load_n(&touch_retry_count,__ATOMIC_RELAXED);
 }
+#include "touch_worker.inc"
 #include "enqueue_drain_observer.inc"
 void sdk_input_play_snapshot(uint64_t *values){
  pthread_mutex_lock(&touch_lock);values[0]=touch_queued;values[3]=touch_dropped;values[4]=(touch_tail+TOUCH_QUEUE_CAP-touch_head)%TOUCH_QUEUE_CAP;pthread_mutex_unlock(&touch_lock);
@@ -220,21 +222,22 @@ static void touch_snapshot_file(void){
  FILE *f=fopen("/data/storage/el2/base/haps/entry/files/sdkdex/viewgroup-touch.txt","a");
  if(f){fprintf(f,"pid=%d epoch=%lld injected=%llu queued=%llu failed=%llu dropped=%llu\n",getpid(),(long long)time(NULL),(unsigned long long)i,(unsigned long long)q,(unsigned long long)failed,(unsigned long long)d);fclose(f);last_q=q;last_i=i;last_f=failed;last_d=d;}
 }
-static void drain_touches(state *s){
+static void drain_touches_impl(state *s,bool independent){
  if(touch_draining)return;
  if(atomic_load(&multitouch_enabled)&&(dvm_exception(s->vm)||jni_bridge_pending(s->bridge)))return;
- if(!atomic_load(&ed_every_frame)&&!atomic_load(&ed_wake)&&dvm_gil_frame_touch_enabled()&&!frame_touch_busy&&frame_touch_last&&perf_now()-frame_touch_last<=100000000ull)return;
+ if(!independent&&!atomic_load(&ed_every_frame)&&!atomic_load(&ed_wake)&&dvm_gil_frame_touch_enabled()&&!frame_touch_busy&&frame_touch_last&&perf_now()-frame_touch_last<=100000000ull)return;
  touch_draining=true;
+ struct touch_batch batch=touch_batch_begin(perf_now());
  atomic_fetch_add(&play_drains,1);
- if(!atomic_load(&ed_wake))touch_snapshot_file();
  atomic_store(&touch_consumer_tid,(long)syscall(SYS_gettid));
  static int64_t current_down_ms;
  static struct {int id;int64_t down;int active;} presses[32];
- int drained=0,last_player=0,consumed_ok=0;
  for(;;){
   queued_touch q;
   pthread_mutex_lock(&touch_lock);
   if(touch_head==touch_tail){pthread_mutex_unlock(&touch_lock);break;}
+  /* Test before popping: the remainder stays in exactly the same FIFO. */
+  if(touch_batch_limit(&batch,perf_now())){pthread_mutex_unlock(&touch_lock);break;}
   q=touch_queue[touch_head];touch_head=(touch_head+1)%TOUCH_QUEUE_CAP;
   q.drain_ns=perf_now();
   input_obs_queue_wait(q.multi?q.packet.enqueue_ns:q.host_ns,q.drain_ns);
@@ -244,7 +247,7 @@ static void drain_touches(state *s){
    if(s->activity&&ac&&dvm__get_field_from(s->vm,s->activity,ac,"mUnityPlayer","Lcom/unity3d/player/UnityPlayer;",&pv)&&!dvm_exception(s->vm))player=pv.l;
    int consumed=0;bool ok=inject_touch(s->vm,player,&q,q.packet.down_ns/1000000,&consumed);
    atomic_fetch_add(&play_drained,1);if(ok)touch_injected++;else touch_failed++;
-   drained++;last_player=player!=0;consumed_ok+=consumed;
+   touch_batch_event(&batch,q.drain_ns,perf_now());
    if(dvm_exception(s->vm)||jni_bridge_pending(s->bridge))break;
    continue;
   }
@@ -266,10 +269,9 @@ static void drain_touches(state *s){
   queued_touch qq=q;
   if(!atomic_load(&play_touch_timestamps)&&(action==1||action==3)&&current_down_ms&&qq.event_ms<=current_down_ms)qq.event_ms=current_down_ms+80;
   bool ok=player&&inject_touch(s->vm,player,&qq,current_down_ms?current_down_ms:qq.event_ms,&consumed);
-  {static pid_t tp;bool first=tp!=getpid();tp=getpid();uint64_t end=perf_now();FILE *f=fopen("/data/storage/el2/base/haps/entry/files/sdkdex/gil-touch-latency.csv",first?"w":"a");if(f){if(first)fputs("pid,host_ns,consume_end_ns,action,latency_ms,ok,consumed,retries,full,dropped\n",f);fprintf(f,"%d,%llu,%llu,%d,%.6f,%d,%d,%llu,%llu,%llu\n",getpid(),(unsigned long long)q.host_ns,(unsigned long long)end,action,(end-q.host_ns)/1e6,ok,consumed,(unsigned long long)touch_retry_count,(unsigned long long)touch_full_count,(unsigned long long)touch_dropped);fclose(f);}}
-  last_player=player?1:0;drained++;consumed_ok+=consumed;
   atomic_fetch_add(&play_drained,1);
   if(ok)touch_injected++;else touch_failed++;
+  touch_batch_event(&batch,q.drain_ns,perf_now());
   if(action==1||action==3)current_down_ms=0; /* UP/CANCEL */
   if(atomic_load(&play_touch_timestamps)&&(action==1||action==3))presses[press].active=0;
   /* Inject TAP 合成的 DOWN/UP 使用同一 event_ms；若同一 tick 连续注入，
@@ -282,15 +284,27 @@ static void drain_touches(state *s){
    pthread_mutex_unlock(&touch_lock);
    if(split)break;
   }
-  if(touch_injected+touch_failed<=64){
-   FILE *f=fopen("/data/storage/el2/base/haps/entry/files/sdkdex/engine-probe.txt","a");
-   if(f){fprintf(f,"TOUCH_INJECT action=%d id=%d x=%.1f y=%.1f down=%lld event=%lld ok=%d consumed=%d player=%u queued=%llu injected=%llu failed=%llu dropped=%llu\n",q.action,q.pointer_id,q.x,q.y,(long long)(current_down_ms?current_down_ms:q.event_ms),(long long)q.event_ms,ok?1:0,consumed,(unsigned)player,(unsigned long long)touch_queued,(unsigned long long)touch_injected,(unsigned long long)touch_failed,(unsigned long long)touch_dropped);fclose(f);}
-   if(s&&s->file)(void)fprintf(s->file,"event=touch_injected action=%d id=%d x=%.1f y=%.1f ok=%d consumed=%d injected=%llu failed=%llu\n",q.action,q.pointer_id,q.x,q.y,ok?1:0,consumed,(unsigned long long)touch_injected,(unsigned long long)touch_failed);
+ }
+ touch_batch_finish(&batch,perf_now());
+ if(batch.events&&!independent){
+  /* Keep the existing reentrancy guard set across this normal GIL handoff.
+   * No touch_lock is held and no event is partly dispatched at this point.
+   * Restore the exact nesting depth using the runtime's existing lock order. */
+  struct dvm *vm=s->vm;
+  unsigned depth=dvm_gil_held(vm)?dvm_gil_unlock_all(vm):0;
+  if(depth){
+   if(atomic_load_explicit(&input_obs_enabled,memory_order_relaxed))atomic_fetch_add_explicit(&touch_batch_yields,1,memory_order_relaxed);
+   dvm_gil_relock(vm,depth);
   }
  }
- if(!atomic_load(&ed_wake))touch_snapshot_file();
  touch_draining=false;
- if(drained&&!atomic_load(&ed_wake))OH_LOG_Print(LOG_APP,LOG_INFO,0xFF00,"NativeProbeTouch","TOUCHDRAIN host=0 drained=%{public}d player=%{public}d consumed=%{public}d injected=%{public}llu failed=%{public}llu queued=%{public}llu dropped=%{public}llu",drained,last_player,consumed_ok,(unsigned long long)touch_injected,(unsigned long long)touch_failed,(unsigned long long)touch_queued,(unsigned long long)touch_dropped);
+}
+static void drain_touches(state *s){
+ if(atomic_load_explicit(&touch_worker_enabled,memory_order_acquire))return;
+ unsigned empty=0;
+ if(!atomic_compare_exchange_strong_explicit(&touch_drain_owner,&empty,1,memory_order_acquire,memory_order_relaxed))return;
+ drain_touches_impl(s,false);
+ atomic_store_explicit(&touch_drain_owner,0,memory_order_release);
 }
 /* Called at the real nativeRender boundary. A contended caller retains the
  * queue for a later frame. The ArkTS/XComponent producer never takes GIL. */
@@ -691,6 +705,7 @@ static bool run_foreground_lifecycle(state *s){
   * Job.Worker 线程仍在等待）。capture 超时 240 秒，留足余量。 */
  bool submission_reported=false;
  frame_touch_state=s;
+ if(!touch_worker_start(s))atomic_store(&touch_worker_enabled,0);
  uint64_t owner_deadline=perf_now()+120000000000ull,owner_controls=0,owner_focus=0,owner_threads=0;
  for(int i=0;perf_now()<owner_deadline;i++){
   uint64_t owner_now=perf_now();
@@ -881,7 +896,7 @@ int unity_player_probe_run(struct dvm*vm,const char*dir,const char*reportdir){
  failure_stage="constructor_lifecycle";
  (void)elf_loader_with_init_observer(init_event,&s,with_dlopen,&s);
  ok=s.ctor_ok&&s.create_ok&&s.start_ok&&s.resume_ok&&s.focus_ok&&s.init_enter==1&&s.init_return==1&&s.init_receiver&&s.init_context==s.activity&&!dvm_exception(vm)&&!jni_bridge_pending(s.bridge)&&jni_bridge_limited_count(s.bridge)==s.limited_before;
- done: frame_touch_state=NULL;{char description[1024]="-";dvm_ref exc=dvm_exception(vm);if(exc)dvm_describe_exception(vm,exc,description,sizeof description);require_record(&s,fprintf(f,"event=probe_result result=%s activity=%u init_enter=%u init_return=%u exception=%u exception_text=%s pending=%d limited_before=%u limited_after=%u host_ui_queue_bound=0 engine_status=unknown\n",ok?"pass":"fail",s.activity,s.init_enter,s.init_return,exc,description,s.bridge?jni_bridge_pending(s.bridge):-1,s.limited_before,s.bridge?jni_bridge_limited_count(s.bridge):0));}
+ done: touch_worker_finish(&s);frame_touch_state=NULL;{char description[1024]="-";dvm_ref exc=dvm_exception(vm);if(exc)dvm_describe_exception(vm,exc,description,sizeof description);require_record(&s,fprintf(f,"event=probe_result result=%s activity=%u init_enter=%u init_return=%u exception=%u exception_text=%s pending=%d limited_before=%u limited_after=%u host_ui_queue_bound=0 engine_status=unknown\n",ok?"pass":"fail",s.activity,s.init_enter,s.init_return,exc,description,s.bridge?jni_bridge_pending(s.bridge):-1,s.limited_before,s.bridge?jni_bridge_limited_count(s.bridge):0));}
  /* Cookie close may report EBADF on this libc even when queue writes worked.
   * Diagnostic persistence is not an engine acceptance condition. */
  (void)fclose(f);
