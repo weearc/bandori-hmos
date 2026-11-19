@@ -76,6 +76,13 @@ build/
 *.app
 
 # third-party build outputs (built by build_pcre2.py / build_native.ps1)
-sdk-init-next/vendor/
+sdk-init-next/vendor/build-pcre2-16/
 tls-java-next/native/build/
 sqlite-backend-next/build/
+
+# generated from your APK (contains publisher SDK keys)
+package-metadata-next/metadata_values.inc
+login-milestone-next/application-metadata-original.json
+login-milestone-next/application-metadata-typed.json
+# PCRE2 sources are vendored (BSD); only its build output is ignored
+!sdk-init-next/vendor/pcre2-10.45/

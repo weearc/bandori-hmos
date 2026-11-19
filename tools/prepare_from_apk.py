@@ -5,10 +5,10 @@
     python tools/prepare_from_apk.py --apk D:\\path\\to\\your.apk
 
 产物:
-    host/entry/src/main/resources/rawfile/sdkdex/base.apk   （APK 原样复制）
-    host/entry/src/main/resources/rawfile/sdkdex/classes*.dex
-    host/entry/libs/arm64-v8a/<游戏自带的 so>
-    host/entry/src/main/resources/base/media/app_icon.png   （从 APK 解析出的图标）
+    native-probe/entry/src/main/resources/rawfile/sdkdex/base.apk   （APK 原样复制）
+    native-probe/entry/src/main/resources/rawfile/sdkdex/classes*.dex
+    native-probe/entry/libs/arm64-v8a/<游戏自带的 so>
+    native-probe/entry/src/main/resources/base/media/app_icon.png   （从 APK 解析出的图标）
     host/AppScope/resources/base/media/app_icon.png
 
 图标只在本机从你自己的 APK 解出，用于替换仓库里的占位图；不要把结果提交回仓库。
@@ -33,7 +33,7 @@ GAME_LIBS = [
 ]
 
 ICON_TARGETS = [
-    "host/entry/src/main/resources/base/media/app_icon.png",
+    "native-probe/entry/src/main/resources/base/media/app_icon.png",
     "host/AppScope/resources/base/media/app_icon.png",
 ]
 
@@ -58,8 +58,8 @@ def main() -> int:
         print("APK 不存在: %s" % apk, file=sys.stderr)
         return 2
 
-    sdkdex = repo / "host/entry/src/main/resources/rawfile/sdkdex"
-    libs = repo / "host/entry/libs" / args.abi
+    sdkdex = repo / "native-probe/entry/src/main/resources/rawfile/sdkdex"
+    libs = repo / "native-probe/entry/libs" / args.abi
     sdkdex.mkdir(parents=True, exist_ok=True)
     libs.mkdir(parents=True, exist_ok=True)
 

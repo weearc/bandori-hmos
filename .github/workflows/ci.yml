@@ -54,7 +54,7 @@ jobs:
             echo 'no committed shared libraries; nothing to scan'
             exit 0
           fi
-          python3 tools/verify_no_embedded_assets.py --manifest host/entry/src/main/cpp/apk_payload_manifest.h "${libs[@]}"
+          python3 tools/verify_no_embedded_assets.py "${libs[@]}"
 
       - name: Asset generator defaults to no embedding
         run: |
