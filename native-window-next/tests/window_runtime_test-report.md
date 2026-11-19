@@ -9,7 +9,7 @@
 WSL distribution discovery (`wsl -l -q`) returned `ArchLinux`. The requested strict host compile/run command was attempted:
 
 ```sh
-cd <local-path>
+cd <repo>
 cc -std=c11 -Wall -Wextra -Werror -pthread -Inative-window-next \
   native-window-next/window_runtime.c \
   native-window-next/tests/window_runtime_test.c \
