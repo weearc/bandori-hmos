@@ -4,6 +4,37 @@
 
 ## 2026-11-19
 
+### 构建：native-probe 端到端可用，并修掉一批「干净克隆编不过」的问题
+
+以下问题都是在本机按 README 从零走一遍时才暴露的，逐一修掉：
+
+- **新增 `tools/gen_payload_manifest.py`**：从用户的 APK 生成 `apk_payload_manifest.h`（版本、大小、采样身份、
+  每条 payload 的 size/CRC32、DEX 摘要）。用它对本机 APK 生成的结果与仓库先前那份**逐字节一致**（3760 条）。
+- **新增 `tools/apk_metadata.py`**：APK 二进制清单版本读取 + 采样 SHA-256 身份。
+- `build_tls_candidate.py`：基线二进制改为可缺省（不再强制要求 `preserved-template/libsdktrace.so`）；
+  输出目录改为递归创建；补齐 GC/触摸/观测相关源文件的复制与编译单元；链接补 `-lffrt.z`。
+- `unity_player_probe.c`：引入 `host_callbacks_stub.inc`，为 `sdk_app_vm_is_foreground` / `sdk_app_vm_should_destroy`
+  提供弱符号默认实现（宿主可用强符号覆盖）。
+- `jni_gc_selftest.inc`：补 `<sys/stat.h>`、`<unistd.h>`（`fchmod` 在干净构建里没有隐式声明）。
+- `touch_record.inc`：为 `ReplayNow` / `ReplayPoll` / replay 状态提供**无回放实现**的等价物，
+  只有定义 `BG_ENABLE_TOUCH_REPLAY` 的诊断构建才链接真正的注入实现。
+- `build_native.ps1`：产物同时复制到 `native-probe/` 与 `host/`，并调用 manifest 生成与素材自检。
+- **签名材料不再入库**：`native-probe/build-profile.json5` 与 `host/build-profile.json5` 的 `signingConfigs` 清空；
+  `.gitignore` 增加生成物与构建产物规则。
+- **构建产物停止跟踪**：`sdk-init-next/vendor/`（456 个文件）取消跟踪，`*.hap`、`build/`、`.cxx/`、`.hvigor/` 全部忽略。
+- `tools/verify_no_embedded_assets.py` 重写判定：清单里的路径字符串不再算违规，改为
+  「64 字节高熵切片逐字节命中」或「PNG/UnityFS/ACB 容器魔数」才是违规；低熵（补零）切片被显式过滤。
+
+验证结果（本机，DevEco 6.0.2.130）：
+
+```text
+libsdktrace.so            6.30 MB   素材自检 exit 0
+entry-default-unsigned.hap  393 MB   41 项，module.json bundleName=top.weearc.bangdream.nativeprobe
+HAP 内 libsdktrace.so              素材自检 exit 0
+```
+
+
+
 ### 合规：把 APK 派生内容从仓库二进制里清掉
 
 - **移除两个预编译运行时**：`host/entry/libs/arm64-v8a/libsdktrace.so` 与

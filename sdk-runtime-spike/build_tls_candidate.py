@@ -40,10 +40,17 @@ pcre_archive = workspace/'sdk-init-next/vendor/build-pcre2-16/libpcre2-16.a'
 if not pcre_archive.is_file():
     subprocess.run([sys.executable,str(workspace/'sdk-init-next/build_pcre2.py')],check=True)
 base_manifest = json.loads((base / 'candidate.json').read_text(encoding='utf-8'))
+# The preserved baseline binary is no longer distributed (it carried embedded
+# APK assets). When it is present, verify it; when absent, build from source.
 base_library = base / 'libsdktrace.so'
-base_hash = hashlib.sha256(base_library.read_bytes()).hexdigest()
-if base_hash != base_manifest['sha256']:
-    raise SystemExit(f'preserved v30 candidate hash mismatch: {base_hash}')
+base_hash = base_manifest.get('sha256', '')
+if base_library.is_file():
+    base_hash = hashlib.sha256(base_library.read_bytes()).hexdigest()
+    if base_hash != base_manifest.get('sha256'):
+        raise SystemExit(f'preserved base hash mismatch: {base_hash}')
+    print('base binary verified:', base_hash[:16], '...')
+else:
+    print('note: preserved-template/libsdktrace.so absent; building from source only')
 if out.exists():
     raise SystemExit(f'refusing to overwrite existing candidate directory: {out}')
 
@@ -186,7 +193,7 @@ missing_inputs = [str(path) for path in required_inputs if not path.exists()]
 if missing_inputs:
     raise SystemExit('TLS candidate prerequisites missing: ' + ', '.join(missing_inputs))
 
-out.mkdir()
+out.mkdir(parents=True)
 shutil.copytree(base / 'source', source)
 # Per-allocation identity prevents weak native map keys from aliasing a reused
 # dvm_ref. Keep the preserved template immutable; compile every unit against
@@ -246,6 +253,14 @@ shutil.copy2(workspace/'application-lifecycle-next/shadow_view_declarations.inc'
 shutil.copy2(root/'webview_panel.inc',source/'webview_panel.inc')
 for name in ('multitouch_packet.h','multitouch_runtime.inc','multitouch_selftest.inc','multitouch_unity.inc','enqueue_drain_observer.inc','input_pipeline_observer.inc'):
     shutil.copy2(workspace/'native-elf-loader-next'/name,source/name)
+# input pipeline / touch worker overlays referenced by unity_player_probe.c
+for name in ('touch_drain_budget.inc','touch_worker.inc','task8a_watch.inc','task6f_download_preflight.inc',
+             'gc_observ_core.h','gc_observ_export.inc','host_callbacks_stub.inc'):
+    src = workspace / 'native-elf-loader-next' / name
+    if src.is_file():
+        shutil.copy2(src, source / name)
+    else:
+        print('note: missing %s' % name)
 for name in ('web_cookie_runtime.h','web_cookie_runtime.inc'):
     shutil.copy2(workspace/'application-lifecycle-next'/name,source/name)
 shutil.copy2(workspace/'application-lifecycle-next/math_interpolator_runtime.inc',source/'math_interpolator_runtime.inc')
@@ -1133,7 +1148,7 @@ library = out / 'libsdktrace.so'
 subprocess.run(common + ['-shared','-Wl,-z,max-page-size=16384','-Wl,-z,common-page-size=16384', *map(str, objects), '-Wl,--no-undefined',
     str(workspace/'sdk-init-next/vendor/build-pcre2-16/libpcre2-16.a'),
     '-L'+str(out), '-L'+str(mbed_dir), '-lmbedtls', '-lmbedx509', '-lmbedcrypto',
-    '-lEGL', '-lnative_vsync', '-lgame_sqlite', '-lnet_connection', '-lhilog_ndk.z', '-ldl', '-lm', '-lpthread', '-lz',
+    '-lEGL', '-lnative_vsync', '-lgame_sqlite', '-lnet_connection', '-lhilog_ndk.z','-lffrt.z', '-ldl', '-lm', '-lpthread', '-lz',
     '-lnative_media_core','-lnative_media_codecbase','-lnative_media_avsource','-lnative_media_avdemuxer','-lnative_media_acodec',
     '-o', str(library)], check=True)
 manifest = {

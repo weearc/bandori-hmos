@@ -1,20 +1,6 @@
 {
   "app": {
-    "signingConfigs": [
-      {
-        "name": "default",
-        "type": "HarmonyOS",
-        "material": {
-          "certpath": "C:\\Users\\michaelki\\.ohos\\config\\default_native-probe_p1yuO9pds7m5BBTJ5xL2dZw4oCm-KjhxOn9iE8y91vs=.cer",
-          "keyAlias": "debugKey",
-          "keyPassword": "<redacted-encrypted-password>",
-          "profile": "C:\\Users\\michaelki\\.ohos\\config\\default_native-probe_p1yuO9pds7m5BBTJ5xL2dZw4oCm-KjhxOn9iE8y91vs=.p7b",
-          "signAlg": "SHA256withECDSA",
-          "storeFile": "C:\\Users\\michaelki\\.ohos\\config\\default_native-probe_p1yuO9pds7m5BBTJ5xL2dZw4oCm-KjhxOn9iE8y91vs=.p12",
-          "storePassword": "<redacted-encrypted-password>"
-        }
-      }
-    ],
+    "signingConfigs": [],
     "products": [
       {
         "name": "default",

@@ -1,3 +1,15 @@
+/* Touch recording needs a monotonic clock and the replay state flags. A normal
+ * build has no replay unit, so provide inert equivalents here; a diagnostic
+ * build that defines BG_ENABLE_TOUCH_REPLAY pulls in the real implementation. */
+#if defined(BG_ENABLE_TOUCH_REPLAY)
+#include "touch_replay_host.inc"
+#else
+#include <atomic>
+#include <ctime>
+static std::atomic<bool> replayRunning{false}, replayStop{false};
+static uint64_t ReplayNow(){timespec t{};clock_gettime(CLOCK_MONOTONIC,&t);return (uint64_t)t.tv_sec*1000000000ull+t.tv_nsec;}
+static void ReplayPoll(){}
+#endif
 // Host-only observer. No game inspection or input delivery changes.
 #include "touch_record_core.h"
 #include "touch_record_format.h"

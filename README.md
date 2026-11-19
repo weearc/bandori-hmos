@@ -95,15 +95,23 @@ python tools/prepare_from_apk.py --apk D:\path\to\your.apk
 ### 2. 编译原生运行时 → libsdktrace.so
 
 ```powershell
+$env:BG_APK = 'D:\path\to\your.apk'      # 或每次显式 --apk
 powershell -ExecutionPolicy Bypass -File tools\build_native.ps1
 ```
 
-四个阶段（脚本依次执行）：PCRE2 → mbedTLS 3.6.7 → SQLite 适配层 → 组装 `libsdktrace.so`，
-最后自动复制到 `host/entry/libs/arm64-v8a/`。
+脚本依次做：PCRE2（UTF-16）→ mbedTLS 3.6.7 → SQLite 适配层 → 组装 `libsdktrace.so`，
+然后**生成 `apk_payload_manifest.h`**、把库复制到 `native-probe/`（以及 `host/`）、最后跑一次
+`tools/verify_no_embedded_assets.py` 自检（有内嵌素材会直接失败）。
+
+资源表（`sdk-init-next/apk_resource_table.inc`）同理，默认由构建自动生成；也可以单独跑：
+
+```powershell
+python resource-table-next/gen_apk_resource_table.py --apk $env:BG_APK --out sdk-init-next/apk_resource_table.inc
+```
 
 ### 3. 构建 HAP
 
-用 DevEco Studio 打开 `host/`，或用命令行（需要 java 在 PATH）：
+宿主入口用 `native-probe/`：
 
 ```powershell
 $de = 'C:\Program Files\Huawei\DevEco Studio'
@@ -111,22 +119,18 @@ $env:DEVECO_SDK_HOME = "$de\sdk"
 $env:JAVA_HOME      = "$de\jbr"
 $env:PATH           = "$de\jbr\bin;$de\tools\node;$de\tools\hvigor\bin;" + $env:PATH
 
-cd host
+cd native-probe
 hvigorw assembleHap --mode module -p product=default
-## 产物：host/entry/build/default/outputs/default/entry-default-unsigned.hap
+## 产物：native-probe/entry/build/default/outputs/default/entry-default-unsigned.hap
 ```
 
-> 已验证：本仓库从干净状态可构建出 **unsigned HAP（约 12.6 MB）**。
-> 若只想确认编译链是否通，做到这一步即可，不需要签名。
+> 本仓库已按这条路径验证过一次完整构建：`libsdktrace.so` 6.30 MB，unsigned HAP 393 MB，
+> HAP 内的运行时通过素材自检。HAP 体积主要来自你自己 APK 里的 guest 库与 `rawfile/sdkdex/base.apk`。
 
-签名（要装到设备时才需要）：
-
-1. DevEco → File → Project Structure → Signing Configs → 勾选 Automatically generate signature；
-2. 或用你自己的 `.p12/.cer/.p7b`，通过 DevEco 的 Sign 面板 / `hap-sign-tool` 完成。
-
-仓库里的 `build-profile.json5` 故意把 `signingConfigs` 留空，避免把任何人的证书带进来。
+签名：用你自己的证书。仓库不带任何签名材料（`build-profile.json5` 的 `signingConfigs` 为空）。
 
 ### 4. 安装运行
+
 
 ```powershell
 hdc install -r host\entry\build\default\outputs\default\entry-default-signed.hap

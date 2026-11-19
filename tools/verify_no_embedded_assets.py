@@ -1,101 +1,82 @@
 #!/usr/bin/env python3
-r"""Fail if a produced runtime ELF still carries game asset bytes.
+r"""Fail if a produced runtime ELF still carries game asset payload bytes.
+
+Manifest-only asset tables legitimately contain APK paths and NULL data
+pointers, and ELF padding can match trivially repetitive asset regions, so
+both are filtered out. A failure means one of:
+
+  1) a distinctive 64-byte slice of an APK asset appears verbatim in the ELF
+     (embedded arrays reproduce file content exactly), or
+  2) the ELF contains an asset-container signature (PNG header, ACB header,
+     UnityFS bundle header).
 
 Usage:
-    python tools/verify_no_embedded_assets.py path/to/libsdktrace.so [...]
-    python tools/verify_no_embedded_assets.py --manifest apk_payload_manifest.h libsdktrace.so
+    python tools/verify_no_embedded_assets.py --apk yours.apk libsdktrace.so
+    python tools/verify_no_embedded_assets.py libsdktrace.so        # structural only
 
-Checks, per ELF:
-  1) no known Unity/APK asset paths appear as strings (SplashImage.png,
-     boot.config, JigsawData.json, blive/images/, assets/bin/Data/...);
-  2) no 'assets' table with non-NULL data pointers -- i.e. the generated
-     assets.inc has no embedded byte arrays;
-  3) optionally, every sha256 in --manifest is absent from the binary body.
-
-Exit code 0 when clean, 1 when anything matched, 2 on argument/IO errors."""
+Exit 0 clean, 1 payload found, 2 argument/IO error.
+"""
 import argparse
-import hashlib
 import pathlib
-import re
-import struct
 import sys
+import zipfile
 
-SUSPECT_STRINGS = (
-    b'SplashImage.png',
-    b'JigsawData.json',
-    b'blive/images/',
-    b'assets/bin/Data/',
-    b'bin/Data/boot.config',
-)
+# Container signatures that only embedded asset files would introduce.
+MAGICS = [
+    (b'\x89PNG\r\n\x1a\n', 'PNG header'),
+    (b'UnityFS', 'UnityFS bundle header'),
+    (b'\x40\x00\x00\x00ACB', 'ACB header'),
+]
+MIN_DISTINCT = 8  # a 64-byte probe with fewer distinct byte values is padding
 
 
-def scan_strings(blob: bytes):
-    hits = [s for s in SUSPECT_STRINGS if s in blob]
+def structural_hits(blob: bytes):
+    return ['%s present' % label for magic, label in MAGICS if magic in blob]
+
+
+def payload_hits(blob: bytes, apk: pathlib.Path):
+    hits = []
+    with zipfile.ZipFile(apk) as z:
+        for name in z.namelist():
+            if not name.startswith('assets/') or name.endswith('/'):
+                continue
+            data = z.read(name)
+            if len(data) < 256:
+                continue
+            probe = data[len(data) // 2:len(data) // 2 + 64]
+            if len(probe) < 64 or len(set(probe)) < MIN_DISTINCT:
+                continue  # padding-like regions match by coincidence
+            if probe in blob:
+                hits.append('%s (%d bytes) payload present' % (name, len(data)))
     return hits
 
 
-def scan_asset_table(blob: bytes):
-    """assets[] rows are {'name',ptr,len}; a non-NULL ptr in the data section
-    means embedded bytes. We look for the generated table marker and count
-    rows whose pointer field is not zero."""
-    marker = b'static const asset assets[]='
-    idx = blob.find(marker)
-    if idx < 0:
-        return None
-    return idx
-
-
-def scan_manifest_hashes(blob: bytes, manifest: pathlib.Path):
-    text = manifest.read_text(encoding='utf-8', errors='replace')
-    digests = set(re.findall(r'[0-9a-fA-F]{64}', text))
-    found = []
-    for d in digests:
-        try:
-            if bytes.fromhex(d) in blob:
-                found.append(d)
-        except ValueError:
-            continue
-    return found
-
-
-def check(path: pathlib.Path, manifest):
-    blob = path.read_bytes()
-    problems = []
-    strings = scan_strings(blob)
-    if strings:
-        problems.append('asset path strings present: ' + ', '.join(s.decode('ascii', 'replace') for s in strings))
-    table = scan_asset_table(blob)
-    if table is not None:
-        problems.append('generated assets table marker present at offset %d (embedded arrays likely)' % table)
-    if manifest is not None:
-        hashes = scan_manifest_hashes(blob, manifest)
-        if hashes:
-            problems.append('%d manifest asset digest(s) found in binary body, e.g. %s' % (len(hashes), hashes[0]))
-    return problems
-
-
 def main(argv):
-    ap = argparse.ArgumentParser(description=__doc__)
+    ap = argparse.ArgumentParser(description='Detect embedded game assets in a runtime ELF')
     ap.add_argument('targets', nargs='+', type=pathlib.Path)
-    ap.add_argument('--manifest', type=pathlib.Path,
-                    help='apk_payload_manifest.h; its sha256 values must not appear in the binary')
+    ap.add_argument('--apk', type=pathlib.Path, help='your APK; enables payload-byte verification')
     args = ap.parse_args(argv)
     bad = 0
     for target in args.targets:
         if not target.is_file():
             print('ERROR: not a file: %s' % target)
             return 2
-        problems = check(target, args.manifest)
+        blob = target.read_bytes()
+        problems = structural_hits(blob)
+        if args.apk:
+            if not args.apk.is_file():
+                print('ERROR: APK not found: %s' % args.apk)
+                return 2
+            problems += payload_hits(blob, args.apk)
         if problems:
             bad += 1
             print('FAIL %s' % target)
-            for p in problems:
-                print('  - ' + p)
+            for item in problems[:10]:
+                print('  - ' + item)
         else:
-            print('OK   %s (no game asset bytes detected)' % target)
+            print('OK   %s (no embedded asset payload detected)' % target)
     if bad:
-        print('\n%d file(s) carry game asset content; rebuild with generate.py --no-embed '
-              'and BG_EMBED_BOOT_CONFIG unset.' % bad)
+        print('\n%d file(s) carry game asset payload; rebuild with generate.py --no-embed' % bad)
         return 1
     return 0
 

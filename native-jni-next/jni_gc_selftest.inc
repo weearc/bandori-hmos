@@ -1,3 +1,5 @@
+#include <sys/stat.h>
+#include <unistd.h>
 /* Included once by jni_bridge.c: exercises the installed JNI function table,
  * real guest objects, retained copies, weak identities and direct loans. */
 struct jni_gc_test_root {dvm_ref ref;unsigned hits;};

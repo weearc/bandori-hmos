@@ -14,6 +14,7 @@
 #include "intent_runtime.h"
 #include "egl_window_runtime.h"
 #include "perf_attr.h"
+#include "host_callbacks_stub.inc"
 #include "dvm/dvm_internal.h"
 #include <time.h>
 #include <pthread.h>

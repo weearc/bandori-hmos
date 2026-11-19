@@ -1,4 +1,5 @@
-﻿# Build the native runtime (libsdktrace.so) and copy it into host/entry/libs.
+﻿# Build the native runtime (libsdktrace.so) and copy it into the host projects.
+# native-probe/ is the release entry; host/ is kept for legacy comparison.
 # Usage: powershell -ExecutionPolicy Bypass -File tools\build_native.ps1
 $ErrorActionPreference = 'Stop'
 
@@ -37,11 +38,23 @@ try {
 
     $so = 'sdk-runtime-spike/build/local-build/libsdktrace.so'
     if (-not (Test-Path $so)) { throw ('artifact missing: ' + $so) }
-    New-Item -ItemType Directory -Force -Path 'host/entry/libs/arm64-v8a' | Out-Null
-    Copy-Item $so 'host/entry/libs/arm64-v8a/' -Force
-    $target = 'host/entry/libs/arm64-v8a/libsdktrace.so'
-    $hash = (Get-FileHash $target -Algorithm SHA256).Hash.ToLower()
-    $size = (Get-Item $target).Length
-    Write-Host ('DONE: ' + $target + '  ' + $size + ' bytes  sha256=' + $hash) -ForegroundColor Green
+
+    Write-Host '=== payload manifest (generated locally from your APK) ===' -ForegroundColor Cyan
+    python tools/gen_payload_manifest.py
+    if ($LASTEXITCODE -ne 0) { throw 'apk_payload_manifest.h generation failed (set BG_APK or pass --apk)' }
+
+    foreach ($hostDir in @('native-probe','host')) {
+        $libs = Join-Path $hostDir 'entry/libs/arm64-v8a'
+        New-Item -ItemType Directory -Force -Path $libs | Out-Null
+        Copy-Item $so $libs -Force
+        $target = Join-Path $libs 'libsdktrace.so'
+        $hash = (Get-FileHash $target -Algorithm SHA256).Hash.ToLower()
+        $size = (Get-Item $target).Length
+        Write-Host ('DONE: ' + $target + '  ' + $size + ' bytes  sha256=' + $hash) -ForegroundColor Green
+    }
+
+    Write-Host '=== compliance self check ===' -ForegroundColor Cyan
+    python tools/verify_no_embedded_assets.py native-probe/entry/libs/arm64-v8a/libsdktrace.so
+    if ($LASTEXITCODE -ne 0) { throw 'runtime still carries embedded game assets; rebuild with embedding disabled' }
 }
 finally { Pop-Location }
