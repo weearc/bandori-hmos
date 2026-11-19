@@ -220,7 +220,9 @@ shutil.copy2(workspace/'file-directory-next/file_runtime.h',source/'file_runtime
 ca_pem = workspace/'tls-java-next/analysis/mozilla-ca-bundle.pem'
 ca_provenance = json.loads(ca_pem.with_suffix('.json').read_text(encoding='utf-8'))
 ca_bytes = ca_pem.read_bytes()
-if hashlib.sha256(ca_bytes).hexdigest() != ca_provenance['sha256']:
+# A CRLF checkout (core.autocrlf=true) must not break the recorded digest.
+ca_normalized = ca_bytes.replace(b'\r\n', b'\n')
+if hashlib.sha256(ca_normalized).hexdigest() != ca_provenance['sha256']:
     raise SystemExit('guest CA bundle digest mismatch')
 ca_blocks = __import__('re').findall(b'-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----', ca_bytes, __import__('re').S)
 if len(ca_blocks) != ca_provenance['certificates']:
@@ -483,7 +485,7 @@ for name in ('trust.c', 'trust.h', 'fixture_selftest.c', 'fixture_selftest.h', '
     shutil.copy2(workspace / 'tls-trust-next' / name, source / name)
 for name in ('cert_objects.c', 'cert_objects.h', 'cert_selftest.c',
              'cert_selftest.h', 'expected_spki.h'):
-    shutil.copy2(workspace / 'cert-objects-next' / name, source / name)
+    shutil.copy2(workspace / 'cert-objects-next' / name, source / name)
 ssl_copy = source / 'ssl_runtime.c'
 ssl_text = ssl_copy.read_text(encoding='utf-8')
 ssl_text = ssl_text.replace('#include "../native/tls_client.h"', '#include "tls_client.h"')

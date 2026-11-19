@@ -1,0 +1,30 @@
+# Files whose bytes are verified by a recorded digest must not be line-ending
+# converted: a CRLF checkout changes the SHA-256 and breaks the build checks.
+*.pem   -text
+*.crt   -text
+*.cer   -text
+*.p12   -text
+*.p7b   -text
+*.so    -text
+*.a     -text
+*.o     -text
+*.png   -text
+*.jpg   -text
+*.jpeg  -text
+*.hap   -text
+*.apk   -text
+*.dex   -text
+*.bin   -text
+
+# Sources and docs keep normal text handling.
+*.c     text eol=lf
+*.h     text eol=lf
+*.inc   text eol=lf
+*.cpp   text eol=lf
+*.py    text eol=lf
+*.ps1   text eol=lf
+*.md    text eol=lf
+*.json  text eol=lf
+*.json5 text eol=lf
+*.ets   text eol=lf
+*.ts    text eol=lf
