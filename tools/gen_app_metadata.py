@@ -27,28 +27,36 @@ sys.path.insert(0, str(HERE))
 from apk_metadata import apk_path  # noqa: E402
 
 # Android resource value types used by the .inc reader.
+TYPE_REFERENCE = 1
 TYPE_STRING = 3
 TYPE_INT_DEC = 16
+TYPE_INT_HEX = 17
 TYPE_INT_BOOLEAN = 18
+TYPE_INT_COLOR_ARGB8 = 28
+NO_ENTRY = 0xFFFFFFFF
 
 
 def _parse_strings(blob, p, header):
+    """Decode a ResStringPool chunk (UTF-8 or UTF-16, per the pool flags)."""
     count = struct.unpack_from('<I', blob, p + 8)[0]
     flags = struct.unpack_from('<I', blob, p + 16)[0]
     start = struct.unpack_from('<I', blob, p + 20)[0]
-    utf8 = bool(flags & 256)
+    utf8 = bool(flags & 0x100)
     out = []
     for i in range(count):
-        q = p + start + struct.unpack_from('<I', blob, p + header + 4 * i)[0]
+        off = struct.unpack_from('<I', blob, p + header + 4 * i)[0]
+        q = p + start + off
         if utf8:
+            # UTF-8 pool: byte length, then character length, each 1 or 2 bytes.
             n = blob[q]; q += 1
             if n & 0x80:
                 n = ((n & 0x7F) << 8) | blob[q]; q += 1
-            n2 = blob[q]; q += 1
-            if n2 & 0x80:
+            c = blob[q]; q += 1
+            if c & 0x80:
                 q += 1
             out.append(blob[q:q + n].decode('utf-8', 'replace'))
         else:
+            # UTF-16 pool: character length, 1 or 2 little-endian u16.
             n = struct.unpack_from('<H', blob, q)[0]; q += 2
             if n & 0x8000:
                 n = ((n & 0x7FFF) << 16) | struct.unpack_from('<H', blob, q)[0]; q += 2
@@ -57,24 +65,35 @@ def _parse_strings(blob, p, header):
 
 
 def read_meta_data(apk):
+    """Return the <application> <meta-data> entries of AndroidManifest.xml.
+
+    Only direct children of <application> are collected (provider/service deps
+    declare their own meta-data that the runtime does not read), duplicate names
+    keep their first occurrence, and each value keeps its declared Android type:
+    strings resolve through the pool, booleans normalise to true/false, and every
+    other numeric type keeps its 32-bit value.
+    """
     with zipfile.ZipFile(apk) as z:
         blob = z.read('AndroidManifest.xml')
     strings = []
     results = []
+    seen = set()
+    depth = 0
     p = struct.unpack_from('<H', blob, 2)[0]
     while p + 8 <= len(blob):
         ctype, header, size = struct.unpack_from('<HHI', blob, p)
         if size < header or size < 8 or p + size > len(blob):
             break
-        if ctype == 1:
+        if ctype == 0x0001:  # string pool
             strings = _parse_strings(blob, p, header)
         elif ctype == 0x0102:  # start element
             name_idx = struct.unpack_from('<I', blob, p + 20)[0]
-            attr_start = struct.unpack_from('<H', blob, p + 24)[0]
-            attr_size = struct.unpack_from('<H', blob, p + 26)[0]
-            attr_count = struct.unpack_from('<H', blob, p + 28)[0]
-            if strings and strings[name_idx] == 'meta-data':
-                record = {}
+            tag = strings[name_idx] if strings and name_idx < len(strings) else ''
+            if tag == 'meta-data' and depth == 2:  # manifest(0) > application(1) > meta-data(2)
+                record, types = {}, {}
+                attr_start = struct.unpack_from('<H', blob, p + 24)[0]
+                attr_size = struct.unpack_from('<H', blob, p + 26)[0]
+                attr_count = struct.unpack_from('<H', blob, p + 28)[0]
                 base = p + 16 + attr_start
                 for i in range(attr_count):
                     q = base + i * attr_size
@@ -82,19 +101,26 @@ def read_meta_data(apk):
                     raw = struct.unpack_from('<I', blob, q + 8)[0]
                     vtype = blob[q + 15]
                     vdata = struct.unpack_from('<I', blob, q + 16)[0]
-                    if aname in ('name', 'value'):
-                        if raw != 0xFFFFFFFF:
-                            record[aname] = strings[raw]
-                        elif vtype == TYPE_STRING:
-                            record[aname] = strings[vdata]
-                        else:
-                            record[aname] = vdata
-                        record.setdefault('_types', {})[aname] = vtype
-                if 'name' in record:
+                    if aname not in ('name', 'value'):
+                        continue
+                    types[aname] = vtype
+                    if vtype == TYPE_STRING:
+                        idx = raw if raw != NO_ENTRY else vdata
+                        record[aname] = strings[idx] if idx < len(strings) else None
+                    elif vtype == TYPE_INT_BOOLEAN:
+                        record[aname] = bool(vdata)
+                    else:
+                        record[aname] = vdata
+                name = record.get('name')
+                if name and name not in seen:
+                    seen.add(name)
+                    record['_types'] = types
                     results.append(record)
+            depth += 1
+        elif ctype == 0x0103:  # end element
+            depth = max(0, depth - 1)
         p += size
     return results
-
 
 def render(records):
     """Render records exactly as Android declared them.
@@ -118,8 +144,13 @@ def render(records):
                 rows.append('{%s,%d,%s,0u},' % (json.dumps(name), TYPE_STRING, json.dumps(text)))
                 typed.append({'attributes': {'name': name, 'value': text},
                               'android_value_types': {'name': TYPE_STRING, 'value': TYPE_STRING}})
+        elif vtype == TYPE_INT_BOOLEAN:
+            flag = 1 if (value is True or (isinstance(value, int) and value != 0)) else 0
+            rows.append('{%s,%d,NULL,%du},' % (json.dumps(name), TYPE_INT_BOOLEAN, flag))
+            typed.append({'attributes': {'name': name, 'value': bool(flag)},
+                          'android_value_types': {'name': TYPE_STRING, 'value': TYPE_INT_BOOLEAN}})
         else:
-            num = value if isinstance(value, int) else (int(value) if isinstance(value, str) and value.lstrip('-').isdigit() else 0)
+            num = int(value) if isinstance(value, (int, bool)) else (int(value) if isinstance(value, str) and value.lstrip('-').isdigit() else 0)
             rows.append('{%s,%d,NULL,%du},' % (json.dumps(name), vtype, num))
             typed.append({'attributes': {'name': name, 'value': num},
                           'android_value_types': {'name': TYPE_STRING, 'value': vtype}})
