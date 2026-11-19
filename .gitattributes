@@ -15,16 +15,3 @@
 *.apk   -text
 *.dex   -text
 *.bin   -text
-
-# Sources and docs keep normal text handling.
-*.c     text eol=lf
-*.h     text eol=lf
-*.inc   text eol=lf
-*.cpp   text eol=lf
-*.py    text eol=lf
-*.ps1   text eol=lf
-*.md    text eol=lf
-*.json  text eol=lf
-*.json5 text eol=lf
-*.ets   text eol=lf
-*.ts    text eol=lf
