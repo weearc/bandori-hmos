@@ -36,7 +36,19 @@ MPL-2.0 与 AGPL-3.0 可以组合分发，但有前提，**不能把上游 MPL �
 ## 不包含的内容
 
 - 不含游戏本体：没有 APK、没有 `classes*.dex`、没有 `assets/`、没有 `libil2cpp.so` / `libunity.so` 等游戏自带库；
-- 不含由游戏 APK 派生的资源表：**`asset-reader-next/assets.inc` 已从仓库移除**，由使用者在本地用 `generate.py` 从自己的 APK 生成（被 `.gitignore` 排除）；
+- 不含由游戏 APK 派生的素材：`asset-reader-next/assets.inc` 与 `source-manifest.json` 只存在于你的工作区，
+  由 `asset-reader-next/generate.py` 从你自己的 APK 生成（被 `.gitignore` 排除）。生成器**默认不嵌入任何字节**，
+  只写清单；`--embed` 是诊断用开关，会把小素材正文写进二进制，**不要用于对外发布的构建**；
+- 不含由游戏 APK 派生的资源表：`apk_resource_table.inc` 已从仓库移除（此前 `sdk-init-next/` 与
+  `preserved-template/source/` 各有一份，来自原 APK 的 `resources.arsc`，含 3072 个资源 ID 与 192 个颜色）。
+  现在由 `resource-table-next/gen_apk_resource_table.py` 在构建时按你本地的 APK 生成；
+  未生成时 `platform_runtime.c` 通过 `__has_include` 回退到空表，构建不会失败；
+- 不含预编译的运行时二进制：`libsdktrace.so` 已从仓库移除（`host/entry/libs/arm64-v8a/` 与
+  `sdk-runtime-spike/preserved-template/` 两份旧库都曾内嵌 81 个 APK 素材条目，合计 663,006 字节）。
+  现在必须由 `tools/build_native.ps1` / `build_tls_candidate.py` 在你本地构建，并用
+  `tools/verify_no_embedded_assets.py` 自检：一旦检测到素材字节，脚本返回非 0；
+- 不含 Unity 引导配置正文：`assets/bin/Data/boot.config` 只在显式设置 `BG_EMBED_BOOT_CONFIG=1` 的
+  诊断构建里才会被嵌入，默认不嵌入；
 - 不含反编译分析材料：`*.smali.txt` 等 DEX 反汇编文件已移除，只保留接口签名与行为分析；
 - 不含账号、Cookie、Token 或真实用户数据；
 - 不含签名私钥（`*.p12` / `*.p7b` / `*.cer` 均在 `.gitignore` 中）。

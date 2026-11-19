@@ -36,6 +36,22 @@
 - 运行时需要实现 `ConnectivityManager.registerDefaultNetworkCallback` 与回调投递，
   需要实现 `ConnectivityManager.registerDefaultNetworkCallback` 与回调投递。
 
+### 切场景时内存涨得快（AssetManager 读取路径）
+
+`asset-reader-next/asset_reader.c` 的 `AssetManager.open()` 是**整文件读取**：先 `fstat`，
+单文件上限 64 MiB，然后一次 `malloc` + 完整读入；`InputStream.close()` 只置关闭标记，
+缓冲要等对象销毁（`release()`）才释放。所以「打开即关闭」也会承担整份资源的分配与读取成本。
+
+最小验证（连续开/关同一大资源，看三个时刻的 live bytes）：
+
+```text
+1) 记录 opened 前 live_charge；
+2) 打开同一大资源 N 次并立即 close，记录 close 后的 live_charge；
+3) 让这些对象全部销毁（或 GC 可达性消失后再触发一次回收/退出场景），记录销毁后的 live_charge。
+```
+
+判读：close 后不降、销毁后才降 → 属于该路径；两者都不降 → 另有持有者，别把增长直接归给它。
+
 ### E-ELF-PAGE-CONGRUENCE
 
 - guest 库的 PT_LOAD 只满足 4KB 同余（`p_align=0x1000`，offset 与 vaddr 差 0x1000），

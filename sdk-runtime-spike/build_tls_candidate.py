@@ -8,6 +8,27 @@ import subprocess
 import zipfile
 import sys
 
+def _install_resource_table(workspace, source):
+    """apk_resource_table.inc is derived from the user's own APK and is never
+    committed. Prefer a locally generated copy, else generate one, else skip
+    (platform_runtime.c falls back to an empty table via __has_include)."""
+    local = workspace / 'sdk-init-next/apk_resource_table.inc'
+    if local.is_file():
+        shutil.copy2(local, source / 'apk_resource_table.inc')
+        return True
+    apk_env = os.environ.get('BG_APK')
+    candidate = Path(apk_env) if apk_env else None
+    if candidate is None:
+        found = sorted(workspace.glob('*.apk'))
+        candidate = found[0] if found else None
+    generator = workspace / 'resource-table-next/gen_apk_resource_table.py'
+    if candidate and candidate.is_file() and generator.is_file():
+        subprocess.run([sys.executable, str(generator), '--apk', str(candidate),
+                        '--out', str(source / 'apk_resource_table.inc')], check=True)
+        return True
+    print('note: apk_resource_table.inc not generated (no APK); resource lookups fall back to empty')
+    return False
+
 
 root = Path(__file__).resolve().parent
 workspace = root.parent
@@ -71,7 +92,7 @@ required_inputs = [
     *[workspace / 'sdk-init-next' / name for name in (
         'file_runtime.c', 'prefs_runtime.c', 'string_runtime.c',
         'reflection_runtime.c', 'platform_runtime.c', 'java_basics.c',
-        'apk_resource_table.inc', 'unity_resource_strings.inc',
+        'unity_resource_strings.inc',
         'io_runtime.c', 'io_runtime.h', 'lrucache_runtime.c',
         'lrucache_runtime.h', 'latch_runtime.c', 'latch_runtime.h',
         'executor_extras.c', 'executor_extras.h', 'thread_extras.c',
@@ -241,7 +262,7 @@ shutil.copy2(workspace/'sdk-runtime-spike/jni_throwable_pressure_selftest.inc',s
 # String.trim/format, Locale, reflective constructors, ConcurrentHashMap.
 for name in ('freeze180_file.inc','freeze180_resource_strings.inc','file_runtime.c','prefs_runtime.c','string_runtime.c',
              'reflection_runtime.c','platform_runtime.c','java_basics.c',
-             'apk_resource_table.inc', 'unity_resource_strings.inc', 'numeric_radix_cases.inc', 'task5_split_cases.inc',
+             'unity_resource_strings.inc', 'numeric_radix_cases.inc', 'task5_split_cases.inc',
              'io_runtime.c','io_runtime.h','lrucache_runtime.c',
              'lrucache_runtime.h','latch_runtime.c','latch_runtime.h',
              'executor_extras.c','executor_extras.h','thread_extras.c',
@@ -264,6 +285,15 @@ for name in ('runtime_extra.inc', 'runtime_extra_test.inc'):
 shutil.copy2(workspace/'sdk-init-next/dvm.c', source/'generated/dvm/dvm.c')
 for name in ('gc_runtime.h', 'gc_layout_types.h', 'gc_layout.inc', 'gc_foundation.inc', 'gc_handles.inc','gc_fast.inc','gc_stw.inc','gc_e1_matrix.inc','gc_young_selftest.inc','gil_observe.inc'):
     shutil.copy2(workspace/'sdk-init-next'/name, source/name)
+# GC generation/directory/metrics/operation: the current dvm.c references these.
+for name in ('gc_directory.h', 'gc_directory.inc', 'gc_reverse.inc', 'gc_generation.h',
+             'gc_generation.c', 'gc_generation_publish.inc', 'gc_metrics.h', 'gc_metrics.inc',
+             'gc_operation.h', 'gc_contract.inc', 'gc_scope_generation.inc'):
+    src = workspace / 'sdk-init-next' / name
+    if src.is_file():
+        shutil.copy2(src, source / name)
+    else:
+        print('note: missing %s (older base)' % name)
 shutil.copy2(workspace/'sdk-init-next/gil_perf.inc',source/'gil_perf.inc')
 shutil.copy2(workspace/'sdk-init-next/gil_deep.inc',source/'gil_deep.inc')
 for name in ('next_arena.c', 'next_arena.h', 'next_interpose.h',
@@ -294,9 +324,13 @@ if not (workspace / 'asset-reader-next/assets.inc').is_file():
         candidate_apk = found[0] if found else None
     if candidate_apk is None or not candidate_apk.is_file():
         raise SystemExit('asset-reader-next/assets.inc missing: run "python asset-reader-next/generate.py --apk <your.apk>" first (or set BG_APK)')
-    subprocess.run([sys.executable, str(workspace / 'asset-reader-next/generate.py'), '--apk', str(candidate_apk)], check=True)
+    subprocess.run([sys.executable, str(workspace / 'asset-reader-next/generate.py'), '--apk', str(candidate_apk), '--no-embed'], check=True)
 shutil.copy2(workspace/'asset-reader-next/assets.inc', source/'assets.inc')
-if os.environ.get('UNITY_PLAYER_PROBE') == '1':
+_install_resource_table(workspace, source)
+# Embedding the real boot.config body puts game bytes into the produced ELF.
+# It is opt-in for local diagnostics only; a published build must not do it.
+if os.environ.get('UNITY_PLAYER_PROBE') == '1' and os.environ.get('BG_EMBED_BOOT_CONFIG') == '1':
+    print('WARNING: BG_EMBED_BOOT_CONFIG=1 embeds game content into the binary; do not distribute this build.')
     original_apk = workspace / 'BanGDream_10.1.3.0.0.0.0_20260917_031717_9932d.apk'
     with zipfile.ZipFile(original_apk) as apk:
         member = apk.getinfo('assets/bin/Data/boot.config')
@@ -1034,7 +1068,7 @@ for name in ('gc_isolated_satb.h', 'gc_isolated_evacuate.inc'):
     shutil.copy2(workspace/'sdk-init-next'/name, source/name)
 for name in ('perf_attr.h','perf_attr.c','play_stall.inc','long_frame_breakdown.inc','frame_io_probe.h','frame_block_probe.h','ffrt_stall.inc','leak_scope.h','leak_scope.c'):
     shutil.copy2(workspace/'sdk-init-next'/name,source/name)
-names = ['page_geometry.c','leak_scope.c','perf_attr.c','gc_isolated_satb.c','generated/dvm/dvm.c', 'generated/dvm/dex.c', 'strict_runtime.c',
+names = ['page_geometry.c','leak_scope.c','perf_attr.c','gc_isolated_satb.c','gc_generation.c','generated/dvm/dvm.c', 'generated/dvm/dex.c', 'strict_runtime.c',
          'java_basics.c', 'java_basics_test.c', 'android_basics.c', 'android_basics_test.c',
          'guest_profile.c', 'collections.c', 'collections_test.c', 'next_arena.c',
          'thread_runtime.c', 'thread_runtime_test.c', 'executor_runtime.c',

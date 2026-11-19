@@ -7,13 +7,15 @@ before compiling the runtime.
 
 Usage:
     python asset-reader-next/generate.py --apk D:\path\to\your.apk
-    python asset-reader-next/generate.py --apk your.apk --no-embed
+    python asset-reader-next/generate.py --apk your.apk --embed   # not recommended
 
-By default, small text-like assets (<= 64 KiB, not under assets/bin/) are
-embedded as C byte arrays; everything else is represented by a manifest entry
-(path, size, sha256) and read from the APK payload at runtime.
+By default nothing is embedded: every asset is a manifest entry
+(path, size, sha256) and is read from the APK payload at runtime.  This keeps
+game bytes out of the compiled runtime and out of anything you distribute.
 
---no-embed keeps only the manifest and embeds nothing.
+--embed (opt-in, diagnostic only) additionally writes small text-like assets
+(<= 64 KiB, not under assets/bin/) as C byte arrays, which puts game content
+into the produced binary.  Do not use it for a published build.
 """
 import argparse
 import hashlib
@@ -61,13 +63,16 @@ def build(apk: pathlib.Path, embed: bool) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--apk", type=pathlib.Path, required=True, help="your own game APK")
-    parser.add_argument("--no-embed", action="store_true", help="embed no bytes, keep manifest only")
+    parser.add_argument("--embed", action="store_true",
+                        help="opt-in: embed small assets as C arrays (diagnostic only; puts game bytes in the binary)")
+    parser.add_argument("--no-embed", action="store_true",
+                        help="kept for compatibility; embedding is already off by default")
     args = parser.parse_args()
     apk = args.apk.resolve()
     if not apk.is_file():
         print("APK not found: %s" % apk, file=sys.stderr)
         return 2
-    build(apk, embed=not args.no_embed)
+    build(apk, embed=args.embed and not args.no_embed)
     return 0
 
 

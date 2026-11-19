@@ -1,3 +1,13 @@
+/* DIAGNOSTIC ONLY -- never compiled into a user-facing build.
+ *
+ * This unit injects synthetic touch events through the system input service
+ * (after the platform grants input-injection authorization).  It exists to
+ * reproduce dropped touches and to compare input latency before/after a change.
+ * A normal build must not contain it: guard the include site with
+ * defined(BG_ENABLE_TOUCH_REPLAY) and leave that undefined in release builds.
+ * It is not referenced anywhere in this tree by default.
+ */
+#if defined(BG_ENABLE_TOUCH_REPLAY)
 // Public host input API only: OS routing -> XComponent -> existing guest path.
 // Does not call queueTouch, queueMultiTouch or any guest/runtime entry point.
 #include <multimodalinput/oh_input_manager.h>
@@ -82,3 +92,4 @@ static void ReplayPoll(){
  ffrt_task_attr_t attr;ffrt_task_attr_init(&attr);ffrt_task_attr_set_name(&attr,"os-touch-replay");
  ffrt_submit_base(task,nullptr,nullptr,&attr);ffrt_task_attr_destroy(&attr);
 }
+#endif /* BG_ENABLE_TOUCH_REPLAY */

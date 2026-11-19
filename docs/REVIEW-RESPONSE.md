@@ -26,8 +26,8 @@ python asset-reader-next/generate.py --apk D:\path\to\your.apk
 
 | 问题 | 处理 |
 |---|---|
-| 干净克隆缺 `sdk-runtime-spike/preserved-template/libsdktrace.so` | **已随仓库提供**（4.48 MB，本项目代码冻结的基线二进制，AGPL，非游戏内容） |
-| 干净克隆缺 `host/entry/libs/arm64-v8a/*.so`（运行时及其垫片共 14 个） | **已随仓库提供**（本项目 AGPL 产物，不是游戏内容）；游戏侧 `.so` 仍在 `.gitignore` 中要求用户自备 |
+| 干净克隆缺 `sdk-runtime-spike/preserved-template/libsdktrace.so` | **已改为本地构建**：该二进制已于 2026-11-19 从仓库移除（其 `assets` 表内嵌 81 个 APK 素材条目）。`preserved-template/` 只保留源码级模板 |
+| 干净克隆缺 `host/entry/libs/arm64-v8a/*.so`（运行时及其垫片共 14 个） | **垫片仍在仓库**（13 个，本项目 AGPL 产物）；**运行时 `libsdktrace.so` 已于 2026-11-19 移除**，改由 `tools/build_native.ps1` 本地构建并用 `tools/verify_no_embedded_assets.py` 自检 |
 | `asset_reader.c` 的 `asset_probe_log()` 每次 fopen/write/fclose | **已修复**：默认关闭（仅当 `files/sdkdex/engine-probe-observe` 含 `1` 才启用）；启用时流只开一次并保持，VM 结束时 flush+close；不再在热路径做同步 IO |
 
 ## P2 维护性与合规

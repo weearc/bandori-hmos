@@ -2,6 +2,45 @@
 
 本文件记录对外可见的变更。日期为本地时间（Asia/Shanghai）。
 
+## 2026-11-19
+
+### 合规：把 APK 派生内容从仓库二进制里清掉
+
+- **移除两个预编译运行时**：`host/entry/libs/arm64-v8a/libsdktrace.so` 与
+  `sdk-runtime-spike/preserved-template/libsdktrace.so`。两份库的 `assets` 表各含 81 个来自 APK 的素材条目
+  （合计 663,006 字节，含 `SplashImage.png`、`JigsawData.json`、`blive/images/*`、`bin/Data/boot.config`）。
+  仓库不再分发预编译运行时，改由使用者本地构建。
+- **移除两份 APK 派生资源表**：`sdk-init-next/apk_resource_table.inc` 与
+  `sdk-runtime-spike/preserved-template/source/apk_resource_table.inc`（来自原 APK `resources.arsc`，
+  3072 个资源 ID、192 个颜色）。改为构建期用 `resource-table-next/gen_apk_resource_table.py` 生成；
+  未生成时 `platform_runtime.c` 通过 `__has_include` 回退到空表，构建不会失败。
+- **素材生成器默认不嵌入**：`asset-reader-next/generate.py` 的默认行为改为「只写清单、不写字节数组」，
+  原先控制嵌入的开关翻转为显式 `--embed`（仅诊断用）。
+- **Unity 引导配置正文改为显式开关**：`build_tls_candidate.py` 里 `boot.config` 的嵌入改为需要
+  `BG_EMBED_BOOT_CONFIG=1`，默认不嵌入；开启时脚本会打印「不要分发此构建」的警告。
+- **新增自检工具**：`tools/verify_no_embedded_assets.py` 扫描 ELF 里的素材路径、生成表标记与清单摘要，
+  命中即返回非 0；构建脚本与 CI 都用它做门禁。
+- **CI 修复并加门禁**：`.github/workflows/ci.yml` 此前 YAML 已损坏（一个 step 的正则字面量把下一个 step
+  的名字吞了进去，另有游离片段）。重写后新增三项检查：拒绝提交派生资源表/预编译运行时、对任何提交的 `*.so`
+  执行素材扫描、校验生成器默认不嵌入。
+- **文档同步**：`LEGAL.md` 删掉了「不含派生资源表」这一不准确表述，改为逐项说明「本地生成 + 自检」；
+  `BUILD.md` 不再给出跨环境固定哈希，改为「记录你自己的构建哈希」。
+
+### 已知缺口：逐帧释放模块未接入公开构建
+
+- `sdk-runtime-spike/overlay/leak_release_candidate.*` 是**未接线**的模块：公开树里没有
+  `lr_register` / `lr_poll` 的调用点，构建脚本也不编译它。它记录的是这条路径的实现与接口，
+  不是「克隆即可复现 0.2 KiB/s」的保证；
+- 真机上那组数据（主页 35.199 → 0.2 KiB/s）来自接线后的诊断构建。要让公开构建拿到同样的回收效果，
+  需要把 `lr_register`/`lr_returned`/`lr_poll` 接到 proxy 分派与帧节拍上，并把 `overlay/` 加入 include 路径；
+- 触摸录制（`touch_record.inc`）与载荷缓存（`apk_cache_runtime.inc`、`payload_boot_reuse.inc`）已经随源码发布，
+  但它们挂在 `native-probe/` 这个宿主入口上，`host/` 里没有对应实现。
+
+### 构建：收敛到唯一宿主入口
+
+- README 的目录表把 `native-probe/` 标为**正式宿主入口**（真机验证用的就是它），`host/` 标注为早期工程、
+  保留供对照；两者的 `probe.cpp` 与 CMake 入口是独立副本，之前照 README 打包会漏掉新实现。
+
 ## 2026-11-18
 
 ### 新增：对象目录 / 世代 / 指标 / 准入契约
@@ -19,8 +58,9 @@
 ### 新增：逐帧临时对象释放模块
 
 - `sdk-runtime-spike/overlay/leak_release_candidate.h`、`.inc`：对 proxy 分派每帧产生的
-  `Object[1]` 与装箱 `Long` 在返回后回收；带金丝雀隔离（抽 1/8 不复用并填 `0xDD`），
-  便于观测「是否有人读取已释放对象」。
+  `Object[1]` 与装箱 `Long` 在返回后回收。**公开版本不做金丝雀隔离**（模块头部写明 `No quarantine`，
+  直接归还分配器）；带 1/8 抽样隔离与 `0xDD` 填充的是本地诊断变体，未随仓库发布。
+  文中 35.199 → 0.2 KiB/s 这组数据来自含诊断观测的构建，公开版本的行为与之同源但观测代码不同。
 - 开关文件 `leak-release-control`（`1` 开 / `0` 关，重启生效）。
 - 效果：同一构建下主页静置由 35.199 KiB/s 降到 0.2 KiB/s；关闭后回到 40.6 KiB/s。
   300 秒窗口释放 16,953 对 / 3,036,400 字节。

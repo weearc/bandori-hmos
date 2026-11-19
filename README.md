@@ -11,13 +11,15 @@
 
 ## 构建前必须知道的三件事
 
-1. **你需要自备正版 APK**。仓库不含 APK/DEX/游戏 SO，也不含由 APK 派生的资源表：
-   `asset-reader-next/assets.inc` 由你本地生成（已被 `.gitignore` 排除）：
+1. **你需要自备正版 APK**。仓库不含 APK/DEX/游戏 SO，也不含由 APK 派生的素材与资源表；
+   两者都在本地生成（已被 `.gitignore` 排除），生成器默认**不嵌入任何素材字节**：
+   `asset-reader-next/assets.inc`（清单形式）与 `sdk-init-next/apk_resource_table.inc`（资源表）：
    ```powershell
    python asset-reader-next/generate.py --apk D:\path\to\your.apk   # 或设置 BG_APK
    ```
-2. **基线库随仓库提供**：`sdk-runtime-spike/preserved-template/libsdktrace.so` 是我们自己代码冻结出的基线二进制（AGPL），
-   用于校验重新组装的运行时；干净克隆后直接可用，无需先构建它。
+2. **仓库不带预编译运行时**：`libsdktrace.so` 不再入库（旧的预编译库内嵌了来自 APK 的素材条目，已移除）。
+   你需要用 `tools/build_native.ps1` 自己构建，构建后用 `tools/verify_no_embedded_assets.py` 自检；
+   发布说明里请附上你自己的 `libsdktrace.so` 哈希。
 3. **分辨率与密度不写死**：由宿主 `@ohos.display` 注入；4KB 页只是部分 guest 库的几何约束，见 COMPATIBILITY。
 
 
@@ -59,7 +61,8 @@ guest：classes*.dex + libil2cpp.so + libunity.so + 游戏自带 so（用户自�
 
 | 路径 | 说明 |
 |---|---|
-| `host/` | HarmonyOS 应用工程（ArkTS + NAPI），可直接用 DevEco 打开 |
+| `native-probe/` | **正式宿主入口**（ArkTS + NAPI），真机验证用的就是它；包含触摸录制、载荷缓存与全部新实现 |
+| `host/` | 早期宿主工程（保留供对照），**不是**当前发布入口；两者的 `probe.cpp`/CMake 是独立副本 |
 | `*-next/` | 兼容层各子模块的 C 源码（按功能命名，共 57 个） |
 | `sdk-runtime-spike/` | 运行时组装脚本 `build_tls_candidate.py` 与保留的基线模板 |
 | `tools/` | 素材准备与构建脚本 |
@@ -152,7 +155,7 @@ hdc shell aa start -a EntryAbility -b <bundleName>
 
 | 文档 | 内容 |
 |---|---|
-| [docs/BUILD.md](docs/BUILD.md) | 完整构建步骤、随仓库提供的二进制、换 APK 版本 |
+| [docs/BUILD.md](docs/BUILD.md) | 完整构建步骤、本地生成的目标文件、换 APK 版本 |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 分层架构与各模块职责 |
 | [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | 常见错误与排查 |
 | **[docs/CHANGELOG.md](docs/CHANGELOG.md)** | **变更记录（修复、新增、未完成）** |
@@ -172,6 +175,12 @@ hdc shell aa start -a EntryAbility -b <bundleName>
 | 内存：主页静置 | 35.199 KiB/s → 0.2 KiB/s（−99.4%）；开关 `leak-release-control` 可现场对比 |
 | 内存：进歌与切场景 | 增速由场景加载主导（约 195 MB/h）；逐帧临时对象已由释放模块回收 |
 | 反作弊 / 支付 | 不实现（不在本项目目标内） |
+
+### 关于公开构建的能力边界
+
+内存表格里的 0.2 KiB/s 是**接线后的本地构建**实测值。仓库里的释放模块（`sdk-runtime-spike/overlay/`）
+目前只提供实现与接口，公开构建尚未接线；按本 README 直接构建得到的运行时，主页静置速率仍接近 35 KiB/s。
+接线点与缺口写在 [docs/CHANGELOG.md](docs/CHANGELOG.md) 的「已知缺口」一节。
 
 ### 内存子系统
 

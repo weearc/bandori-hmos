@@ -89,7 +89,10 @@ bool asset_reader_call(struct dvm* v,const char* c,const char* m,const char* sig
   int fd=sdk_apk_open_asset(name);if(fd<0)return error(v,"java/io/FileNotFoundException");
   struct stat st={0};if(fstat(fd,&st)||st.st_size<0||st.st_size>64*1024*1024){close(fd);return error(v,"java/io/IOException");}
   io*p=calloc(1,sizeof *p);if(!p){close(fd);return error(v,"java/lang/OutOfMemoryError");}
-  p->owned_bytes=malloc(st.st_size?st.st_size:1);if(!p->owned_bytes){close(fd);free(p);return error(v,"java/lang/OutOfMemoryError");}
+  /* LIFETIME: the whole-file buffer is read on open (bounded to 64 MiB) and is
+ * released by release() when the Stream object is destroyed, not by close().
+ * Do not free it in close(): not every read path re-checks the closed flag yet. */
+p->owned_bytes=malloc(st.st_size?st.st_size:1);if(!p->owned_bytes){close(fd);free(p);return error(v,"java/lang/OutOfMemoryError");}
   size_t at=0;while(at<(size_t)st.st_size){ssize_t k=read(fd,p->owned_bytes+at,st.st_size-at);if(k<=0){close(fd);release(p);return error(v,"java/io/IOException");}at+=k;}close(fd);
   out->l=object(v,"java/io/InputStream");struct dvm_object*o=dvm__obj(v,out->l);if(!o){release(p);return error(v,"java/lang/OutOfMemoryError");}
   p->vm=v;p->owned_asset=(asset){"runtime-apk",p->owned_bytes,at};p->a=&p->owned_asset;o->data=p;o->data_destroy=release;return true;

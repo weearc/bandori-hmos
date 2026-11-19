@@ -18,6 +18,17 @@ SDK 不在默认路径时，改 `tools/build_native.ps1` 顶部的 `$SDK`，以�
 `sdk-init-next/build_pcre2.py`、`tls-java-next/native/build_native.py`、
 `sdk-runtime-spike/build_tls_candidate.py` 顶部同样的常量。
 
+## 0. 先选对宿主工程
+
+仓库里有**两个宿主工程**，构建步骤不同：
+
+| 目录 | 定位 | 说明 |
+|---|---|---|
+| `native-probe/` | **正式入口** | 真机验证、触摸录制、载荷缓存、全部新实现都在这里 |
+| `host/` | 早期工程 | 保留供对照；`probe.cpp` 与 CMake 是独立副本，不含新实现 |
+
+下面的步骤以 `native-probe/` 为准；把命令里的 `native-probe` 换成 `host` 只能得到旧版宿主。
+
 ## 1. 取游戏素材（需要你自己的 APK）
 
 ```powershell
@@ -50,10 +61,18 @@ powershell -ExecutionPolicy Bypass -File tools\build_native.ps1
 
 最后把 `libsdktrace.so` 复制到 `host/entry/libs/arm64-v8a/` 并打印 sha256。
 
-验证结果（两次独立构建一致）：
+仓库**不再提供预编译的 `libsdktrace.so`**：两次不同环境的构建产物并不保证一致，且旧的预编译库曾内嵌游戏素材
+（已移除）。请以你自己构建出的哈希为准，并把它记在你的发布说明里：
 
 ```text
-libsdktrace.so  6.8 MB  sha256=16825da15eec0c49a5d2b6b74e380d853614b99bcf716710202a0308794ef578
+# 构建后自行记录，示例格式
+libsdktrace.so  <大小>  sha256=<你的构建哈希>
+```
+
+构建完请跑一次合规自检（有内嵌素材会返回非 0）：
+
+```powershell
+python tools/verify_no_embedded_assets.py host\entry\libs\arm64-v8a\libsdktrace.so
 ```
 
 ## 3. 构建 unsigned HAP（已验证）
@@ -135,11 +154,24 @@ $env:BG_APK='D:\path\to\your.apk'
 
 若文件缺失，`sdk-runtime-spike/build_tls_candidate.py` 会尝试用 `BG_APK` 或仓库根目录第一个 `*.apk` 自动生成并给出明确报错。
 
-### 关于 `preserved-template/libsdktrace.so`
+### 关于 `apk_resource_table.inc`
 
-该文件是**我们自己代码冻结出的基线二进制**（AGPL-3.0），随仓库提供，用于校验重新组装出的运行时；
-它不是游戏内容，也不包含游戏代码。若你想从头重做基线，可用 `sdk-runtime-spike/build.ps1` 编译后替换，
-但校验摘要会随之改变。
+该文件同样由 APK 派生（原 `resources.arsc`，3072 个资源 ID、192 个颜色），**不再入库**：
+
+```powershell
+python resource-table-next/gen_apk_resource_table.py --apk D:\path\to\your.apk --out sdk-init-next/apk_resource_table.inc
+```
+
+没生成也能编译：`platform_runtime.c` 用 `__has_include` 回退到空表，只是 `getIdentifier()` 之类的查询会落空。
+
+### 关于 `sdk-runtime-spike/preserved-template/`
+
+该目录保留**源码级**基线（组装脚本需要的模板文件），但**不再随仓库提供** `libsdktrace.so`：
+
+- 旧基线库内嵌了 81 个来自 APK 的素材条目（合计 663,006 字节），已从仓库移除；
+- 需要基线时请用 `sdk-runtime-spike/build_tls_candidate.py` 自己构建，产物落在
+  `sdk-runtime-spike/build/local-build/libsdktrace.so`；
+- 与旧基线的差异（符号、行为）请以源码为准，不再用二进制哈希做跨环境比较。
 
 ### 换 APK 版本
 
@@ -153,8 +185,8 @@ python tools/check_payload_manifest.py --apk D:\path\to\your.apk
 
 ## 仓库随附的运行时二进制
 
-`host/entry/libs/arm64-v8a/` 内的 14 个 `.so` 是**本项目自己代码的构建产物**（AGPL-3.0），随仓库提供，
-以保证「干净克隆 → 直接可构建出可运行的 HAP」：
+`host/entry/libs/arm64-v8a/` 内保留**本项目自己代码的垫片与依赖**（AGPL-3.0，共 13 个），随仓库提供，
+让「干净克隆 → 构建」不必先手工准备这些垫片；**运行时本体 `libsdktrace.so` 已从仓库移除**，必须自己构建：
 
 ```text
 libsdktrace.so              运行时（DEX 解释器/JNI/ELF/网络/TLS/SQLite 等）
