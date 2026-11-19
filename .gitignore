@@ -86,3 +86,6 @@ login-milestone-next/application-metadata-original.json
 login-milestone-next/application-metadata-typed.json
 # PCRE2 sources are vendored (BSD); only its build output is ignored
 !sdk-init-next/vendor/pcre2-10.45/
+# resource-table generator outputs
+resource-table-next/apk-resource-report.json
+resource-table-next/dex-resource-uses.json
