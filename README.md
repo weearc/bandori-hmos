@@ -30,7 +30,7 @@
 Android 游戏跑在 HarmonyOS 上，缺的不止是一个 VM。本工程按层补齐：
 
 ```text
-ArkTS 宿主 (host/)
+ArkTS 宿主 (native-probe/ 为发布入口，host/ 为早期工程)
   EntryAbility / Index.ets : 窗口、EGL/NativeWindow、音频、触摸、输入法、宿主 RPC
   cpp/probe.cpp            : NAPI 侧宿主能力（EGL、音频、网络快照、权限）
   cpp/payload.cpp          : 以 C ABI 暴露给运行时的宿主接口
@@ -55,7 +55,7 @@ guest：classes*.dex + libil2cpp.so + libunity.so + 游戏自带 so（用户自�
 - 仓库里的应用图标是**自制占位图**（`BHMOS / compat layer` 渐变方块），不使用任何来自游戏 APK 的位图；
 - 游戏图标、启动图、UI 贴图等都不随仓库发布；它们属于游戏本体，由使用者自己的 APK 提供；
 - `tools/prepare_from_apk.py` 会在本地把占位图**替换**成你 APK 里的图标（不改仓库、不联网）；
-  该替换只发生在你的工作区，提交前用 `git checkout -- host/**/app_icon.png` 还原。
+  该替换只发生在你的工作区，提交前用 `git checkout -- native-probe/**/app_icon.png` 还原。
 
 ## 目录
 
@@ -90,7 +90,7 @@ python tools/prepare_from_apk.py --apk D:\path\to\your.apk
 并把**应用图标替换成你 APK 里的图标**（解析 AndroidManifest 的 `android:icon` → resources.arsc → 最高密度 png）。
 
 **这些文件被 .gitignore 排除；图标文件会被本地改写，提交前用
-`git checkout -- host/**/app_icon.png` 还原占位图。** 加 `--no-icon` 可跳过图标替换。
+`git checkout -- native-probe/**/app_icon.png` 还原占位图。** 加 `--no-icon` 可跳过图标替换。
 
 ### 2. 编译原生运行时 → libsdktrace.so
 
@@ -100,7 +100,7 @@ powershell -ExecutionPolicy Bypass -File tools\build_native.ps1
 ```
 
 脚本依次做：PCRE2（UTF-16）→ mbedTLS 3.6.7 → SQLite 适配层 → 组装 `libsdktrace.so`，
-然后**生成 `apk_payload_manifest.h`**、把库复制到 `native-probe/`（以及 `host/`）、最后跑一次
+然后**生成 `apk_payload_manifest.h` 与 `metadata_values.inc`（应用元数据）**、把库复制到 `native-probe/`（以及 `host/`）、最后跑一次
 `tools/verify_no_embedded_assets.py` 自检（有内嵌素材会直接失败）。
 
 资源表（`sdk-init-next/apk_resource_table.inc`）同理，默认由构建自动生成；也可以单独跑：
@@ -133,7 +133,7 @@ hvigorw assembleHap --mode module -p product=default
 
 
 ```powershell
-hdc install -r host\entry\build\default\outputs\default\entry-default-signed.hap
+hdc install -r native-probe\entry\build\default\outputs\default\entry-default-signed.hap
 hdc shell aa start -a EntryAbility -b <bundleName>
 ```
 

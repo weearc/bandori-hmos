@@ -96,6 +96,36 @@ def read_meta_data(apk):
     return results
 
 
+def render(records):
+    """Render records exactly as Android declared them.
+
+    The value type decides the representation: a string stays a string even when
+    it looks numeric (unity.builder="00123" must not become the integer 123),
+    while int/boolean types are emitted as numbers with a NULL string pointer.
+    """
+    rows, typed = [], []
+    for rec in sorted(records, key=lambda r: r['name']):
+        name = rec['name']
+        vtype = rec.get('_types', {}).get('value', TYPE_STRING)
+        value = rec.get('value')
+        if vtype == TYPE_STRING:
+            text = value if isinstance(value, str) else (str(value) if value is not None else None)
+            if text is None:
+                rows.append('{%s,%d,NULL,0u},' % (json.dumps(name), TYPE_STRING))
+                typed.append({'attributes': {'name': name, 'value': None},
+                              'android_value_types': {'name': TYPE_STRING, 'value': TYPE_STRING}})
+            else:
+                rows.append('{%s,%d,%s,0u},' % (json.dumps(name), TYPE_STRING, json.dumps(text)))
+                typed.append({'attributes': {'name': name, 'value': text},
+                              'android_value_types': {'name': TYPE_STRING, 'value': TYPE_STRING}})
+        else:
+            num = value if isinstance(value, int) else (int(value) if isinstance(value, str) and value.lstrip('-').isdigit() else 0)
+            rows.append('{%s,%d,NULL,%du},' % (json.dumps(name), vtype, num))
+            typed.append({'attributes': {'name': name, 'value': num},
+                          'android_value_types': {'name': TYPE_STRING, 'value': vtype}})
+    return rows, typed
+
+
 def main():
     ap = argparse.ArgumentParser(description='Generate app metadata from an APK')
     ap.add_argument('--apk', help='your APK (default: $BG_APK or the bundled rawfile copy)')
@@ -105,25 +135,7 @@ def main():
         print('APK not found: %s' % apk)
         return 2
     records = read_meta_data(apk)
-    rows, typed = [], []
-    for rec in sorted(records, key=lambda r: r['name']):
-        name = rec['name']
-        types = rec.get('_types', {})
-        value = rec.get('value')
-        vtype = types.get('value', TYPE_STRING)
-        if isinstance(value, str) and not value.isdigit():
-            rows.append('{%s,%d,%s,0u},' % (json.dumps(name), TYPE_STRING, json.dumps(value)))
-            typed.append({'attributes': {'name': name, 'value': value},
-                          'android_value_types': {'name': TYPE_STRING, 'value': TYPE_STRING}})
-        elif isinstance(value, int) or (isinstance(value, str) and value.isdigit()):
-            num = int(value)
-            rows.append('{%s,%d,NULL,%du},' % (json.dumps(name), vtype, num))
-            typed.append({'attributes': {'name': name, 'value': num},
-                          'android_value_types': {'name': TYPE_STRING, 'value': vtype}})
-        else:
-            rows.append('{%s,%d,NULL,0u},' % (json.dumps(name), vtype))
-            typed.append({'attributes': {'name': name, 'value': None},
-                          'android_value_types': {'name': TYPE_STRING, 'value': vtype}})
+    rows, typed = render(records)
     inc = ROOT / 'package-metadata-next/metadata_values.inc'
     inc.parent.mkdir(parents=True, exist_ok=True)
     inc.write_text('\n'.join(rows) + '\n', encoding='utf-8')

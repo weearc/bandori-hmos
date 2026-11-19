@@ -31,6 +31,10 @@ try {
     & $clang '--target=aarch64-linux-ohos' $sysroot '-shared' 'sqlite-backend-next/build/sqlite3.o' 'sqlite-backend-next/build/game_sqlite.o' '-lpthread' '-ldl' '-lm' '-o' 'sqlite-backend-next/build/libgame_sqlite.so'
     if ($LASTEXITCODE -ne 0) { throw 'SQLite adapter build failed' }
 
+    Write-Host '=== app metadata (generated from your APK) ===' -ForegroundColor Cyan
+    python tools/gen_app_metadata.py
+    if ($LASTEXITCODE -ne 0) { throw 'app metadata generation failed (set BG_APK or pass --apk)' }
+
     Write-Host '=== 4/4 Assemble libsdktrace.so ===' -ForegroundColor Cyan
     $env:TLS_CANDIDATE_DIR = 'local-build'
     python sdk-runtime-spike/build_tls_candidate.py

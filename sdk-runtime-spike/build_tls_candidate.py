@@ -127,7 +127,7 @@ required_inputs = [
     workspace / 'json-runtime-next/json_runtime.h',
     workspace / 'package-metadata-next/reviewed_metadata.c',
     workspace / 'package-metadata-next/package_metadata.h',
-    workspace / 'package-metadata-next/metadata_values.inc',
+    # metadata_values.inc is generated from the user's APK (tools/gen_app_metadata.py);
     workspace / 'sdk-init-next/runtime_extra.inc',
     workspace / 'sdk-init-next/runtime_extra_test.inc',
     workspace / 'native-jni-next/jni_forname_selftest.c',
@@ -381,7 +381,17 @@ shutil.copy2(workspace/'sdk-init-next/choreographer_runtime.inc', source/'choreo
 # metadata Bundle fixes.
 shutil.copy2(workspace/'package-metadata-next/reviewed_metadata.c', source/'package_metadata.c')
 shutil.copy2(workspace/'package-metadata-next/package_metadata.h', source/'package_metadata.h')
-shutil.copy2(workspace/'package-metadata-next/metadata_values.inc', source/'metadata_values.inc')
+metadata_values = workspace / 'package-metadata-next/metadata_values.inc'
+if not metadata_values.is_file():
+    apk_env = os.environ.get('BG_APK')
+    candidate_apk = Path(apk_env) if apk_env else (sorted(workspace.glob('*.apk')) or [None])[0]
+    generator = workspace / 'tools/gen_app_metadata.py'
+    if candidate_apk and Path(candidate_apk).is_file() and generator.is_file():
+        subprocess.run([sys.executable, str(generator), '--apk', str(candidate_apk)], check=True)
+if metadata_values.is_file():
+    shutil.copy2(metadata_values, source / 'metadata_values.inc')
+else:
+    print('note: metadata_values.inc not generated (no APK); SDK meta-data lookups fall back to empty')
 # Original APK certificate: the DER is embedded and SHA256-checked by
 # apk_signature_vm_start(); PackageInfo GET_SIGNATURES returns this certificate,
 # never the HAP signing certificate.
