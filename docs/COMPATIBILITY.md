@@ -31,7 +31,7 @@
 
 ### 换版本时的注意事项
 
-1. `host/entry/src/main/cpp/apk_payload_manifest.h` **与具体 APK 版本绑定**（记录了 `APK_SOURCE_SIZE` / `APK_SOURCE_CRC` / 每条资产的 size+crc）。
+1. `native-probe/entry/src/main/cpp/apk_payload_manifest.h` **与具体 APK 版本绑定**：记录 `APK_SOURCE_SIZE`、采样身份 `APK_SOURCE_ID`（APK 首 1 MiB + 末 64 KiB + 大小做 SHA-256）、应用版本，以及每条 payload 的 size + zip CRC32。它由 `tools/gen_payload_manifest.py` 生成（构建脚本会自动调用），`tools/check_payload_manifest.py` 负责核对（默认路径也是 `native-probe/`）。
 2. 换 APK 后必须重新生成该头文件，否则提取阶段会校验失败。
 3. 校验当前头文件是否与你的 APK 匹配：
    ```powershell
@@ -60,5 +60,5 @@
 - 单次 50.5 ms 长帧的归因（与慢持锁、大分配、region 提交均不重合）；
 - 持锁 p99.9 = 2.27 ms 的偶发尖峰（1,080 秒内 100 次超 2 ms，集中在后台帧队列消费与自治循环快照）；
 - 进歌加载期增长（约 195 MB/h）的进一步压缩——这部分分配不经逐帧释放路径；
-- `apk_payload_manifest.h` 的自动生成脚本（当前只有校验脚本）。
+- 无
 

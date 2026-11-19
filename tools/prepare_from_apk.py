@@ -32,9 +32,10 @@ GAME_LIBS = [
     "libcustom_rules.so",
 ]
 
+# Only the release host is touched: host/ keeps the committed placeholder so a
+# stray replacement cannot be committed from there.
 ICON_TARGETS = [
     "native-probe/entry/src/main/resources/base/media/app_icon.png",
-    "host/AppScope/resources/base/media/app_icon.png",
 ]
 
 

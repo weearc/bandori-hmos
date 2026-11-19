@@ -133,6 +133,8 @@ hvigorw assembleHap --mode module -p product=default
 
 
 ```powershell
+# 回到仓库根目录再执行（上一步在 native-probe/ 里）
+cd ..
 hdc install -r native-probe\entry\build\default\outputs\default\entry-default-signed.hap
 hdc shell aa start -a EntryAbility -b <bundleName>
 ```

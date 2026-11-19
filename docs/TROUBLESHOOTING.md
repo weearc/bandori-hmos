@@ -64,6 +64,8 @@
 
 | 文件 | 内容 |
 |---|---|
+> **适用范围**：下面这些数字与状态文件来自**接线了逐帧释放模块的构建**。按本仓库默认源码构建出的运行时，`leak-release-status.txt` 可能不存在，主页静置速率仍接近 35 KiB/s —— 此时不要把「没到 0.2」当作故障。
+
 | `leak-release-control` | 释放开关：`1` 开、`0` 关，重启生效；缺失视为开 |
 | `leak-release-status.txt` | 每约 60 秒更新：`rate_60s_KiB_s`、`freed_pairs`、`freed_bytes`、`denied`、`fault`、`frames_gt33`、`live_charge` |
 

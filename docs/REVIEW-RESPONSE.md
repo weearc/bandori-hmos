@@ -38,7 +38,7 @@ python asset-reader-next/generate.py --apk D:\path\to\your.apk
 | `LICENSE` 前有项目说明、被识别为 Other | **已还原**为标准 AGPL-3.0 全文，项目说明移入 `README.md` |
 | 无自动测试 | **已加** `.github/workflows/ci.yml`：拒绝游戏资源/反编译材料/签名材料入库、Python 语法检查、LICENSE 与第三方声明检查 |
 | 缺版本兼容矩阵 | **已加** `docs/COMPATIBILITY.md`：SDK、4KB 页约束、宿主注入的分辨率/密度、APK 版本绑定说明 |
-| `apk_payload_manifest.h` 与 APK 绑定、无同步再生成 | **已加校验脚本** `tools/check_payload_manifest.py`（比对 APK size/CRC 与清单记录）；BUILD/COMPATIBILITY 说明换版本必须先校验/重生成 |
+| `apk_payload_manifest.h` 与 APK 绑定、无同步再生成 | **已补生成器** `tools/gen_payload_manifest.py`（构建时自动调用），并保留 `tools/check_payload_manifest.py` 校验（比对 size、采样身份、版本与每条 CRC）；BUILD/COMPATIBILITY 说明换版本必须先校验/重生成 |
 
 ## 关于 4KB 页与分辨率（审查者关注点）
 
@@ -50,7 +50,7 @@ python asset-reader-next/generate.py --apk D:\path\to\your.apk
 ## 尚未完成（明确列出，不掩饰）
 
 1. ~~`reflection_runtime.c` 中 DisplayMetrics 字面量断言~~ —— **已修复**：改为 `*_valid` 有效性检查，宿主快照缺失（宽高为 0）时记 `SKIP` 并打印真实 `sdk_display_source()`，不再 `goto done` 中断自检；仓库内 `host/entry/libs/arm64-v8a/libsdktrace.so` 已用修复后源码重建并替换（sha256=4debbe8f123c442936620e36bdd3b0edc9d42aa80139d577454c4119eae2c7eb），二进制内已无 `*_2560` 字符串；
-2. `apk_payload_manifest.h` 目前只有校验脚本，没有自动再生成器；
+2. `apk_payload_manifest.h` 已由构建脚本自动生成（`tools/gen_payload_manifest.py`）；
 3. 断触/跳帧、极端长帧、标题 30fps 仍未完成最终验收；
 4. 大文件（`dvm.c` / `jni_bridge.c`）尚未拆分，属后续维护项。
 

@@ -72,7 +72,7 @@ libsdktrace.so  <大小>  sha256=<你的构建哈希>
 构建完请跑一次合规自检（有内嵌素材会返回非 0）：
 
 ```powershell
-python tools/verify_no_embedded_assets.py host\entry\libs\arm64-v8a\libsdktrace.so
+python tools/verify_no_embedded_assets.py native-probe\entry\libs\arm64-v8a\libsdktrace.so
 ```
 
 ## 3. 构建 unsigned HAP（已验证）
@@ -85,7 +85,7 @@ $env:DEVECO_SDK_HOME = "$de\sdk"
 $env:JAVA_HOME      = "$de\jbr"
 $env:PATH           = "$de\jbr\bin;$de\tools\node;$de\tools\hvigor\bin;" + $env:PATH
 
-cd host
+cd native-probe
 hvigorw assembleHap --mode module -p product=default
 ```
 
@@ -115,7 +115,7 @@ WARN: No signingConfig found for product default   <- 预期，未配置签名
 ## 5. 安装与首次启动
 
 ```powershell
-hdc install -r host\entry\build\default\outputs\default\entry-default-signed.hap
+hdc install -r native-probe\entry\build\default\outputs\default\entry-default-signed.hap
 hdc shell aa start -a EntryAbility -b <bundleName>
 hdc shell hilog | Select-String -Pattern 'E-|FATAL|mono_ns'
 ```

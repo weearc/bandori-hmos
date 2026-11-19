@@ -46,7 +46,7 @@ MPL-2.0 与 AGPL-3.0 可以组合分发，但有前提，**不能把上游 MPL �
 - 不含预编译的运行时二进制：`libsdktrace.so` 已从仓库移除（`host/entry/libs/arm64-v8a/` 与
   `sdk-runtime-spike/preserved-template/` 两份旧库都曾内嵌 81 个 APK 素材条目，合计 663,006 字节）。
   现在必须由 `tools/build_native.ps1` / `build_tls_candidate.py` 在你本地构建，并用
-  `tools/verify_no_embedded_assets.py` 自检：一旦检测到素材字节，脚本返回非 0；
+  `tools/verify_no_embedded_assets.py` 自检：默认只扫运行时 `.so` 里的素材容器标记（PNG 头、UnityFS、ACB）；显式传 `--apk <你的APK>` 时才会抽样比对素材字节（64 字节高熵切片逐字节命中）。注意：本地构建的 HAP 按设计包含你自己 APK 的 `base.apk`，所以「运行时自检通过」不等于整个 HAP 可以对外分发；
 - 不含 Unity 引导配置正文：`assets/bin/Data/boot.config` 只在显式设置 `BG_EMBED_BOOT_CONFIG=1` 的
   诊断构建里才会被嵌入，默认不嵌入；
 - 不含反编译分析材料：`*.smali.txt` 等 DEX 反汇编文件已移除，只保留接口签名与行为分析；

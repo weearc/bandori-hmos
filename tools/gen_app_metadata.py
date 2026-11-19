@@ -47,13 +47,14 @@ def _parse_strings(blob, p, header):
         off = struct.unpack_from('<I', blob, p + header + 4 * i)[0]
         q = p + start + off
         if utf8:
-            # UTF-8 pool: byte length, then character length, each 1 or 2 bytes.
+            # UTF-8 pool layout: UTF-16 length first (u16, 0x8000 extends it),
+            # then the UTF-8 byte length (u8, 0x80 extends it), then the bytes.
+            c = struct.unpack_from('<H', blob, q)[0]; q += 2
+            if c & 0x8000:
+                c = ((c & 0x7FFF) << 16) | struct.unpack_from('<H', blob, q)[0]; q += 2
             n = blob[q]; q += 1
             if n & 0x80:
                 n = ((n & 0x7F) << 8) | blob[q]; q += 1
-            c = blob[q]; q += 1
-            if c & 0x80:
-                q += 1
             out.append(blob[q:q + n].decode('utf-8', 'replace'))
         else:
             # UTF-16 pool: character length, 1 or 2 little-endian u16.
@@ -78,7 +79,7 @@ def read_meta_data(apk):
     strings = []
     results = []
     seen = set()
-    depth = 0
+    tag_stack = []
     p = struct.unpack_from('<H', blob, 2)[0]
     while p + 8 <= len(blob):
         ctype, header, size = struct.unpack_from('<HHI', blob, p)
@@ -89,7 +90,7 @@ def read_meta_data(apk):
         elif ctype == 0x0102:  # start element
             name_idx = struct.unpack_from('<I', blob, p + 20)[0]
             tag = strings[name_idx] if strings and name_idx < len(strings) else ''
-            if tag == 'meta-data' and depth == 2:  # manifest(0) > application(1) > meta-data(2)
+            if tag == 'meta-data' and tag_stack and tag_stack[-1] == 'application':
                 record, types = {}, {}
                 attr_start = struct.unpack_from('<H', blob, p + 24)[0]
                 attr_size = struct.unpack_from('<H', blob, p + 26)[0]
@@ -116,9 +117,10 @@ def read_meta_data(apk):
                     seen.add(name)
                     record['_types'] = types
                     results.append(record)
-            depth += 1
+            tag_stack.append(tag)
         elif ctype == 0x0103:  # end element
-            depth = max(0, depth - 1)
+            if tag_stack:
+                tag_stack.pop()
         p += size
     return results
 
@@ -137,21 +139,21 @@ def render(records):
         if vtype == TYPE_STRING:
             text = value if isinstance(value, str) else (str(value) if value is not None else None)
             if text is None:
-                rows.append('{%s,%d,NULL,0u},' % (json.dumps(name), TYPE_STRING))
+                rows.append('{%s,%d,NULL,0u},' % (json.dumps(name, ensure_ascii=False), TYPE_STRING))
                 typed.append({'attributes': {'name': name, 'value': None},
                               'android_value_types': {'name': TYPE_STRING, 'value': TYPE_STRING}})
             else:
-                rows.append('{%s,%d,%s,0u},' % (json.dumps(name), TYPE_STRING, json.dumps(text)))
+                rows.append('{%s,%d,%s,0u},' % (json.dumps(name, ensure_ascii=False), TYPE_STRING, json.dumps(text, ensure_ascii=False)))
                 typed.append({'attributes': {'name': name, 'value': text},
                               'android_value_types': {'name': TYPE_STRING, 'value': TYPE_STRING}})
         elif vtype == TYPE_INT_BOOLEAN:
             flag = 1 if (value is True or (isinstance(value, int) and value != 0)) else 0
-            rows.append('{%s,%d,NULL,%du},' % (json.dumps(name), TYPE_INT_BOOLEAN, flag))
+            rows.append('{%s,%d,NULL,%du},' % (json.dumps(name, ensure_ascii=False), TYPE_INT_BOOLEAN, flag))
             typed.append({'attributes': {'name': name, 'value': bool(flag)},
                           'android_value_types': {'name': TYPE_STRING, 'value': TYPE_INT_BOOLEAN}})
         else:
             num = int(value) if isinstance(value, (int, bool)) else (int(value) if isinstance(value, str) and value.lstrip('-').isdigit() else 0)
-            rows.append('{%s,%d,NULL,%du},' % (json.dumps(name), vtype, num))
+            rows.append('{%s,%d,NULL,%du},' % (json.dumps(name, ensure_ascii=False), vtype, num))
             typed.append({'attributes': {'name': name, 'value': num},
                           'android_value_types': {'name': TYPE_STRING, 'value': vtype}})
     return rows, typed

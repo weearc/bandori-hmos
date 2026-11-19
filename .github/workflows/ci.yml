@@ -13,7 +13,7 @@ jobs:
       - name: Refuse game artifacts and APK-derived tables
         run: |
           set -e
-          bad=$(git ls-files | grep -Ei '(\\.apk$|\\.xapk$|\\.obb$|\\.dex$|assets\\.inc$|source-manifest\\.json$|apk_resource_table\\.inc$|\\.smali\\.txt$)' || true)
+          bad=$(git ls-files | grep -Ei '(\.apk$|\.xapk$|\.obb$|\.dex$|assets\.inc$|source-manifest\.json$|apk_resource_table\.inc$|\.smali\.txt$)' || true)
           # Whole-game libraries shipped inside an APK (exact basenames; our own libunity*.so are fine).
           while IFS= read -r f; do
             [ -z "$f" ] && continue
@@ -33,7 +33,7 @@ jobs:
           # apk_resource_table.inc is generated locally from the user's own APK.
           # libsdktrace.so is built locally; a committed binary cannot be audited
           # by this workflow and previously carried embedded game assets.
-          bad=$(git ls-files | grep -E '(^|/)(apk_resource_table\\.inc|libsdktrace\\.so)$' || true)
+          bad=$(git ls-files | grep -E '(^|/)(apk_resource_table\.inc|libsdktrace\.so)$' || true)
           if [ -n "$bad" ]; then
             echo 'These derived artifacts must not be committed:'; echo "$bad"; exit 1
           fi
@@ -41,10 +41,94 @@ jobs:
       - name: Refuse signing material
         run: |
           set -e
-          bad=$(git ls-files | grep -Ei '(\\.p12$|\\.p7b$|\\.cer$|\\.keystore$|\\.jks$)' || true)
+          bad=$(git ls-files | grep -Ei '(\.p12$|\.p7b$|\.cer$|\.keystore$|\.jks$)' || true)
           if [ -n "$bad" ]; then
             echo 'Signing material must not be committed:'; echo "$bad"; exit 1
           fi
+
+      - name: Guard self-test (forbidden names must be caught)
+        run: |
+          set -e
+          artifacts='(\\.apk$|\\.xapk$|\\.obb$|\\.dex$|assets\\.inc$|source-manifest\\.json$|apk_resource_table\\.inc$|\\.smali\\.txt$)'
+          signing='(\\.p12$|\\.p7b$|\\.cer$|\\.keystore$|\\.jks$)'
+          runtimes='(^|/)(apk_resource_table\\.inc|libsdktrace\\.so)
+        run: |
+          set -e
+          mapfile -t libs < <(git ls-files '*.so')
+          if [ ${#libs[@]} -eq 0 ]; then
+            echo 'no committed shared libraries; nothing to scan'
+            exit 0
+          fi
+          python3 tools/verify_no_embedded_assets.py "${libs[@]}"
+
+      - name: Asset generator defaults to no embedding
+        run: |
+          set -e
+          python3 - <<'PY'
+          import pathlib, sys
+          src = pathlib.Path('asset-reader-next/generate.py').read_text(encoding='utf-8')
+          if 'embed=args.embed and not args.no_embed' not in src:
+              print('generate.py must default to manifest-only output')
+              sys.exit(1)
+          build = pathlib.Path('sdk-runtime-spike/build_tls_candidate.py').read_text(encoding='utf-8')
+          if "--no-embed" not in build:
+              print('build_tls_candidate.py must call the generator with --no-embed')
+              sys.exit(1)
+          if 'BG_EMBED_BOOT_CONFIG' not in build:
+              print('boot.config embedding must be explicitly gated')
+              sys.exit(1)
+          print('generator defaults OK')
+          PY
+
+      - name: Core GC source compiles standalone
+        run: |
+          set -e
+          # gc_generation.c has no HarmonyOS dependency; compiling it here catches
+          # header drift without needing the full SDK toolchain.
+          gcc -std=c11 -Wall -Wextra -c sdk-init-next/gc_generation.c -o /tmp/gc_generation.o
+          echo 'gc_generation.c compiles'
+
+      - name: Python syntax
+        run: |
+          python3 - <<'PY'
+          import compileall, sys
+          ok = True
+          for d in ('tools', 'asset-reader-next', 'resource-table-next', 'sdk-runtime-spike'):
+              ok = compileall.compile_dir(d, quiet=1) and ok
+          sys.exit(0 if ok else 1)
+          PY
+
+      - name: LICENSE must be the verbatim AGPL header
+        run: |
+          set -e
+          head -1 LICENSE | grep -q 'GNU AFFERO GENERAL PUBLIC LICENSE'
+
+      - name: Third-party notice present
+        run: |
+          set -e
+          grep -q 'MPL-2.0' docs/LEGAL.md
+          grep -q 'PCRE2' docs/LEGAL.md
+          grep -q 'Mbed TLS' docs/LEGAL.md
+          grep -q 'SQLite' docs/LEGAL.md
+
+      - name: YAML self check
+        run: |
+          set -e
+          python3 -c "import yaml,sys; yaml.safe_load(open('.github/workflows/ci.yml',encoding='utf-8'));print('ci.yml parses')"
+
+
+          fail=0
+          for name in example.apk example.p12 libsdktrace.so apk_resource_table.inc; do
+            if printf '%s\n' "$name" | grep -Eiq "$artifacts|$signing|$runtimes"; then
+              echo "caught: $name"
+            else
+              echo "MISSED: $name (the guard would let it through)"; fail=1
+            fi
+          done
+          if printf '%s\n' tools/example.py | grep -Eiq "$artifacts|$signing|$runtimes"; then
+            echo 'FALSE POSITIVE: tools/example.py'; fail=1
+          fi
+          exit $fail
 
       - name: No game asset bytes in any shipped binary
         run: |
