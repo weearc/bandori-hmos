@@ -74,3 +74,8 @@ build/
 *.hap
 *.hsp
 *.app
+
+# third-party build outputs (built by build_pcre2.py / build_native.ps1)
+sdk-init-next/vendor/
+tls-java-next/native/build/
+sqlite-backend-next/build/
